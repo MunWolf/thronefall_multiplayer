@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThronefallMP", "Main\ThronefallMP.csproj", "{BAD34921-EBC8-449E-83AA-B0DB5775B67B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BAD34921-EBC8-449E-83AA-B0DB5775B67B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAD34921-EBC8-449E-83AA-B0DB5775B67B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAD34921-EBC8-449E-83AA-B0DB5775B67B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAD34921-EBC8-449E-83AA-B0DB5775B67B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
