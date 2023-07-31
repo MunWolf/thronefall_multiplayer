@@ -7,57 +7,32 @@ namespace ThronefallMP;
 public class Serializer
 {
     public readonly List<byte> Data = new();
-    
-    public int Pointer = 0;
 
-    private bool CanRead(int size)
-    {
-        return Data.Count <= Pointer + size;
-    }
-    
-    public bool ReadBool()
-    {
-        if (CanRead(1))
-        {
-            Pointer = Data.Count;
-            return false;
-        }
-
-        return Data[Pointer] != 0;
-    }
-    
-    public float ReadFloat()
-    {
-        if (CanRead(4))
-        {
-            Pointer = Data.Count;
-            return 0.0f;
-        }
-
-        BitConverter.ToSingle(Data, Pointer);
-    }
-    
-    public Vector3 ReadVector3()
-    {
-        Vector3 output;
-        output.x = ReadFloat();
-        output.y = ReadFloat();
-        output.z = ReadFloat();
-        return output;
-    }
-    
     public void Write(bool item)
     {
-        
+        Data.Add((byte)(item ? 1 : 0));
+    }
+
+    public void Write(int item)
+    {
+        foreach (var value in BitConverter.GetBytes(item))
+        {
+            Data.Add(value);
+        }
     }
     
     public void Write(float item)
     {
-        
+        foreach (var value in BitConverter.GetBytes(item))
+        {
+            Data.Add(value);
+        }
     }
     
     public void Write(Vector3 item)
     {
-        
+        Write(item.x);
+        Write(item.y);
+        Write(item.z);
     }
 }
