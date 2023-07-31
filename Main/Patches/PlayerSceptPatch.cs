@@ -1,18 +1,16 @@
 ﻿using System.Collections;
 using HarmonyLib;
-using JetBrains.Annotations;
-using Rewired;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 public static class PlayerSceptPatch
 {
     public static void Apply()
     {
-        //On.PlayerScept.Update += Update;
+        On.PlayerScept.Update += Update;
     }
 
-    static void Update(On.PlayerScept.orig_Update original, PlayerScept self)
+    private static void Update(On.PlayerScept.orig_Update original, PlayerScept self)
     {
         var data = self.GetComponent<PlayerNetworkData>();
         if (data.SharedData.InteractButton && !data.PlayerSceptInteract)

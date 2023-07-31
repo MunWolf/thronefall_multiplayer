@@ -1,6 +1,6 @@
 ﻿using ThronefallMP.NetworkPackets;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 public static class SceneTransitionManagerPatch
 {
@@ -11,7 +11,7 @@ public static class SceneTransitionManagerPatch
         On.SceneTransitionManager.TransitionFromLevelSelectToLevel += TransitionFromLevelSelectToLevel;
     }
     
-    static void TransitionFromLevelSelectToLevel(On.SceneTransitionManager.orig_TransitionFromLevelSelectToLevel original, SceneTransitionManager self, string levelName)
+    private static void TransitionFromLevelSelectToLevel(On.SceneTransitionManager.orig_TransitionFromLevelSelectToLevel original, SceneTransitionManager self, string levelName)
     {
         if (!DisableTransitionHook)
         {
@@ -22,6 +22,7 @@ public static class SceneTransitionManagerPatch
             };
             Plugin.Instance.Network.Send(packet);
         }
+
         original(self, levelName);
     }
 }

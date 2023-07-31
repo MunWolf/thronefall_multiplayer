@@ -1,48 +1,66 @@
-﻿using HarmonyLib;
+﻿using System.Collections;
+using HarmonyLib;
 using Pathfinding.RVO;
 using UnityEngine;
-using UnityEngine.UIElements.Experimental;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 static class PlayerMovementPatch
 {
 	private static readonly int Moving = Animator.StringToHash("Moving");
 	private static readonly int Sprinting = Animator.StringToHash("Sprinting");
 
-	public const float MaximumDeviance = 8.0f;
+	public const float MaximumDeviance = 3.0f;
 	public const float MaximumDevianceSquared = MaximumDeviance * MaximumDeviance;
 
+	public static Vector3 SpawnLocation { get; private set; }
+	
 	public static void Apply()
 	{
-		On.PlayerMovement.Awake += Awake;
+		On.PlayerMovement.Start += Start;
         On.PlayerMovement.Update += Update;
     }
 
-	private static bool FirstInitialization = true;
+	private static bool _firstInitialization = true;
 	
-	static void Awake(On.PlayerMovement.orig_Awake original, PlayerMovement self)
+	private static void Start(On.PlayerMovement.orig_Start original, PlayerMovement self)
 	{
-		if (self.gameObject.GetComponent<PlayerNetworkData>() == null)
-		{
-			self.gameObject.AddComponent<PlayerNetworkData>();
-		}
+		original(self);
 		
-		if (PlayerMovement.instance == null)
+		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
+		if (vanillaPlayer)
 		{
-			PlayerMovement.instance = self;
-		}
-
-		if (FirstInitialization)
-		{
-			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
-			FirstInitialization = false;
+			self.StartCoroutine(ReinstanciatePlayers(self));
 		}
 	}
 
-    static void Update(On.PlayerMovement.orig_Update original, PlayerMovement self)
+	private static IEnumerator ReinstanciatePlayers(PlayerMovement self)
+	{
+		yield return new WaitForEndOfFrame();
+		if (_firstInitialization)
+		{
+			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
+			_firstInitialization = false;
+		}
+		
+		SpawnLocation = self.transform.position;
+		Plugin.Instance.Network.ReinstanciatePlayers();
+		if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
+		{
+			var newInteraction = Plugin.Instance.Network.LocalPlayerData.GetComponent<PlayerInteraction>();
+			newInteraction.AddCoin(EnemySpawner.instance.goldBalanceAtStart);
+		}
+		
+		Object.Destroy(self);
+	}
+	
+	private static void Update(On.PlayerMovement.orig_Update original, PlayerMovement self)
     {
 	    var playerNetworkData = self.GetComponent<PlayerNetworkData>();
+	    if (playerNetworkData == null)
+	    {
+		    return;
+	    }
 	    
         var input = Traverse.Create(self).Field<Rewired.Player>("input").Value;
         var hp = Traverse.Create(self).Field<Hp>("hp").Value;
@@ -121,9 +139,11 @@ static class PlayerMovementPatch
 			if (!playerNetworkData.IsLocal)
 			{
 				var deltaPosition = playerNetworkData.SharedData.Position - controller.Value.transform.position;
-				if (deltaPosition.sqrMagnitude > MaximumDevianceSquared)
+				if (deltaPosition.sqrMagnitude > MaximumDevianceSquared || playerNetworkData.TeleportNext)
 				{
+					Plugin.Log.LogInfo("MaximumDeviance reached " + playerNetworkData.id);
 					self.TeleportTo(playerNetworkData.SharedData.Position);
+					playerNetworkData.TeleportNext = false;
 				}
 				else
 				{

@@ -2,7 +2,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 public class LevelBorderPatch
 {
@@ -11,9 +11,9 @@ public class LevelBorderPatch
         On.LevelBorder.Update += Update;
     }
 
-    static void Update(On.LevelBorder.orig_Update original, LevelBorder self)
+    private static void Update(On.LevelBorder.orig_Update original, LevelBorder self)
     {
-        var data = Plugin.Instance.Network.GetPlayerData(Plugin.Instance.Network.LocalPlayer);
+        var data = Plugin.Instance.Network.LocalPlayerData;
         if (data == null)
         {
             return;

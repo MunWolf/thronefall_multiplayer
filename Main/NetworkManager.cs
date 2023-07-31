@@ -4,6 +4,7 @@ using LiteNetLib;
 using LiteNetLib.Utils;
 using Rewired;
 using ThronefallMP.NetworkPackets;
+using ThronefallMP.Patches;
 using UnityEngine;
 
 namespace ThronefallMP;
@@ -18,6 +19,7 @@ public class NetworkManager
     }
     
     public int LocalPlayer { get; private set; } = -1;
+    public PlayerNetworkData LocalPlayerData { get { return GetPlayerData(LocalPlayer); } }
     public bool Online { get; private set; } = false;
     public bool Server { get; private set; } = true;
     public int ActivePort { get; private set; } = 0;
@@ -27,7 +29,6 @@ public class NetworkManager
     private readonly Dictionary<int, NetworkPeerData> _data = new();
     
     private GameObject _playerPrefab = null;
-    private bool _playerPrefabInitialized = false;
     private bool _playerUpdateQueued = false;
     private PlayerNetworkData.Shared? _latestLocalData = null;
 
@@ -43,11 +44,15 @@ public class NetworkManager
 
     public void InitializeDefaultPlayer(GameObject player)
     {
+        _playerPrefab = Object.Instantiate(player);
+        _playerPrefab.SetActive(false);
+        _playerPrefab.AddComponent<PlayerNetworkData>();
+        var data = _playerPrefab.GetComponent<PlayerNetworkData>();
+        data.id = -1;
+        
+        // Add this so we start with a player.
         _data.Add(LocalPlayer, new NetworkPeerData());
         _data[LocalPlayer].Id = LocalPlayer;
-        var data = player.GetComponent<PlayerNetworkData>();
-        data.id = -1;
-        _data[LocalPlayer].Data = data;
     }
     
     public PlayerNetworkData GetPlayerData(int id)
@@ -80,19 +85,18 @@ public class NetworkManager
 
     public void ReinstanciatePlayers()
     {
-        foreach (var player in PlayerManager.Instance.RegisteredPlayers)
+        if (PlayerManager.Instance != null)
         {
-            PlayerManager.UnregisterPlayer(player);
-            Object.Destroy(player.gameObject);
+            foreach (var player in PlayerManager.Instance.RegisteredPlayers)
+            {
+                PlayerManager.UnregisterPlayer(player);
+                Object.Destroy(player.gameObject);
+            }
         }
 
         foreach (var pair in _data)
         {
-            var newPlayer = Object.Instantiate(_playerPrefab);
-            newPlayer.SetActive(true);
-            var data = newPlayer.GetComponent<PlayerNetworkData>();
-            data.id = pair.Key;
-            pair.Value.Data = data;
+            createPlayer(pair.Key);
         }
     }
 
@@ -103,14 +107,7 @@ public class NetworkManager
         Online = false;
         Server = true;
         LocalPlayer = -1;
-        _data.Add(LocalPlayer, new NetworkPeerData());
-        _data[LocalPlayer].Id = LocalPlayer;
-        
-        var newPlayer = Object.Instantiate(_playerPrefab);
-        newPlayer.SetActive(true);
-        var data = newPlayer.GetComponent<PlayerNetworkData>();
-        data.id = -1;
-        _data[LocalPlayer].Data = data;
+        createPlayer(LocalPlayer);
     }
 
     public void Host(int port)
@@ -127,8 +124,9 @@ public class NetworkManager
         
         var newPlayer = Object.Instantiate(_playerPrefab);
         newPlayer.SetActive(true);
+        newPlayer.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, LocalPlayer);
         var data = newPlayer.GetComponent<PlayerNetworkData>();
-        data.id = -1;
+        data.id = LocalPlayer;
         _data[LocalPlayer].Data = data;
     }
     
@@ -160,17 +158,19 @@ public class NetworkManager
 
     public void Update()
     {
-        if (!_playerPrefabInitialized && PlayerMovement.instance != null)
-        {
-            _playerPrefab = Object.Instantiate(PlayerMovement.instance.gameObject);
-            _playerPrefab.SetActive(false);
-            _playerPrefabInitialized = true;
-        }
-        
         _netManager.PollEvents();
         if (_playerUpdateQueued)
         {
-            var packet = new PlayerListPacket { PlayerIDs = _data.Keys.ToList() };
+            var packet = new PlayerListPacket();
+            foreach (var pair in _data)
+            {
+                packet.Players.Add(new PlayerListPacket.PlayerData
+                {
+                    Id = pair.Key,
+                    Position = pair.Value.Data.SharedData.Position
+                });
+            }
+            
             Send(packet);
             _playerUpdateQueued = false;
         }
@@ -200,13 +200,8 @@ public class NetworkManager
         if (Server)
         {
             Plugin.Log.LogInfo("Peer connected with id " + peer.Id + " and remote id " + peer.RemoteId);
-            var newPlayer = Object.Instantiate(_playerPrefab);
-            newPlayer.SetActive(true);
-            var data = newPlayer.GetComponent<PlayerNetworkData>();
-            var id = peer.Id;
-            _data.Add(id, new NetworkPeerData());
-            _data[id].Peer = peer;
-            _data[id].Data = data;
+            createPlayer(peer.Id);
+            _data[peer.Id].Peer = peer;
             _playerUpdateQueued = true;
             Plugin.Log.LogInfo("Local " + LocalPlayer);
             foreach (var pair in _data)
@@ -238,18 +233,21 @@ public class NetworkManager
             {
                 var packet = new PlayerListPacket();
                 packet.Receive(ref reader);
-                foreach (var id in packet.PlayerIDs)
+                Plugin.Log.LogInfo("Received player list");
+                foreach (var data in packet.Players)
                 {
-                    if (!_data.ContainsKey(id))
+                    if (!_data.ContainsKey(data.Id) || _data[data.Id].Data == null)
                     {
-                        _data.Add(id, new NetworkPeerData());
-                        _data[id].Id = id;
-        
-                        var newPlayer = Object.Instantiate(_playerPrefab);
-                        newPlayer.SetActive(true);
-                        var data = newPlayer.GetComponent<PlayerNetworkData>();
-                        data.id = id;
-                        _data[id].Data = data;
+                        Plugin.Log.LogInfo("Creating player " + data.Id);
+                        createPlayer(data.Id);
+                        var playerData = GetPlayerData(data.Id);
+                        playerData.SharedData.Position = data.Position;
+                        playerData.TeleportNext = true;
+                    }
+                    else
+                    {
+                        Plugin.Log.LogInfo("Player " + data.Id + " exists");
+                        GetPlayerData(data.Id).SharedData.Position = data.Position;
                     }
                 }
                 break;
@@ -290,5 +288,22 @@ public class NetworkManager
                 break;
             }
         }
+    }
+
+    private GameObject createPlayer(int id)
+    {
+        var newPlayer = Object.Instantiate(_playerPrefab);
+        newPlayer.SetActive(true);
+        newPlayer.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, id);
+        var data = newPlayer.GetComponent<PlayerNetworkData>();
+        data.id = id;
+        if (!_data.ContainsKey(id))
+        {
+            _data.Add(id, new NetworkPeerData());
+        }
+
+        _data[id].Id = id;
+        _data[id].Data = data;
+        return newPlayer;
     }
 }

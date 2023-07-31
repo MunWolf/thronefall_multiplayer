@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 public static class CameraRigPatch
 {
@@ -10,10 +10,10 @@ public static class CameraRigPatch
         On.CameraRig.Update += Update;
     }
 
-    static void Update(On.CameraRig.orig_Update original, CameraRig self)
+    private static void Update(On.CameraRig.orig_Update original, CameraRig self)
     {
         var cameraTarget = Traverse.Create(self).Field<Transform>("cameraTarget");
-        var localData = Plugin.Instance.Network.GetPlayerData(Plugin.Instance.Network.LocalPlayer);
+        var localData = Plugin.Instance.Network.LocalPlayerData;
         if (localData != null)
         {
             cameraTarget.Value = localData.transform;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using ThronefallMP.Patches;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Windows;
@@ -27,10 +28,13 @@ namespace ThronefallMP
             Log = Logger;
             
             // Patch all the methods.
+            BuildSlotPatch.Apply();
             CameraRigPatch.Apply();
             LevelBorderPatch.Apply();
+            PlayerInteractionPatch.Apply();
             PlayerMovementPatch.Apply();
             SceneTransitionManagerPatch.Apply();
+            TreasuryUIPatch.Apply();
             
             // Apply settings.
             Application.runInBackground = true;

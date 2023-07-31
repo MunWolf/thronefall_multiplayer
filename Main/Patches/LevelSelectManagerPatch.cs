@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Patches;
 
 public static class LevelSelectManagerPatch
 {
@@ -9,7 +9,7 @@ public static class LevelSelectManagerPatch
         On.LevelSelectManager.MovePlayerToTheLevelYouCameFrom += MovePlayerToTheLevelYouCameFrom;
     }
     
-    static void MovePlayerToTheLevelYouCameFrom(On.LevelSelectManager.orig_MovePlayerToTheLevelYouCameFrom original, LevelSelectManager self)
+    private static void MovePlayerToTheLevelYouCameFrom(On.LevelSelectManager.orig_MovePlayerToTheLevelYouCameFrom original, LevelSelectManager self)
     {
         SceneTransitionManager sceneTransitionManager = SceneTransitionManager.instance;
         if (!sceneTransitionManager)
@@ -29,7 +29,9 @@ public static class LevelSelectManagerPatch
                 foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
                 {
                     var playerMovement = data.GetComponent<PlayerMovement>();
-                    playerMovement.TeleportTo(levelInteractors.Value[i].transform.position + self.spawnOnLevelOffsetPositon);
+                    var spawnLocation = levelInteractors.Value[i].transform.position + self.spawnOnLevelOffsetPositon;
+                    spawnLocation = Utils.GetSpawnLocation(spawnLocation, data.id);
+                    playerMovement.TeleportTo(spawnLocation);
                 }
                 return;
             }

@@ -68,6 +68,7 @@ public class PlayerNetworkData : MonoBehaviour
     // Local variables
     public bool PlayerMovementSprintToggle { get; set; }
     public bool PlayerSceptInteract { get; set; }
+    public bool TeleportNext { get; set; }
 
     private void Update()
     {

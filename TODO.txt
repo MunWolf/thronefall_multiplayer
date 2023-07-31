@@ -1,5 +1,18 @@
-Make player interaction work for building
-NightCall.UpdateFill should use shared buttons.
-Sync enemy spawns from server
+Sync building/upgrading
+NightCall.UpdateFill should activate the correct player and sync over network.
 Sync Hp from server
+Sync loadout on level select
+Sync night/day
+Handle restarts and exit to level select gracefully.
 
+Coins:
+	Each player has their own coins, at night end coins fly to the closest player.
+	Players can drop coins for other players to pick up.
+	Make sure coins are not lost if 2 players try to build the same building.
+	Spawn exploding coins when player disconnects corresponding to his balance.
+
+Spawn:
+	Need to sync up enemy spawn locations and connect different enemies together.
+
+Maybe:
+	Multiplayer tutorial?
