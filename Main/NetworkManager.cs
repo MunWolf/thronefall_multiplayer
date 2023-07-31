@@ -41,9 +41,26 @@ public class NetworkManager
         _listener.NetworkReceiveEvent += NetworkReceiveEvent;
     }
 
+    public void InitializeDefaultPlayer(GameObject player)
+    {
+        _data.Add(LocalPlayer, new NetworkPeerData());
+        _data[LocalPlayer].Id = LocalPlayer;
+        var data = player.GetComponent<PlayerNetworkData>();
+        data.id = -1;
+        _data[LocalPlayer].Data = data;
+    }
+    
     public PlayerNetworkData GetPlayerData(int id)
     {
         return _data.TryGetValue(id, out var data) ? data.Data : null;
+    }
+    
+    public IEnumerable<PlayerNetworkData> GetAllPlayerData()
+    {
+        foreach (var pair in _data)
+        {
+            yield return pair.Value.Data;
+        }
     }
 
     public void Send(IPacket packet, NetPeer except = null)
@@ -59,6 +76,41 @@ public class NetworkManager
         {
             _netManager.SendToAll(writer, DeliveryMethod.ReliableSequenced);
         }
+    }
+
+    public void ReinstanciatePlayers()
+    {
+        foreach (var player in PlayerManager.Instance.RegisteredPlayers)
+        {
+            PlayerManager.UnregisterPlayer(player);
+            Object.Destroy(player.gameObject);
+        }
+
+        foreach (var pair in _data)
+        {
+            var newPlayer = Object.Instantiate(_playerPrefab);
+            newPlayer.SetActive(true);
+            var data = newPlayer.GetComponent<PlayerNetworkData>();
+            data.id = pair.Key;
+            pair.Value.Data = data;
+        }
+    }
+
+    public void Local()
+    {
+        Stop();
+        
+        Online = false;
+        Server = true;
+        LocalPlayer = -1;
+        _data.Add(LocalPlayer, new NetworkPeerData());
+        _data[LocalPlayer].Id = LocalPlayer;
+        
+        var newPlayer = Object.Instantiate(_playerPrefab);
+        newPlayer.SetActive(true);
+        var data = newPlayer.GetComponent<PlayerNetworkData>();
+        data.id = -1;
+        _data[LocalPlayer].Data = data;
     }
 
     public void Host(int port)
@@ -221,6 +273,20 @@ public class NetworkManager
                 {
                     value.Data.SharedData = packet.Data;
                 }
+                break;
+            }
+            case TransitionToScenePacket.PacketID:
+            {
+                var packet = new TransitionToScenePacket();
+                packet.Receive(ref reader);
+                if (Server)
+                {
+                    Send(packet, peer);
+                }
+
+                SceneTransitionManagerPatch.DisableTransitionHook = true;
+                SceneTransitionManager.instance.TransitionFromLevelSelectToLevel(packet.Level);
+                SceneTransitionManagerPatch.DisableTransitionHook = false;
                 break;
             }
         }

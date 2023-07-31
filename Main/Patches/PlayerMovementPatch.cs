@@ -19,6 +19,8 @@ static class PlayerMovementPatch
         On.PlayerMovement.Update += Update;
     }
 
+	private static bool FirstInitialization = true;
+	
 	static void Awake(On.PlayerMovement.orig_Awake original, PlayerMovement self)
 	{
 		if (self.gameObject.GetComponent<PlayerNetworkData>() == null)
@@ -29,6 +31,12 @@ static class PlayerMovementPatch
 		if (PlayerMovement.instance == null)
 		{
 			PlayerMovement.instance = self;
+		}
+
+		if (FirstInitialization)
+		{
+			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
+			FirstInitialization = false;
 		}
 	}
 

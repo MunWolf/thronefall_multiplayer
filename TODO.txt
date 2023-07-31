@@ -1,0 +1,5 @@
+Make player interaction work for building
+NightCall.UpdateFill should use shared buttons.
+Sync enemy spawns from server
+Sync Hp from server
+

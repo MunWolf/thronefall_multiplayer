@@ -28,7 +28,9 @@ namespace ThronefallMP
             
             // Patch all the methods.
             CameraRigPatch.Apply();
+            LevelBorderPatch.Apply();
             PlayerMovementPatch.Apply();
+            SceneTransitionManagerPatch.Apply();
             
             // Apply settings.
             Application.runInBackground = true;
@@ -36,18 +38,25 @@ namespace ThronefallMP
 
         private void Update()
         {
-            if (!Network.Online)
+            if (Input.GetKeyDown(KeyCode.I))
             {
-                if (Input.GetKeyDown(KeyCode.O))
-                {
-                    Logger.LogInfo($"Hosting game");
-                    Network.Host(1000);
-                }
-                if (Input.GetKeyDown(KeyCode.P))
-                {
-                    Logger.LogInfo($"Connecting...");
-                    Network.Connect("127.0.0.1", 1000);
-                }
+                Logger.LogInfo($"Local game");
+                Network.Local();
+            }
+            if (Input.GetKeyDown(KeyCode.O))
+            {
+                Logger.LogInfo($"Hosting game");
+                Network.Host(1000);
+            }
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                Logger.LogInfo($"Connecting...");
+                Network.Connect("127.0.0.1", 1000);
+            }
+            if (Input.GetKeyDown(KeyCode.K))
+            {
+                Logger.LogInfo($"Reinstanciating all players");
+                Network.ReinstanciatePlayers();
             }
             
             Network.Update();
