@@ -12,7 +12,12 @@ public static class PlayerSceptPatch
 
     private static void Update(On.PlayerScept.orig_Update original, PlayerScept self)
     {
-        var data = self.GetComponent<PlayerNetworkData>();
+        var data = self.transform.parent.GetComponent<PlayerNetworkData>();
+        if (data == null)
+        {
+            return;
+        }
+        
         if (data.SharedData.InteractButton && !data.PlayerSceptInteract)
         {
             self.StopAllCoroutines();

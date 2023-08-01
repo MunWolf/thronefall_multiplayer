@@ -38,11 +38,20 @@
     <Reference Include="MMHOOK_Assembly-CSharp">
       <HintPath>..\lib\MMHOOK_Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="MoreMountains.Feedbacks">
+      <HintPath>..\lib\MoreMountains.Feedbacks.dll</HintPath>
+    </Reference>
+    <Reference Include="MPUIKit">
+      <HintPath>..\lib\MPUIKit.dll</HintPath>
+    </Reference>
     <Reference Include="Rewired_Core">
       <HintPath>..\lib\Rewired_Core.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>..\lib\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\lib\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

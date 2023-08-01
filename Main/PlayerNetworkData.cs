@@ -15,6 +15,7 @@ public class PlayerNetworkData : MonoBehaviour
         public bool SprintToggleButton { get; set; }
         public bool SprintButton { get; set; }
         public bool InteractButton { get; set; }
+        public bool CallNightButton { get; set; }
         
         public static bool operator ==(Shared a, Shared b) 
         {
@@ -35,7 +36,8 @@ public class PlayerNetworkData : MonoBehaviour
                 && Math.Abs(MoveVertical - b.Value.MoveVertical) < 0.01f
                 && SprintToggleButton == b.Value.SprintToggleButton
                 && SprintButton == b.Value.SprintButton
-                && InteractButton == b.Value.InteractButton;
+                && InteractButton == b.Value.InteractButton
+                && CallNightButton == b.Value.CallNightButton;
         }
 
         public override int GetHashCode()
@@ -47,6 +49,7 @@ public class PlayerNetworkData : MonoBehaviour
             hashCode *= 9737333 ^ SprintToggleButton.GetHashCode();
             hashCode *= 7474967 ^ SprintButton.GetHashCode();
             hashCode *= 77557187 ^ InteractButton.GetHashCode();
+            hashCode *= 1146581 ^ CallNightButton.GetHashCode();
             return hashCode;
         }
     }
@@ -68,6 +71,7 @@ public class PlayerNetworkData : MonoBehaviour
     // Local variables
     public bool PlayerMovementSprintToggle { get; set; }
     public bool PlayerSceptInteract { get; set; }
+    public bool CallNightDown { get; set; }
     public bool TeleportNext { get; set; }
 
     private void Update()
@@ -80,6 +84,7 @@ public class PlayerNetworkData : MonoBehaviour
             SharedData.SprintToggleButton = input.GetButton("Sprint Toggle");
             SharedData.SprintButton = input.GetButton("Sprint");
             SharedData.InteractButton = input.GetButton("Interact");
+            SharedData.CallNightButton = input.GetButton("Call Night");
         }
     }
 }

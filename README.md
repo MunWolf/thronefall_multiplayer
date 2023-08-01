@@ -9,8 +9,11 @@ This is written in CSharp so you will have to acquire an IDE that can read .sln 
 You will also need an installation of Thronefall, copy these 4 dlls from Thronefall_Data/Managed to the lib folder
  * Assembly-CSharp.dll
  * AstarPathfindingProject.dll
+ * MoreMountains.Feedbacks.dll
  * Rewired_Core.dll
+ * MPUIKit.dll
  * Unity.TextMeshPro.dll
+ * UnityEngine.UI.dll
  After that open the solution file and run the build.
 
 ## How to Run
