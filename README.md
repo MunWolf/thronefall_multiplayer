@@ -25,14 +25,12 @@ Run your executable either directly or through Steam.
 
 ## TODO
 
-* Sync building/upgrading
-* NightCall.UpdateFill should activate the correct player and sync over network.
 * Sync Hp from server
 * Sync loadout on level select
-* Sync night/day
 * Handle restarts and exit to level select gracefully.
 * Players can drop coins for other players to pick up.
 * Make sure coins are not lost if 2 players try to build the same building.
 * Spawn exploding coins when player disconnects corresponding to his balance.
 * Sync up enemy spawn locations
 * Add a unique identifier to every enemy
+* Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).

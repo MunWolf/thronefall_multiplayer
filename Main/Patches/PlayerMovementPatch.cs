@@ -17,11 +17,22 @@ static class PlayerMovementPatch
 	
 	public static void Apply()
 	{
+		On.PlayerMovement.Awake += Awake;
 		On.PlayerMovement.Start += Start;
         On.PlayerMovement.Update += Update;
     }
 
 	private static bool _firstInitialization = true;
+	private static void Awake(On.PlayerMovement.orig_Awake original, PlayerMovement self)
+	{
+		original(self);
+		
+		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
+		if (vanillaPlayer)
+		{
+			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
+		}
+	}
 	
 	private static void Start(On.PlayerMovement.orig_Start original, PlayerMovement self)
 	{
@@ -46,11 +57,10 @@ static class PlayerMovementPatch
 		// First initialization happens when we enter level select or the tutorial for the first time.
 		if (_firstInitialization)
 		{
-			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
-			_firstInitialization = false;
 			// We need this otherwise we get a null value in Camera.Main when starting a level.
 			yield return new WaitForEndOfFrame();
 			Plugin.Instance.Network.Local();
+			_firstInitialization = false;
 		}
 		else
 		{

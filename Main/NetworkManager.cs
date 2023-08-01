@@ -44,11 +44,17 @@ public class NetworkManager
 
     public void InitializeDefaultPlayer(GameObject player)
     {
+        if (_playerPrefab != null)
+        {
+            Object.Destroy(_playerPrefab);
+        }
+        
+        player.SetActive(false);
         _playerPrefab = Object.Instantiate(player, null, true);
-        _playerPrefab.SetActive(false);
         _playerPrefab.AddComponent<PlayerNetworkData>();
         var data = _playerPrefab.GetComponent<PlayerNetworkData>();
         data.id = -1;
+        player.SetActive(true);
         Plugin.Log.LogInfo("Initialized player prefab");
     }
     
@@ -65,18 +71,18 @@ public class NetworkManager
         }
     }
 
-    public void Send(IPacket packet, NetPeer except = null)
+    public void Send(IPacket packet, DeliveryMethod delivery = DeliveryMethod.ReliableOrdered, NetPeer except = null)
     {
         NetDataWriter writer = new();
         writer.Put(packet.TypeID());
         packet.Send(ref writer);
         if (except != null)
         {
-            _netManager.SendToAll(writer, DeliveryMethod.ReliableSequenced, except);
+            _netManager.SendToAll(writer, delivery, except);
         }
         else
         {
-            _netManager.SendToAll(writer, DeliveryMethod.ReliableSequenced);
+            _netManager.SendToAll(writer, delivery);
         }
     }
 
@@ -180,7 +186,7 @@ public class NetworkManager
                 PlayerID = LocalPlayer,
                 Data = playerData.SharedData
             };
-            Send(packet);
+            Send(packet, DeliveryMethod.ReliableSequenced);
         }
     }
 
@@ -261,7 +267,7 @@ public class NetworkManager
                         return;
                     }
                     
-                    Send(packet, peer);
+                    Send(packet, DeliveryMethod.ReliableSequenced, except: peer);
                 }
 
                 if (_data.TryGetValue(packet.PlayerID, out var value))
@@ -276,7 +282,7 @@ public class NetworkManager
                 packet.Receive(ref reader);
                 if (Server)
                 {
-                    Send(packet, peer);
+                    Send(packet, except: peer);
                 }
 
                 SceneTransitionManagerPatch.DisableTransitionHook = true;
@@ -290,10 +296,25 @@ public class NetworkManager
                 packet.Receive(ref reader);
                 if (Server)
                 {
-                    Send(packet, peer);
+                    Send(packet, except: peer);
                 }
                 
                 BuildSlotPatch.HandleUpgrade(packet.BuildingId, packet.Level, packet.Choice);
+                break;
+            }
+            case DayNightPacket.PacketID:
+            {
+                var packet = new DayNightPacket();
+                packet.Receive(ref reader);
+                if (Server)
+                {
+                    Send(packet, except: peer);
+                }
+
+                if (packet.Night)
+                {
+                    NightCallPatch.TriggerNightFall();
+                }
                 break;
             }
         }

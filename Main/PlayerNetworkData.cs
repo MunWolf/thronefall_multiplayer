@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using HarmonyLib;
 using Rewired;
 using UnityEngine;
 
@@ -16,6 +16,7 @@ public class PlayerNetworkData : MonoBehaviour
         public bool SprintButton { get; set; }
         public bool InteractButton { get; set; }
         public bool CallNightButton { get; set; }
+        public float CallNightFill { get; set; }
         
         public static bool operator ==(Shared a, Shared b) 
         {
@@ -37,7 +38,8 @@ public class PlayerNetworkData : MonoBehaviour
                 && SprintToggleButton == b.Value.SprintToggleButton
                 && SprintButton == b.Value.SprintButton
                 && InteractButton == b.Value.InteractButton
-                && CallNightButton == b.Value.CallNightButton;
+                && CallNightButton == b.Value.CallNightButton
+                && Math.Abs(CallNightFill - b.Value.CallNightFill) < 0.01f;
         }
 
         public override int GetHashCode()
@@ -50,6 +52,7 @@ public class PlayerNetworkData : MonoBehaviour
             hashCode *= 7474967 ^ SprintButton.GetHashCode();
             hashCode *= 77557187 ^ InteractButton.GetHashCode();
             hashCode *= 1146581 ^ CallNightButton.GetHashCode();
+            hashCode *= 840943 ^ CallNightFill.GetHashCode();
             return hashCode;
         }
     }
@@ -76,15 +79,18 @@ public class PlayerNetworkData : MonoBehaviour
 
     private void Update()
     {
-        if (IsLocal)
+        if (!IsLocal)
         {
-            var input = ReInput.players.GetPlayer(0);
-            SharedData.MoveHorizontal = input.GetAxis("Move Horizontal");
-            SharedData.MoveVertical = input.GetAxis("Move Vertical");
-            SharedData.SprintToggleButton = input.GetButton("Sprint Toggle");
-            SharedData.SprintButton = input.GetButton("Sprint");
-            SharedData.InteractButton = input.GetButton("Interact");
-            SharedData.CallNightButton = input.GetButton("Call Night");
+            return;
         }
+        
+        var input = ReInput.players.GetPlayer(0);
+        SharedData.MoveHorizontal = input.GetAxis("Move Horizontal");
+        SharedData.MoveVertical = input.GetAxis("Move Vertical");
+        SharedData.SprintToggleButton = input.GetButton("Sprint Toggle");
+        SharedData.SprintButton = input.GetButton("Sprint");
+        SharedData.InteractButton = input.GetButton("Interact");
+        SharedData.CallNightButton = input.GetButton("Call Night");
+        SharedData.CallNightFill = Traverse.Create(NightCall.instance).Field<float>("currentFill").Value;
     }
 }

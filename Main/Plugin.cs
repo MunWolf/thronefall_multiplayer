@@ -28,8 +28,10 @@ namespace ThronefallMP
             Log = Logger;
             
             // Patch all the methods.
+            BuildingInteractorPatch.Apply();
             BuildSlotPatch.Apply();
             CameraRigPatch.Apply();
+            DayNightCyclePatch.Apply();
             LevelBorderPatch.Apply();
             NightCallPatch.Apply();
             PlayerInteractionPatch.Apply();

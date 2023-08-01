@@ -27,6 +27,8 @@ public class PlayerSyncPacket : IPacket
         writer.Put(Data.SprintToggleButton);
         writer.Put(Data.SprintButton);
         writer.Put(Data.InteractButton);
+        writer.Put(Data.CallNightButton);
+        writer.Put(Data.CallNightFill);
     }
 
     public void Receive(ref NetPacketReader reader)
@@ -43,5 +45,7 @@ public class PlayerSyncPacket : IPacket
         Data.SprintToggleButton = reader.GetBool();
         Data.SprintButton = reader.GetBool();
         Data.InteractButton = reader.GetBool();
+        Data.CallNightButton = reader.GetBool();
+        Data.CallNightFill = reader.GetFloat();
     }
 }
