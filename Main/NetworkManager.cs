@@ -202,26 +202,26 @@ public class NetworkManager
     {
         if (Server)
         {
-            Plugin.Log.LogInfo("Peer connected with id " + peer.Id + " and remote id " + peer.RemoteId);
+            Plugin.Log.LogInfo($"Peer connected with id {peer.Id} and remote id {peer.RemoteId}");
             createPlayer(peer.Id);
             _data[peer.Id].Peer = peer;
             _playerUpdateQueued = true;
             Plugin.Log.LogInfo("Local " + LocalPlayer);
             foreach (var pair in _data)
             {
-                Plugin.Log.LogInfo("peer data exists for " + pair.Key);
+                Plugin.Log.LogInfo($"peer data exists for {pair.Key}");
             }
         }
         else
         {
             LocalPlayer = peer.RemoteId;
-            Plugin.Log.LogInfo("Connected to server with peer id " + LocalPlayer);
+            Plugin.Log.LogInfo($"Connected to server with peer id {LocalPlayer}");
         }
     }
 
     private void PeerDisconnected(NetPeer peer, DisconnectInfo info)
     {
-        Plugin.Log.LogInfo("Peer disconnected with id " + peer.Id + " and remote id " + peer.RemoteId);
+        Plugin.Log.LogInfo($"Peer disconnected with id {peer.Id} and remote id {peer.RemoteId}");
         var player = _data[peer.Id].Data;
         _data.Remove(peer.Id);
         Object.Destroy(player.gameObject);
@@ -241,7 +241,7 @@ public class NetworkManager
                 {
                     if (!_data.ContainsKey(data.Id) || _data[data.Id].Data == null)
                     {
-                        Plugin.Log.LogInfo("Creating player " + data.Id);
+                        Plugin.Log.LogInfo($"Creating player {data.Id}");
                         createPlayer(data.Id);
                         var playerData = GetPlayerData(data.Id);
                         playerData.SharedData.Position = data.Position;
@@ -249,7 +249,7 @@ public class NetworkManager
                     }
                     else
                     {
-                        Plugin.Log.LogInfo("Player " + data.Id + " exists");
+                        Plugin.Log.LogInfo($"Player {data.Id} exists");
                         GetPlayerData(data.Id).SharedData.Position = data.Position;
                     }
                 }
@@ -263,7 +263,7 @@ public class NetworkManager
                 {
                     if (peer.Id != packet.PlayerID)
                     {
-                        Plugin.Log.LogWarning("Peer " + peer.Id + " send unauthorized packet for player " + packet.PlayerID);
+                        Plugin.Log.LogWarning($"Peer {peer.Id} send unauthorized packet for player {packet.PlayerID}");
                         return;
                     }
                     
@@ -317,6 +317,22 @@ public class NetworkManager
                 }
                 break;
             }
+            case EnemySpawnPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new EnemySpawnPacket();
+                packet.Receive(ref reader);
+                EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id);
+                break;
+            }
+            default:
+                Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
+                break;
         }
     }
 
