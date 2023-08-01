@@ -31,6 +31,5 @@ Run your executable either directly or through Steam.
 * Players can drop coins for other players to pick up.
 * Make sure coins are not lost if 2 players try to build the same building.
 * Spawn exploding coins when player disconnects corresponding to his balance.
-* Sync up enemy spawn locations
-* Add a unique identifier to every enemy
 * Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
+* Sync special ability usage.
