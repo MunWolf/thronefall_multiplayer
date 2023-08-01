@@ -44,15 +44,12 @@ public class NetworkManager
 
     public void InitializeDefaultPlayer(GameObject player)
     {
-        _playerPrefab = Object.Instantiate(player);
+        _playerPrefab = Object.Instantiate(player, null, true);
         _playerPrefab.SetActive(false);
         _playerPrefab.AddComponent<PlayerNetworkData>();
         var data = _playerPrefab.GetComponent<PlayerNetworkData>();
         data.id = -1;
-        
-        // Add this so we start with a player.
-        _data.Add(LocalPlayer, new NetworkPeerData());
-        _data[LocalPlayer].Id = LocalPlayer;
+        Plugin.Log.LogInfo("Initialized player prefab");
     }
     
     public PlayerNetworkData GetPlayerData(int id)
@@ -285,6 +282,18 @@ public class NetworkManager
                 SceneTransitionManagerPatch.DisableTransitionHook = true;
                 SceneTransitionManager.instance.TransitionFromLevelSelectToLevel(packet.Level);
                 SceneTransitionManagerPatch.DisableTransitionHook = false;
+                break;
+            }
+            case BuildOrUpgradePacket.PacketID:
+            {
+                var packet = new BuildOrUpgradePacket();
+                packet.Receive(ref reader);
+                if (Server)
+                {
+                    Send(packet, peer);
+                }
+                
+                BuildSlotPatch.HandleUpgrade(packet.BuildingId, packet.Level, packet.Choice);
                 break;
             }
         }

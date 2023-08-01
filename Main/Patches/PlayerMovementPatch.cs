@@ -30,28 +30,37 @@ static class PlayerMovementPatch
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
 		if (vanillaPlayer)
 		{
+			Plugin.Log.LogInfo("Ran start for vanilla player");
 			self.StartCoroutine(ReinstanciatePlayers(self));
+		}
+		else
+		{
+			Plugin.Log.LogInfo("Ran start for mp player");
 		}
 	}
 
 	private static IEnumerator ReinstanciatePlayers(PlayerMovement self)
 	{
 		yield return new WaitForEndOfFrame();
+		SpawnLocation = self.transform.position;
+		// First initialization happens when we enter level select or the tutorial for the first time.
 		if (_firstInitialization)
 		{
 			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
 			_firstInitialization = false;
+			// We need this otherwise we get a null value in Camera.Main when starting a level.
+			yield return new WaitForEndOfFrame();
+			Plugin.Instance.Network.Local();
 		}
-		
-		SpawnLocation = self.transform.position;
-		Plugin.Instance.Network.ReinstanciatePlayers();
-		if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
+		else
 		{
-			var newInteraction = Plugin.Instance.Network.LocalPlayerData.GetComponent<PlayerInteraction>();
-			newInteraction.AddCoin(EnemySpawner.instance.goldBalanceAtStart);
+			Plugin.Instance.Network.ReinstanciatePlayers();
+			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
+			{
+				var newInteraction = Plugin.Instance.Network.LocalPlayerData.GetComponent<PlayerInteraction>();
+				newInteraction.AddCoin(EnemySpawner.instance.goldBalanceAtStart);
+			}
 		}
-		
-		Object.Destroy(self);
 	}
 	
 	private static void Update(On.PlayerMovement.orig_Update original, PlayerMovement self)
