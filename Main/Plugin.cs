@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Logging;
-using HarmonyLib;
 using ThronefallMP.Patches;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
-using UnityEngine.Windows;
 using Input = UnityEngine.Input;
 
 namespace ThronefallMP
@@ -31,10 +26,12 @@ namespace ThronefallMP
             BuildingInteractorPatch.Apply();
             BuildSlotPatch.Apply();
             CameraRigPatch.Apply();
+            CommandUnitsPatch.Apply();
             DayNightCyclePatch.Apply();
             EnemySpawnerPatch.Apply();
             HpPatch.Apply();
             LevelBorderPatch.Apply();
+            LevelSelectManagerPatch.Apply();
             NightCallPatch.Apply();
             PathFinderMovementEnemyPatch.Apply();
             PathfindMovementPlayerunitPatch.Apply();

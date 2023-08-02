@@ -5,7 +5,7 @@ namespace ThronefallMP.NetworkPackets;
 
 public interface IPacket
 {
-    int TypeID();
+    PacketId TypeID();
     void Send(ref NetDataWriter writer);
     void Receive(ref NetPacketReader reader);
 }

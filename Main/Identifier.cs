@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using HarmonyLib;
 using UnityEngine;
 
@@ -25,6 +26,12 @@ public struct IdentifierData
             Type = identity.Type;
             Id = identity.Id;
         }
+    }
+
+    [Pure]
+    public GameObject Get()
+    {
+        return Identifier.GetGameObject(Type, Id);
     }
 }
 
@@ -53,10 +60,5 @@ public class Identifier : MonoBehaviour
     public static GameObject GetGameObject(IdentifierType type, int id)
     {
         return type == IdentifierType.Invalid ? null : Repository[type].GetValueSafe(id);
-    }
-
-    public static GameObject GetGameObject(IdentifierData data)
-    {
-        return GetGameObject(data.Type, data.Id);
     }
 }

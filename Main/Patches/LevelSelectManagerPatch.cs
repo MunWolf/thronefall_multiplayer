@@ -4,7 +4,7 @@ namespace ThronefallMP.Patches;
 
 public static class LevelSelectManagerPatch
 {
-    static void Apply()
+    public static void Apply()
     {
         On.LevelSelectManager.MovePlayerToTheLevelYouCameFrom += MovePlayerToTheLevelYouCameFrom;
     }
@@ -22,14 +22,14 @@ public static class LevelSelectManagerPatch
         }
 
         var levelInteractors = Traverse.Create(self).Field<LevelInteractor[]>("levelInteractors");
-        for (int i = 0; i < levelInteractors.Value.Length; i++)
+        foreach (var level in levelInteractors.Value)
         {
-            if (levelInteractors.Value[i].sceneName == sceneTransitionManager.ComingFromGameplayScene)
+            if (level.sceneName == sceneTransitionManager.ComingFromGameplayScene)
             {
                 foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
                 {
                     var playerMovement = data.GetComponent<PlayerMovement>();
-                    var spawnLocation = levelInteractors.Value[i].transform.position + self.spawnOnLevelOffsetPositon;
+                    var spawnLocation = level.transform.position + self.spawnOnLevelOffsetPositon;
                     spawnLocation = Utils.GetSpawnLocation(spawnLocation, data.id);
                     playerMovement.TeleportTo(spawnLocation);
                 }

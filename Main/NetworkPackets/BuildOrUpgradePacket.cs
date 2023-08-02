@@ -5,13 +5,13 @@ namespace ThronefallMP.NetworkPackets;
 
 public class BuildOrUpgradePacket : IPacket
 {
-    public const int PacketID = 4;
+    public const PacketId PacketID = PacketId.BuildOrUpgradePacket;
 
     public int BuildingId;
     public int Level;
     public int Choice;
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }

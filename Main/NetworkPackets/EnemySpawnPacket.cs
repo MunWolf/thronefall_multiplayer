@@ -6,14 +6,14 @@ namespace ThronefallMP.NetworkPackets;
 
 public class EnemySpawnPacket : IPacket
 {
-    public const int PacketID = 6;
+    public const PacketId PacketID = PacketId.EnemySpawnPacket;
     
     public int Wave;
     public int Spawn;
     public int Id;
     public Vector3 Position;
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }
@@ -23,9 +23,7 @@ public class EnemySpawnPacket : IPacket
         writer.Put(Wave);
         writer.Put(Spawn);
         writer.Put(Id);
-        writer.Put(Position.x);
-        writer.Put(Position.y);
-        writer.Put(Position.z);
+        writer.Put(Position);
     }
 
     public void Receive(ref NetPacketReader reader)
@@ -33,6 +31,6 @@ public class EnemySpawnPacket : IPacket
         Wave = reader.GetInt();
         Spawn = reader.GetInt();
         Id = reader.GetInt();
-        Position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
+        Position = reader.GetVector3();
     }
 }

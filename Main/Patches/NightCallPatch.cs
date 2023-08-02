@@ -55,8 +55,7 @@ public static class NightCallPatch
                     Night = true
                 };
 
-                Plugin.Instance.Network.Send(packet);
-                TriggerNightFall();
+                Plugin.Instance.Network.Send(packet, true);
             }
             if (currentFill.Value > 0f)
             {
@@ -97,13 +96,13 @@ public static class NightCallPatch
         {
             foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
             {
-                if (!data.CallNightDown && data.SharedData.CallNightButton)
+                if (!data.CallNightLast && data.SharedData.CallNightButton)
                 {
                     self.nightCallAudio.Stop();
                     self.nightCallAudio.PlayOneShot(ThronefallAudioManager.Instance.audioContent.NightCallStart, 0.45f);
                 }
             
-                data.CallNightDown = data.SharedData.CallNightButton;
+                data.CallNightLast = data.SharedData.CallNightButton;
                 if (data.SharedData.CallNightFill > 0f)
                 {
                     maxVolume = Mathf.Max(

@@ -5,12 +5,12 @@ namespace ThronefallMP.NetworkPackets;
 
 public class ScaleHpPacket : IPacket
 {
-    public const int PacketID = 9;
+    public const PacketId PacketID = PacketId.ScaleHpPacket;
 
     public IdentifierData Target;
     public float Multiplier;
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }

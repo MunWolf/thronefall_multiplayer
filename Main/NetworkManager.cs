@@ -72,10 +72,10 @@ public class NetworkManager
         }
     }
 
-    public void Send(IPacket packet, DeliveryMethod delivery = DeliveryMethod.ReliableOrdered, NetPeer except = null)
+    public void Send(IPacket packet, bool handleLocal = false, DeliveryMethod delivery = DeliveryMethod.ReliableOrdered, NetPeer except = null)
     {
         NetDataWriter writer = new();
-        writer.Put(packet.TypeID());
+        writer.Put((int)packet.TypeID());
         packet.Send(ref writer);
         if (except != null)
         {
@@ -84,6 +84,11 @@ public class NetworkManager
         else
         {
             _netManager.SendToAll(writer, delivery);
+        }
+
+        if (handleLocal)
+        {
+            PacketHandler.HandlePacket(packet);
         }
     }
 
@@ -100,7 +105,7 @@ public class NetworkManager
 
         foreach (var pair in _data)
         {
-            createPlayer(pair.Key);
+            CreatePlayer(pair.Key);
         }
     }
 
@@ -111,7 +116,7 @@ public class NetworkManager
         Online = false;
         Server = true;
         LocalPlayer = -1;
-        createPlayer(LocalPlayer);
+        CreatePlayer(LocalPlayer);
     }
 
     public void Host(int port)
@@ -186,7 +191,7 @@ public class NetworkManager
                 PlayerID = LocalPlayer,
                 Data = playerData.SharedData
             };
-            Send(packet, DeliveryMethod.ReliableSequenced);
+            Send(packet, delivery: DeliveryMethod.ReliableSequenced);
         }
     }
 
@@ -203,7 +208,7 @@ public class NetworkManager
         if (Server)
         {
             Plugin.Log.LogInfo($"Peer connected with id {peer.Id} and remote id {peer.RemoteId}");
-            createPlayer(peer.Id);
+            CreatePlayer(peer.Id);
             _data[peer.Id].Peer = peer;
             _playerUpdateQueued = true;
             Plugin.Log.LogInfo("Local " + LocalPlayer);
@@ -227,213 +232,7 @@ public class NetworkManager
         Object.Destroy(player.gameObject);
     }
 
-    private void NetworkReceiveEvent(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery)
-    {
-        var type = reader.GetInt();
-        switch (type)
-        {
-            case PlayerListPacket.PacketID:
-            {
-                var packet = new PlayerListPacket();
-                packet.Receive(ref reader);
-                Plugin.Log.LogInfo("Received player list");
-                foreach (var data in packet.Players)
-                {
-                    if (!_data.ContainsKey(data.Id) || _data[data.Id].Data == null)
-                    {
-                        Plugin.Log.LogInfo($"Creating player {data.Id}");
-                        createPlayer(data.Id);
-                        var playerData = GetPlayerData(data.Id);
-                        playerData.SharedData.Position = data.Position;
-                        playerData.TeleportNext = true;
-                    }
-                    else
-                    {
-                        Plugin.Log.LogInfo($"Player {data.Id} exists");
-                        GetPlayerData(data.Id).SharedData.Position = data.Position;
-                    }
-                }
-                break;
-            }
-            case PlayerSyncPacket.PacketID:
-            {
-                var packet = new PlayerSyncPacket();
-                packet.Receive(ref reader);
-                if (Server)
-                {
-                    if (peer.Id != packet.PlayerID)
-                    {
-                        Plugin.Log.LogWarning($"Peer {peer.Id} send unauthorized packet for player {packet.PlayerID}");
-                        return;
-                    }
-                    
-                    Send(packet, DeliveryMethod.ReliableSequenced, except: peer);
-                }
-
-                if (_data.TryGetValue(packet.PlayerID, out var value))
-                {
-                    value.Data.SharedData = packet.Data;
-                }
-                break;
-            }
-            case TransitionToScenePacket.PacketID:
-            {
-                var packet = new TransitionToScenePacket();
-                packet.Receive(ref reader);
-                if (Server)
-                {
-                    Send(packet, except: peer);
-                }
-
-                SceneTransitionManagerPatch.DisableTransitionHook = true;
-                SceneTransitionManager.instance.TransitionFromLevelSelectToLevel(packet.Level);
-                SceneTransitionManagerPatch.DisableTransitionHook = false;
-                break;
-            }
-            case BuildOrUpgradePacket.PacketID:
-            {
-                var packet = new BuildOrUpgradePacket();
-                packet.Receive(ref reader);
-                if (Server)
-                {
-                    Send(packet, except: peer);
-                }
-                
-                BuildSlotPatch.HandleUpgrade(packet.BuildingId, packet.Level, packet.Choice);
-                break;
-            }
-            case DayNightPacket.PacketID:
-            {
-                var packet = new DayNightPacket();
-                packet.Receive(ref reader);
-                if (Server)
-                {
-                    Send(packet, except: peer);
-                }
-
-                if (packet.Night)
-                {
-                    NightCallPatch.TriggerNightFall();
-                }
-                break;
-            }
-            case EnemySpawnPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new EnemySpawnPacket();
-                packet.Receive(ref reader);
-                EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id);
-                break;
-            }
-            case DamagePacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new DamagePacket();
-                packet.Receive(ref reader);
-                HpPatch.InflictDamage(
-                    packet.Target,
-                    packet.Source,
-                    packet.Damage,
-                    packet.CausedByPlayer,
-                    packet.InvokeFeedbackEvents
-                );
-                break;
-            }
-            case HealPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new HealPacket();
-                packet.Receive(ref reader);
-                HpPatch.Heal(packet.Target, packet.Amount);
-                break;
-            }
-            case ScaleHpPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new ScaleHpPacket();
-                packet.Receive(ref reader);
-                HpPatch.ScaleHp(packet.Target, packet.Multiplier);
-                break;
-            }
-            case PositionPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized position packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new PositionPacket();
-                packet.Receive(ref reader);
-                var target = Identifier.GetGameObject(packet.Target);
-                if (target != null)
-                {
-                    target.transform.position = packet.Position;
-                }
-                break;
-            }
-            case RespawnPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {peer.Id}.");
-                    return;
-                }
-                
-                var packet = new RespawnPacket();
-                packet.Receive(ref reader);
-                var target = Identifier.GetGameObject(packet.Target);
-                if (target == null)
-                {
-                    return;
-                }
-                
-                switch (packet.Target.Type)
-                {
-                    case IdentifierType.Ally:
-                    {
-                        var hp = target.GetComponent<Hp>();
-                        UnitRespawnerForBuildingsPatch.RevivePlayerUnit(hp, packet.Position);
-                        break;
-                    }
-                    case IdentifierType.Invalid:
-                    case IdentifierType.Player:
-                    case IdentifierType.Building:
-                    case IdentifierType.Enemy:
-                    default:
-                        Plugin.Log.LogWarning($"Received unhandled respawn packet for {packet.Target.Type}:{packet.Target.Id}");
-                        break;
-                }
-                target.transform.position = packet.Position;
-                break;
-            }
-            default:
-                Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
-                break;
-        }
-    }
-
-    private GameObject createPlayer(int id)
+    public GameObject CreatePlayer(int id)
     {
         var newPlayer = Object.Instantiate(_playerPrefab);
         newPlayer.SetActive(true);
@@ -450,5 +249,157 @@ public class NetworkManager
         _data[id].Id = id;
         _data[id].Data = data;
         return newPlayer;
+    }
+
+    private void NetworkReceiveEvent(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery)
+    {
+        var type = (PacketId)reader.GetInt();
+        var shouldPropagate = false;
+        IPacket packet = null;
+        switch (type)
+        {
+            case PlayerListPacket.PacketID:
+            {
+                packet = new PlayerListPacket();
+                break;
+            }
+            case PlayerSyncPacket.PacketID:
+            {
+                packet = new PlayerSyncPacket();
+                shouldPropagate = Server;
+                break;
+            }
+            case TransitionToScenePacket.PacketID:
+            {
+                packet = new TransitionToScenePacket();
+                shouldPropagate = Server;
+                break;
+            }
+            case BuildOrUpgradePacket.PacketID:
+            {
+                packet = new BuildOrUpgradePacket();
+                shouldPropagate = Server;
+                break;
+            }
+            case DayNightPacket.PacketID:
+            {
+                packet = new DayNightPacket();
+                shouldPropagate = Server;
+                break;
+            }
+            case EnemySpawnPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new EnemySpawnPacket();
+                break;
+            }
+            case DamagePacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new DamagePacket();
+                break;
+            }
+            case HealPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new HealPacket();
+                break;
+            }
+            case ScaleHpPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new ScaleHpPacket();
+                break;
+            }
+            case PositionPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized position packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new PositionPacket();
+                break;
+            }
+            case RespawnPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {peer.Id}.");
+                    return;
+                }
+                
+                packet = new RespawnPacket();
+                break;
+            }
+            case PacketId.CommandAddPacket:
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized command add packet from {peer.Id}.");
+                    return;
+                }
+
+                packet = new CommandAddPacket();
+                break;
+            case PacketId.CommandPlacePacket:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized command place packet from {peer.Id}.");
+                    return;
+                }
+
+                packet = new CommandPlacePacket();
+                break;
+            }
+            case PacketId.CommandHoldPositionPacket:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized command hold position packet from {peer.Id}.");
+                    return;
+                }
+
+                packet = new CommandHoldPositionPacket();
+                break;
+            }
+            default:
+                Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
+                break;
+        }
+
+        if (packet == null)
+        {
+            return;
+        }
+        
+        packet.Receive(ref reader);
+        if (shouldPropagate)
+        {
+            Send(packet, false, delivery, peer);
+        }
+        
+        PacketHandler.HandlePacket(packet);
     }
 }

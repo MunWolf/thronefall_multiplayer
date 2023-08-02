@@ -104,8 +104,8 @@ static class PlayerMovementPatch
 		velocity.Value += normalized * zero.x;
 		velocity.Value += normalized2 * zero.y;
 		velocity.Value = Vector3.ClampMagnitude(velocity.Value, 1f);
-		var shouldToggleSprint = playerNetworkData.SharedData.SprintToggleButton && !playerNetworkData.PlayerMovementSprintToggle;
-		playerNetworkData.PlayerMovementSprintToggle = playerNetworkData.SharedData.SprintToggleButton;
+		var shouldToggleSprint = playerNetworkData.SharedData.SprintToggleButton && !playerNetworkData.PlayerMovementSprintLast;
+		playerNetworkData.PlayerMovementSprintLast = playerNetworkData.SharedData.SprintToggleButton;
 		if (shouldToggleSprint)
 		{
 			sprintingToggledOn.Value = !sprintingToggledOn.Value;

@@ -28,17 +28,17 @@ public static class PlayerSceptPatch
             return;
         }
         
-        if (data.SharedData.InteractButton && !data.PlayerSceptInteract)
+        if (data.SharedData.InteractButton && !data.PlayerSceptInteractLast)
         {
             self.StopAllCoroutines();
             self.StartCoroutine(Traverse.Create(self).Method("AnimationIn").GetValue<IEnumerator>());
         }
-        if (!data.SharedData.InteractButton && data.PlayerSceptInteract)
+        if (!data.SharedData.InteractButton && data.PlayerSceptInteractLast)
         {
             self.StopAllCoroutines();
             self.StartCoroutine(Traverse.Create(self).Method("AnimationOut").GetValue<IEnumerator>());
         }
 
-        data.PlayerSceptInteract = data.SharedData.InteractButton;
+        data.PlayerSceptInteractLast = data.SharedData.InteractButton;
     }
 }

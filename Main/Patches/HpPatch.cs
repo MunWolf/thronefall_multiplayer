@@ -1,7 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using ThronefallMP.NetworkPackets;
-using UnityEngine;
-using UnityEngine.Assertions;
+﻿using ThronefallMP.NetworkPackets;
 
 namespace ThronefallMP.Patches;
 
@@ -59,14 +56,14 @@ public static class HpPatch
         bool causedByPlayer,
         bool invokeFeedbackEvents)
     {
-        var target = Identifier.GetGameObject(targetId);
+        var target = targetId.Get();
         if (target == null)
         {
             Plugin.Log.LogWarning($"Failed to inflict damage, target {targetId.Type}:{targetId.Id} did not exist");
             return;
         }
         
-        var source = Identifier.GetGameObject(sourceId);
+        var source = sourceId.Get();
         var component = source == null ? null : source.GetComponent<TaggedObject>();
         _allowHealthChangeOnClient = true;
         target.GetComponent<Hp>().TakeDamage(
@@ -102,7 +99,7 @@ public static class HpPatch
 
     public static void ScaleHp(IdentifierData targetId, float multiply)
     {
-        var target = Identifier.GetGameObject(targetId);
+        var target = targetId.Get();
         if (target == null)
         {
             Plugin.Log.LogWarning($"Failed to scale hp, target {targetId.Type}:{targetId.Id} did not exist");
@@ -142,7 +139,7 @@ public static class HpPatch
 
     public static void Heal(IdentifierData targetId, float amount)
     {
-        var target = Identifier.GetGameObject(targetId);
+        var target = targetId.Get();
         if (target == null)
         {
             Plugin.Log.LogWarning($"Failed to heal, target {targetId.Type}:{targetId.Id} did not exist");

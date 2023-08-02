@@ -17,6 +17,7 @@ public class PlayerNetworkData : MonoBehaviour
         public bool InteractButton { get; set; }
         public bool CallNightButton { get; set; }
         public float CallNightFill { get; set; }
+        public bool CommandUnitsButton { get; set; }
         
         public static bool operator ==(Shared a, Shared b) 
         {
@@ -39,7 +40,8 @@ public class PlayerNetworkData : MonoBehaviour
                 && SprintButton == b.Value.SprintButton
                 && InteractButton == b.Value.InteractButton
                 && CallNightButton == b.Value.CallNightButton
-                && Math.Abs(CallNightFill - b.Value.CallNightFill) < 0.01f;
+                && Math.Abs(CallNightFill - b.Value.CallNightFill) < 0.01f
+                && CommandUnitsButton == b.Value.CommandUnitsButton;
         }
 
         public override int GetHashCode()
@@ -53,6 +55,7 @@ public class PlayerNetworkData : MonoBehaviour
             hashCode *= 77557187 ^ InteractButton.GetHashCode();
             hashCode *= 1146581 ^ CallNightButton.GetHashCode();
             hashCode *= 840943 ^ CallNightFill.GetHashCode();
+            hashCode *= 37027103 ^ CommandUnitsButton.GetHashCode();
             return hashCode;
         }
     }
@@ -72,9 +75,10 @@ public class PlayerNetworkData : MonoBehaviour
     public Shared SharedData;
     
     // Local variables
-    public bool PlayerMovementSprintToggle { get; set; }
-    public bool PlayerSceptInteract { get; set; }
-    public bool CallNightDown { get; set; }
+    public bool PlayerMovementSprintLast { get; set; }
+    public bool PlayerSceptInteractLast { get; set; }
+    public bool CallNightLast { get; set; }
+    public bool CommandUnitsButtonLast { get; set; }
     public bool TeleportNext { get; set; }
 
     private void Update()
@@ -92,5 +96,6 @@ public class PlayerNetworkData : MonoBehaviour
         SharedData.InteractButton = input.GetButton("Interact");
         SharedData.CallNightButton = input.GetButton("Call Night");
         SharedData.CallNightFill = Traverse.Create(NightCall.instance).Field<float>("currentFill").Value;
+        SharedData.CommandUnitsButton = input.GetButton("Command Units");
     }
 }

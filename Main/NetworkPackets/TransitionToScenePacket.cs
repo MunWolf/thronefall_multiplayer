@@ -10,12 +10,12 @@ public class TransitionToScenePacket : IPacket
         LevelSelectToLevel
     }
     
-    public const int PacketID = 3;
+    public const PacketId PacketID = PacketId.TransitionToScenePacket;
 
     public TransitionType Type;
     public string Level;
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }

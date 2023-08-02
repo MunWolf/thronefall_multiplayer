@@ -5,11 +5,11 @@ namespace ThronefallMP.NetworkPackets;
 
 public class DayNightPacket : IPacket
 {
-    public const int PacketID = 5;
+    public const PacketId PacketID = PacketId.DayNightPacket;
 
     public bool Night;
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }

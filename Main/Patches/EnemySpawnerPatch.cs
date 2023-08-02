@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using HarmonyLib;
+﻿using HarmonyLib;
 using ThronefallMP.NetworkPackets;
 using UnityEngine;
 
@@ -52,8 +51,7 @@ public class EnemySpawnerPatch
         }
     }
 
-    private Dictionary<int, GameObject> _enemies = new();
-    private static int _nextEnemyId = 0;
+    private static int _nextEnemyId;
     private static void UpdateSpawn(Spawn self, int waveNumber, int spawnIndex)
     {
 	    var finished = Traverse.Create(self).Field<bool>("finished");
@@ -129,7 +127,7 @@ public class EnemySpawnerPatch
 		}
 		else
 		{
-			gameObject = Object.Instantiate<GameObject>(self.enemyPrefab, position, Quaternion.identity);
+			gameObject = Object.Instantiate(self.enemyPrefab, position, Quaternion.identity);
 			gameObject.AddComponent<Identifier>()
 				.SetIdentity(IdentifierType.Enemy, id);
 			var instance = EnemySpawnManager.instance;
@@ -139,8 +137,7 @@ public class EnemySpawnerPatch
 					position + Vector3.up * instance.weaponAttackHeight,
 					null, 
 					Vector3.forward,
-					gameObject.GetComponent<TaggedObject>(),
-					1f
+					gameObject.GetComponent<TaggedObject>()
 				);
 			}
 		}

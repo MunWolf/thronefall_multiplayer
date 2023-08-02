@@ -13,11 +13,11 @@ public class PlayerListPacket : IPacket
         public Vector3 Position;
     }
     
-    public const int PacketID = 1;
+    public const PacketId PacketID = PacketId.PlayerListPacket;
 
     public List<PlayerData> Players = new();
 
-    public int TypeID()
+    public PacketId TypeID()
     {
         return PacketID;
     }
@@ -28,9 +28,7 @@ public class PlayerListPacket : IPacket
         foreach (var data in Players)
         {
             writer.Put(data.Id);
-            writer.Put(data.Position.x);
-            writer.Put(data.Position.y);
-            writer.Put(data.Position.z);
+            writer.Put(data.Position);
         }
     }
 
@@ -43,7 +41,7 @@ public class PlayerListPacket : IPacket
             Players.Add(new PlayerData
             {
                 Id = reader.GetInt(),
-                Position = new Vector3(reader.GetFloat(), reader.GetFloat(), reader.GetFloat())
+                Position = reader.GetVector3()
             });
         }
     }
