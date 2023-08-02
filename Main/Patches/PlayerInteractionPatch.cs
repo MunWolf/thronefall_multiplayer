@@ -1,4 +1,6 @@
 ﻿using HarmonyLib;
+using Rewired;
+using ThronefallMP.NetworkPackets;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -48,9 +50,39 @@ public static class PlayerInteractionPatch
     private static void RunInteraction(On.PlayerInteraction.orig_RunInteraction original, PlayerInteraction self)
     {
         var data = self.GetComponent<PlayerNetworkData>();
-        if (data == null || data.IsLocal)
+        if (data == null || !data.IsLocal || LocalGamestate.Instance.PlayerFrozen)
         {
-            original(self);
+            return;
         }
+
+        var input = Traverse.Create(self).Field<Player>("input");
+        var focussedInteractor = Traverse.Create(self).Field<InteractorBase>("focussedInteractor");
+        if (input.Value.GetButtonDown("Interact"))
+        {
+            if (focussedInteractor.Value != null)
+            {
+                focussedInteractor.Value.InteractionBegin(self);
+            }
+            else if (self.EquippedWeapon != null)
+            {
+                var packet = new ManualAttackPacket { Player = data.id };
+                Plugin.Instance.Network.Send(packet, true);
+            }
+        }
+
+        if (focussedInteractor.Value != null)
+        {
+            if (input.Value.GetButton("Interact"))
+            {
+                focussedInteractor.Value.InteractionHold(self);
+            }
+            
+            if (input.Value.GetButtonUp("Interact"))
+            {
+                focussedInteractor.Value.InteractionEnd(self);
+            }
+        }
+        
+        BuildingInteractor.displayAllBuildPreviews = input.Value.GetButton("Preview Build Options");
     }
 }

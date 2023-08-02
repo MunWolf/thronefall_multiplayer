@@ -15,6 +15,7 @@ public enum PacketId
     DayNightPacket,
     EnemySpawnPacket,
     HealPacket,
+    ManualAttack,
     PlayerListPacket,
     PlayerSyncPacket,
     PositionPacket,
@@ -35,6 +36,7 @@ public static class PacketHandler
         { DayNightPacket.PacketID, HandleDayNight },
         { EnemySpawnPacket.PacketID, HandleEnemySpawn },
         { HealPacket.PacketID, HandleHeal },
+        { ManualAttackPacket.PacketID, HandleManualAttack },
         { PlayerListPacket.PacketID, HandlePlayerList },
         { PlayerSyncPacket.PacketID, HandlePlayerSync },
         { PositionPacket.PacketID, HandlePosition },
@@ -225,5 +227,18 @@ public static class PacketHandler
                 CommandUnitsPatch.HoldPosition(component, unit.Home);
             }
         }
+    }
+
+    private static void HandleManualAttack(IPacket ipacket)
+    {
+        var packet = (ManualAttackPacket)ipacket;
+        var player = Plugin.Instance.Network.GetPlayerData(packet.Player);
+        if (player == null)
+        {
+            return;
+        }
+        
+        var attack = player.GetComponent<PlayerInteraction>().EquippedWeapon;
+        attack.TryToAttack();
     }
 }

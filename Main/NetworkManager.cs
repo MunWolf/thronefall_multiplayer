@@ -384,6 +384,12 @@ public class NetworkManager
                 packet = new CommandHoldPositionPacket();
                 break;
             }
+            case PacketId.ManualAttack:
+            {
+                packet = new ManualAttackPacket();
+                shouldPropagate = true;
+                break;
+            }
             default:
                 Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
                 break;
