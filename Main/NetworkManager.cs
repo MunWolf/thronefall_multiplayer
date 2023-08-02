@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using Rewired;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
@@ -14,23 +12,23 @@ public class NetworkManager
     public class NetworkPeerData
     {
         public int Id;
-        public NetPeer Peer = null;
-        public PlayerNetworkData Data = null;
+        public NetPeer Peer;
+        public PlayerNetworkData Data;
     }
     
     public int LocalPlayer { get; private set; } = -1;
-    public PlayerNetworkData LocalPlayerData { get { return GetPlayerData(LocalPlayer); } }
-    public bool Online { get; private set; } = false;
+    public PlayerNetworkData LocalPlayerData => GetPlayerData(LocalPlayer);
+    public bool Online { get; private set; }
     public bool Server { get; private set; } = true;
-    public int ActivePort { get; private set; } = 0;
+    public int ActivePort { get; private set; }
 
     private readonly EventBasedNetListener _listener;
     private readonly NetManager _netManager;
     private readonly Dictionary<int, NetworkPeerData> _data = new();
     
-    private GameObject _playerPrefab = null;
-    private bool _playerUpdateQueued = false;
-    private PlayerNetworkData.Shared? _latestLocalData = null;
+    private GameObject _playerPrefab;
+    private bool _playerUpdateQueued;
+    private PlayerNetworkData.Shared? _latestLocalData;
 
     public NetworkManager()
     {
@@ -146,7 +144,7 @@ public class NetworkManager
         Server = false;
         ActivePort = port;
         _netManager.Start();
-        var peer = _netManager.Connect(address, port, "test");
+        _netManager.Connect(address, port, "test");
         _data.Clear();
     }
 
@@ -158,7 +156,7 @@ public class NetworkManager
         _latestLocalData = null;
         _data.Clear();
         foreach (var player in PlayerManager.Instance.RegisteredPlayers)
-        {;
+        {
             PlayerManager.UnregisterPlayer(player);
             Object.Destroy(player.gameObject);
         }
@@ -166,6 +164,19 @@ public class NetworkManager
 
     public void Update()
     {
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            _netManager.SimulateLatency = !_netManager.SimulateLatency;
+            _netManager.SimulationMinLatency = 100;
+            _netManager.SimulationMaxLatency = 200;
+            Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulateLatency}");
+        }
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            _netManager.SimulatePacketLoss = !_netManager.SimulatePacketLoss;
+            Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulatePacketLoss}");
+        }
+        
         _netManager.PollEvents();
         if (_playerUpdateQueued)
         {
