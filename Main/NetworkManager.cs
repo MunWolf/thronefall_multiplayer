@@ -48,7 +48,7 @@ public class NetworkManager
         }
         
         player.SetActive(false);
-        _playerPrefab = Object.Instantiate(player, null, true);
+        _playerPrefab = Object.Instantiate(player);
         _playerPrefab.SetActive(false);
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;

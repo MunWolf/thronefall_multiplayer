@@ -57,6 +57,11 @@ public class Identifier : MonoBehaviour
         Plugin.Log.LogInfo($"Added {type}:{id} to identifier repository.");
     }
 
+    public static void Clear(IdentifierType type)
+    {
+        Repository[type].Clear();
+    }
+    
     public static GameObject GetGameObject(IdentifierType type, int id)
     {
         return type == IdentifierType.Invalid ? null : Repository[type].GetValueSafe(id);

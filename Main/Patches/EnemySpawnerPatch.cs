@@ -6,6 +6,7 @@ namespace ThronefallMP.Patches;
 
 public class EnemySpawnerPatch
 {
+	private static int _nextEnemyId;
     public static void Apply()
     {
 	    On.EnemySpawner.Update += Update;
@@ -14,6 +15,9 @@ public class EnemySpawnerPatch
 
     private static void OnStartOfTheDay(On.EnemySpawner.orig_OnStartOfTheDay original, EnemySpawner self)
     {
+	    Identifier.Clear(IdentifierType.Enemy);
+	    _nextEnemyId = 0;
+	    
 	    var treasureHunterActive = Traverse.Create(self).Field<bool>("treasureHunterActive");
 	    var old = treasureHunterActive.Value;
 	    treasureHunterActive.Value = false;
@@ -64,7 +68,6 @@ public class EnemySpawnerPatch
         }
     }
 
-    private static int _nextEnemyId;
     private static void UpdateSpawn(Spawn self, int waveNumber, int spawnIndex)
     {
 	    var finished = Traverse.Create(self).Field<bool>("finished");
@@ -102,12 +105,6 @@ public class EnemySpawnerPatch
 		
 		Plugin.Instance.Network.Send(packet, true);
 		++_nextEnemyId;
-		
-		spawnedUnits.Value++;
-		if (spawnedUnits.Value >= self.count)
-		{
-			finished.Value = true;
-		}
     }
 
     public static void SpawnEnemy(int waveNumber, int spawnIndex, Vector3 position, int id, int coins)

@@ -1,4 +1,5 @@
 ﻿using ThronefallMP.NetworkPackets;
+using UnityEngine;
 
 namespace ThronefallMP.Patches;
 
@@ -8,17 +9,17 @@ public static class SceneTransitionManagerPatch
     
     public static void Apply()
     {
-        On.SceneTransitionManager.TransitionFromLevelSelectToLevel += TransitionFromLevelSelectToLevel;
+        On.SceneTransitionManager.TransitionToScene += TransitionToScene;
     }
-    
-    private static void TransitionFromLevelSelectToLevel(On.SceneTransitionManager.orig_TransitionFromLevelSelectToLevel original, SceneTransitionManager self, string levelName)
+
+    private static void TransitionToScene(On.SceneTransitionManager.orig_TransitionToScene original, SceneTransitionManager self, string scene)
     {
         if (!DisableTransitionHook)
         {
             var packet = new TransitionToScenePacket
             {
-                Type = TransitionToScenePacket.TransitionType.LevelSelectToLevel,
-                Level = levelName,
+                ComingFromGameplayScene = self.ComingFromGameplayScene,
+                Level = scene,
             };
             
             foreach (var item in PerkManager.instance.CurrentlyEquipped)
@@ -28,7 +29,13 @@ public static class SceneTransitionManagerPatch
             
             Plugin.Instance.Network.Send(packet);
         }
-
-        original(self, levelName);
+        
+        foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
+        {
+            PlayerManager.UnregisterPlayer(data.GetComponent<PlayerMovement>());
+            Object.Destroy(data.gameObject);
+        }
+        
+        original(self, scene);
     }
 }

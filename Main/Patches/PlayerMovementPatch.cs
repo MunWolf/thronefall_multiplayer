@@ -41,7 +41,7 @@ static class PlayerMovementPatch
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
 		if (vanillaPlayer)
 		{
-			self.StartCoroutine(ReinstanciatePlayers(self));
+			Plugin.Instance.StartCoroutine(ReinstanciatePlayers(self));
 		}
 	}
 
@@ -89,6 +89,11 @@ static class PlayerMovementPatch
         var moving = Traverse.Create(self).Field<bool>("moving");
         var desiredMeshRotation = Traverse.Create(self).Field<Quaternion>("desiredMeshRotation");
         var controller = Traverse.Create(self).Field<CharacterController>("controller");
+
+        if (viewTransform.Value == null)
+        {
+	        return;
+        }
         
         // Normal code
 		Vector2 zero = new Vector2(playerNetworkData.SharedData.MoveVertical, playerNetworkData.SharedData.MoveHorizontal);

@@ -6,14 +6,9 @@ namespace ThronefallMP.NetworkPackets;
 
 public class TransitionToScenePacket : IPacket
 {
-    public enum TransitionType
-    {
-        LevelSelectToLevel
-    }
-    
     public const PacketId PacketID = PacketId.TransitionToScenePacket;
 
-    public TransitionType Type;
+    public string ComingFromGameplayScene;
     public string Level;
     public List<string> Perks = new();
 
@@ -24,7 +19,7 @@ public class TransitionToScenePacket : IPacket
 
     public void Send(ref NetDataWriter writer)
     {
-        writer.Put((int)Type);
+        writer.Put(ComingFromGameplayScene);
         writer.Put(Level);
         writer.Put(Perks.Count);
         foreach (var perk in Perks)
@@ -35,7 +30,7 @@ public class TransitionToScenePacket : IPacket
 
     public void Receive(ref NetPacketReader reader)
     {
-        Type = (TransitionType)reader.GetInt();
+        ComingFromGameplayScene = reader.GetString();
         Level = reader.GetString();
         var count = reader.GetInt();
         Perks.Clear();

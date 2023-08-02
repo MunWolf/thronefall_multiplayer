@@ -45,6 +45,9 @@ public static class BuildSlotPatch
     private static IEnumerator ProcessBuildings(BuildSlot root)
     {
         yield return new WaitForEndOfFrame();
+        Identifier.Clear(IdentifierType.Building);
+        Identifier.Clear(IdentifierType.Ally);
+        
         Plugin.Log.LogInfo("Processing buildings");
         Plugin.Log.LogInfo("Added 1 for processing");
         var slots = new List<BuildSlot> { root };

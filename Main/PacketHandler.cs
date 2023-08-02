@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using HarmonyLib;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
@@ -109,7 +110,9 @@ public static class PacketHandler
         }
         
         SceneTransitionManagerPatch.DisableTransitionHook = true;
-        SceneTransitionManager.instance.TransitionFromLevelSelectToLevel(packet.Level);
+        var gameplayScene = Traverse.Create(SceneTransitionManager.instance).Field<string>("comingFromGameplayScene");
+        gameplayScene.Value = packet.ComingFromGameplayScene;
+        SceneTransitionManager.instance.TransitionFromNullToLevel(packet.Level);
         SceneTransitionManagerPatch.DisableTransitionHook = false;
     }
 
