@@ -27,7 +27,6 @@ Run your executable either directly or through Steam.
 
 * Sync special ability usage.
 * Sync loadout on level select
-* Make death UI show up when the local player dies.
 * Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
 * Handle restarts and exit to level select gracefully.
 

@@ -38,8 +38,10 @@ namespace ThronefallMP
             PlayerInteractionPatch.Apply();
             PlayerMovementPatch.Apply();
             PlayerSceptPatch.Apply();
+            RevivePanelPatch.Apply();
             SceneTransitionManagerPatch.Apply();
             TreasuryUIPatch.Apply();
+            UnitRespawnerForBuildingsPatch.Apply();
             
             // Apply settings.
             Application.runInBackground = true;
