@@ -25,7 +25,6 @@ Run your executable either directly or through Steam.
 
 ## TODO
 
-* Sync special ability usage.
 * Sync loadout on level select
 * Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
 * Handle restarts and exit to level select gracefully.
@@ -34,3 +33,6 @@ Run your executable either directly or through Steam.
 
 * Spawn exploding coins when player disconnects corresponding to his balance.
 * Players can drop coins for other players to pick up.
+
+* Make UI for hosting/connecting to servers
+* Make UI to leave a server
