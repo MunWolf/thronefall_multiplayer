@@ -134,10 +134,6 @@ public static class CommandUnitsPatch
         }
         
         var units = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommanding");
-        
-        // TODO: Send a sync message for this.
-        EmitWaypoint(self, units.Value.Count > 0);
-        
         var astarPath = Traverse.Create(self).Field<AstarPath>("astarPath");
         var nearestConstraint = Traverse.Create(self).Field<NNConstraint>("nearestConstraint");
 	    for (var i = 0; i < units.Value.Count; i++)

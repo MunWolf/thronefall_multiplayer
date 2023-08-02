@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
+using UnityEngine;
 
 namespace ThronefallMP.Patches;
 
@@ -31,18 +33,18 @@ public static class DayNightCyclePatch
             }
         }
         ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.BuildingRepair);
-        LevelData levelDataForActiveScene = LevelProgressManager.instance.GetLevelDataForActiveScene();
-        int num = PlayerInteraction.instance.Networth;
+        var levelDataForActiveScene = LevelProgressManager.instance.GetLevelDataForActiveScene();
+        var num = GlobalData.Networth;
         num += TagManager.instance.freeCoins.Count;
         num += self.CoinCountToBeHarvested;
         levelDataForActiveScene.dayToDayNetworth.Add(num);
-        // TODO: Make coins go to the closest player instead of this.
-        var component = Plugin.Instance.Network.GetPlayerData(-1).GetComponent<PlayerInteraction>();
-        foreach (Coin coin in TagManager.instance.freeCoins)
+        var players = Plugin.Instance.Network.GetAllPlayerData().Select(x => x.GetComponent<PlayerInteraction>()).ToArray();
+        foreach (var coin in TagManager.instance.freeCoins)
         {
+            var closest = Utils.FindClosest(players, coin.transform.position);
             if (coin.IsFree)
             {
-                coin.SetTarget(component);
+                coin.SetTarget(closest);
             }
         }
     }
@@ -53,7 +55,7 @@ public static class DayNightCyclePatch
         var daytimeSensitiveObjects = Traverse.Create(self).Field<List<DayNightCycle.IDaytimeSensitive>>("daytimeSensitiveObjects");
 
         afterSunrise.Value = false;
-        for (int i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
+        for (var i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
         {
             if (Utils.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
             {

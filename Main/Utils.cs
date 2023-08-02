@@ -78,4 +78,21 @@ public static class Utils
             Id = reader.GetInt(),
         };
     }
+
+    public static PlayerInteraction FindClosest(PlayerInteraction[] players, Vector3 pos)
+    {
+        var distance = float.MaxValue;
+        PlayerInteraction closest = null;
+        foreach (var player in players)
+        {
+            var playerDistance = (player.transform.position - pos).sqrMagnitude;
+            if (playerDistance < distance)
+            {
+                distance = playerDistance;
+                closest = player;
+            }
+        }
+
+        return closest;
+    }
 }

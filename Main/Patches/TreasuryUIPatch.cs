@@ -13,6 +13,8 @@ public class TreasuryUIPatch
     {
         On.TreasuryUI.Start += Start;
         On.TreasuryUI.Update += Update;
+        On.TreasuryUI.AddCoins += AddCoins;
+        On.TreasuryUI.RemoveCoins += RemoveCoins;
     }
 
     private delegate void CoinsDelegate(int amount);
@@ -82,6 +84,20 @@ public class TreasuryUIPatch
         targetPlayer.Value.onBalanceSpend.AddListener(new UnityAction<int>(removeCoins));
         targetPlayer.Value.onFocusPaymentInteraction.AddListener(new UnityAction(lockActivation));
         targetPlayer.Value.onUnfocusPaymentInteraction.AddListener(new UnityAction(unlockActivation));
-        addCoins(targetPlayer.Value.Balance);
+        addCoins(GlobalData.Balance);
+    }
+
+    private static void AddCoins(On.TreasuryUI.orig_AddCoins original, TreasuryUI self, int amount)
+    {
+        var balance = Traverse.Create(self).Field("targetPlayer").Field<int>("balance");
+        balance.Value = GlobalData.Balance;
+        original(self, amount);
+    }
+
+    private static void RemoveCoins(On.TreasuryUI.orig_RemoveCoins original, TreasuryUI self, int amount)
+    {
+        var balance = Traverse.Create(self).Field("targetPlayer").Field<int>("balance");
+        balance.Value = GlobalData.Balance;
+        original(self, amount);
     }
 }

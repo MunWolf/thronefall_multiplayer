@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using HarmonyLib;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
@@ -9,6 +8,7 @@ namespace ThronefallMP;
 
 public enum PacketId
 {
+    BalancePacket,
     BuildOrUpgradePacket,
     CommandAddPacket,
     CommandPlacePacket,
@@ -24,12 +24,14 @@ public enum PacketId
     RespawnPacket,
     ScaleHpPacket,
     TransitionToScenePacket,
+    SpawnCoinPacket,
 }
 
 public static class PacketHandler
 {
     private static readonly Dictionary<PacketId, Action<IPacket>> Handlers = new()
     {
+        { BalancePacket.PacketID, HandleBalance },
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CommandAddPacket.PacketID, HandleCommandAdd },
         { CommandHoldPositionPacket.PacketID, HandleCommandHoldPosition },
@@ -127,7 +129,7 @@ public static class PacketHandler
     private static void HandleEnemySpawn(IPacket ipacket)
     {
         var packet = (EnemySpawnPacket)ipacket;
-        EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id);
+        EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id, packet.Coins);
     }
 
     private static void HandleDamage(IPacket ipacket)
@@ -251,5 +253,25 @@ public static class PacketHandler
         
         var attack = player.GetComponent<PlayerInteraction>().EquippedWeapon;
         attack.TryToAttack();
+    }
+
+    private static void HandleBalance(IPacket ipacket)
+    {
+        var packet = (BalancePacket)ipacket;
+        GlobalData.Internal.Balance += packet.Delta;
+        var data = Plugin.Instance.Network.LocalPlayerData;
+        if (packet.Delta > 0)
+        {
+            GlobalData.Internal.Networth += packet.Delta;
+        }
+        
+        var player = data == null ? null : data.GetComponent<PlayerInteraction>();
+        if (player == null)
+        {
+            return;
+        }
+        
+        var action = packet.Delta > 0 ? player.onBalanceGain : player.onBalanceSpend;
+        action.Invoke(Mathf.Abs(packet.Delta));
     }
 }

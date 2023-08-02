@@ -401,6 +401,12 @@ public class NetworkManager
                 shouldPropagate = true;
                 break;
             }
+            case PacketId.BalancePacket:
+            {
+                packet = new BalancePacket();
+                shouldPropagate = true;
+                break;
+            }
             default:
                 Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
                 break;

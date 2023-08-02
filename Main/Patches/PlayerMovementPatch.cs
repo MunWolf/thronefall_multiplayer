@@ -62,8 +62,7 @@ static class PlayerMovementPatch
 			Plugin.Instance.Network.ReinstanciatePlayers();
 			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
 			{
-				var newInteraction = Plugin.Instance.Network.LocalPlayerData.GetComponent<PlayerInteraction>();
-				newInteraction.AddCoin(EnemySpawner.instance.goldBalanceAtStart + 100);
+				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart + 100;
 			}
 		}
 	}

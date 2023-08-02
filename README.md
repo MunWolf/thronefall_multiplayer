@@ -25,13 +25,7 @@ Run your executable either directly or through Steam.
 
 ## TODO
 
-* Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
 * Handle restarts and exit to level select gracefully.
-
-* Make sure coins are not lost if 2 players try to build the same building.
-
-* Spawn exploding coins when player disconnects corresponding to his balance.
-* Players can drop coins for other players to pick up.
-
 * Make UI for hosting/connecting to servers
 * Make UI to leave a server
+* If a client cancels building the coins are currently permanently lost (CoinDisplay.CancelFill needs to send a packet)

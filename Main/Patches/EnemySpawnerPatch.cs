@@ -9,16 +9,29 @@ public class EnemySpawnerPatch
     public static void Apply()
     {
 	    On.EnemySpawner.Update += Update;
+	    On.EnemySpawner.OnStartOfTheDay += OnStartOfTheDay;
     }
 
-    public static void Update(On.EnemySpawner.orig_Update original, EnemySpawner self)
+    private static void OnStartOfTheDay(On.EnemySpawner.orig_OnStartOfTheDay original, EnemySpawner self)
+    {
+	    var treasureHunterActive = Traverse.Create(self).Field<bool>("treasureHunterActive");
+	    var old = treasureHunterActive.Value;
+	    treasureHunterActive.Value = false;
+	    original(self);
+	    treasureHunterActive.Value = old;
+	    if (self.FinalWaveComingUp && old && Plugin.Instance.Network.Server)
+	    {
+		    GlobalData.Balance += PerkManager.instance.treasureHunterGoldAmount;
+	    }
+    }
+
+    private static void Update(On.EnemySpawner.orig_Update original, EnemySpawner self)
     {
         if (!self.SpawningInProgress)
         {
             return;
         }
         
-        // TODO: Sunc this instead.
         var lastSpawnPeriodDuration = Traverse.Create(self).Field<float>("lastSpawnPeriodDuration");
         lastSpawnPeriodDuration.Value += Time.deltaTime;
         if (Plugin.Instance.Network.Server)
@@ -68,27 +81,27 @@ public class EnemySpawnerPatch
 		}
 		
 		waitBeforeNextSpawn.Value = self.interval;
-		Vector3 randomPointOnSpawnLine = self.GetRandomPointOnSpawnLine();
+		var randomPointOnSpawnLine = self.GetRandomPointOnSpawnLine();
+
+		var coins = 0;
+		var spawnedUnits = Traverse.Create(self).Field<int>("spawnedUnits");
+		var goldCoinsPerEnemy = Traverse.Create(self).Field<int[]>("goldCoinsPerEnemy");
+		if (goldCoinsPerEnemy.Value.Length > spawnedUnits.Value)
+		{
+			coins = goldCoinsPerEnemy.Value[spawnedUnits.Value];
+		}
 
 		var packet = new EnemySpawnPacket
 		{
 			Wave = waveNumber,
 			Spawn = spawnIndex,
 			Id = _nextEnemyId,
-			Position = randomPointOnSpawnLine
+			Position = randomPointOnSpawnLine,
+			Coins = coins
 		};
 		
-		Plugin.Instance.Network.Send(packet);
-		var enemy = SpawnEnemy(self, randomPointOnSpawnLine, _nextEnemyId);
+		Plugin.Instance.Network.Send(packet, true);
 		++_nextEnemyId;
-		
-		var spawnedUnits = Traverse.Create(self).Field<int>("spawnedUnits");
-		var goldCoinsPerEnemy = Traverse.Create(self).Field<int[]>("goldCoinsPerEnemy");
-		if (goldCoinsPerEnemy.Value.Length > spawnedUnits.Value)
-		{
-			// TODO: Coins spawning should be synced so only do this on the server.
-			enemy.GetComponentInChildren<Hp>().coinCount = goldCoinsPerEnemy.Value[spawnedUnits.Value];
-		}
 		
 		spawnedUnits.Value++;
 		if (spawnedUnits.Value >= self.count)
@@ -97,13 +110,13 @@ public class EnemySpawnerPatch
 		}
     }
 
-    public static void SpawnEnemy(int waveNumber, int spawnIndex, Vector3 position, int id)
+    public static void SpawnEnemy(int waveNumber, int spawnIndex, Vector3 position, int id, int coins)
     {
 	    var spawn = EnemySpawner.instance.waves[waveNumber].spawns[spawnIndex];
 	    var spawnedUnits = Traverse.Create(spawn).Field<int>("spawnedUnits");
 	    var finished = Traverse.Create(spawn).Field<bool>("finished");
 	    
-	    SpawnEnemy(spawn, position, id);
+	    SpawnEnemy(spawn, position, id, coins);
 	    spawnedUnits.Value++;
 	    if (spawnedUnits.Value >= spawn.count)
 	    {
@@ -111,7 +124,7 @@ public class EnemySpawnerPatch
 	    }
     }
 
-    private static GameObject SpawnEnemy(Spawn self, Vector3 position, int id)
+    private static GameObject SpawnEnemy(Spawn self, Vector3 position, int id, int coins)
     {
 		GameObject gameObject;
 		if (self.spawnLine == self.enemyPrefab.transform)
@@ -141,6 +154,9 @@ public class EnemySpawnerPatch
 				);
 			}
 		}
+
+		var singleHp = gameObject.GetComponentInChildren<Hp>();
+		singleHp.coinCount = coins;
 		
 		var tauntTheTurtle = Traverse.Create(self).Field<bool>("tauntTheTurtle");
 		if (tauntTheTurtle.Value)

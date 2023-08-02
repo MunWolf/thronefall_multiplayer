@@ -12,6 +12,7 @@ public class EnemySpawnPacket : IPacket
     public int Spawn;
     public int Id;
     public Vector3 Position;
+    public int Coins;
 
     public PacketId TypeID()
     {
@@ -24,6 +25,7 @@ public class EnemySpawnPacket : IPacket
         writer.Put(Spawn);
         writer.Put(Id);
         writer.Put(Position);
+        writer.Put(Coins);
     }
 
     public void Receive(ref NetPacketReader reader)
@@ -32,5 +34,6 @@ public class EnemySpawnPacket : IPacket
         Spawn = reader.GetInt();
         Id = reader.GetInt();
         Position = reader.GetVector3();
+        Coins = reader.GetInt();
     }
 }

@@ -12,14 +12,16 @@ public static class PlayerInteractionPatch
         On.PlayerInteraction.FetchCoins += FetchCoins;
         On.PlayerInteraction.FetchInteractors += FetchInteractors;
         On.PlayerInteraction.RunInteraction += RunInteraction;
+        On.PlayerInteraction.AddCoin += AddCoin;
+        On.PlayerInteraction.SpendCoins += SpendCoins;
     }
 
     private static void FetchCoins(On.PlayerInteraction.orig_FetchCoins original, PlayerInteraction self)
     {
         Collider[] array = Physics.OverlapSphere(self.transform.position, self.coinMagnetRadius, self.coinLayer);
-        for (int i = 0; i < array.Length; i++)
+        foreach (var collider in array)
         {
-            Coin component = array[i].GetComponent<Coin>();
+            var component = collider.GetComponent<Coin>();
             if (component != null && component.IsFree)
             {
                 var target = Traverse.Create(component).Field<PlayerInteraction>("target");
@@ -84,5 +86,23 @@ public static class PlayerInteractionPatch
         }
         
         BuildingInteractor.displayAllBuildPreviews = input.Value.GetButton("Preview Build Options");
+    }
+
+    private static void AddCoin(On.PlayerInteraction.orig_AddCoin original, PlayerInteraction self, int amount)
+    {
+        if (!Plugin.Instance.Network.Server)
+        {
+            // This function is used by Coin and EnemySpawner, both times we only need to handle them on the server.
+            return;
+        }
+        
+        GlobalData.Balance += amount;
+        self.onBalanceGain.Invoke(amount);
+    }
+
+    private static void SpendCoins(On.PlayerInteraction.orig_SpendCoins orig, PlayerInteraction self, int amount)
+    {
+        GlobalData.Balance -= amount;
+        self.onBalanceSpend.Invoke(amount);
     }
 }
