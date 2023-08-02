@@ -26,6 +26,6 @@ Run your executable either directly or through Steam.
 ## TODO
 
 * Handle restarts and exit to level select gracefully.
+
 * Make UI for hosting/connecting to servers
 * Make UI to leave a server
-* If a client cancels building the coins are currently permanently lost (CoinDisplay.CancelFill needs to send a packet)

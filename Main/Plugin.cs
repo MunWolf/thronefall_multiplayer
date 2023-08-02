@@ -27,6 +27,7 @@ namespace ThronefallMP
             BuildSlotPatch.Apply();
             CameraRigPatch.Apply();
             CommandUnitsPatch.Apply();
+            CostDisplayPatch.Apply();
             DayNightCyclePatch.Apply();
             EnemySpawnerPatch.Apply();
             HpPatch.Apply();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace ThronefallMP;
 
@@ -47,6 +48,7 @@ public static class PacketHandler
         { RespawnPacket.PacketID, HandleRespawn },
         { ScaleHpPacket.PacketID, HandleScaleHp },
         { TransitionToScenePacket.PacketID, HandleTransitionToScene },
+        { SpawnCoinPacket.PacketID, HandleSpawnCoin },
     };
 
     public static void HandlePacket(IPacket packet)
@@ -274,4 +276,13 @@ public static class PacketHandler
         var action = packet.Delta > 0 ? player.onBalanceGain : player.onBalanceSpend;
         action.Invoke(Mathf.Abs(packet.Delta));
     }
+
+    private static void HandleSpawnCoin(IPacket ipacket)
+    {
+        var packet = (SpawnCoinPacket)ipacket;
+        var player = Plugin.Instance.Network.GetPlayerData(packet.Player).GetComponent<PlayerInteraction>();
+        Object.Instantiate(BuildSlotPatch.CoinPrefab, packet.Position, packet.Rotation)
+            .GetComponent<Coin>().SetTarget(player);
+    }
+    
 }

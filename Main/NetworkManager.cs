@@ -222,7 +222,6 @@ public class NetworkManager
             CreatePlayer(peer.Id);
             _data[peer.Id].Peer = peer;
             _playerUpdateQueued = true;
-            Plugin.Log.LogInfo("Local " + LocalPlayer);
             foreach (var pair in _data)
             {
                 Plugin.Log.LogInfo($"peer data exists for {pair.Key}");
@@ -404,6 +403,12 @@ public class NetworkManager
             case PacketId.BalancePacket:
             {
                 packet = new BalancePacket();
+                shouldPropagate = true;
+                break;
+            }
+            case PacketId.SpawnCoinPacket:
+            {
+                packet = new SpawnCoinPacket();
                 shouldPropagate = true;
                 break;
             }

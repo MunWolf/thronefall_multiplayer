@@ -10,6 +10,8 @@ namespace ThronefallMP.Patches;
 
 public static class BuildSlotPatch
 {
+    public static GameObject CoinPrefab;
+    
     private static bool _disableNetworkHook = false; 
     
     public static void Apply()
@@ -67,6 +69,8 @@ public static class BuildSlotPatch
         
         Plugin.Log.LogInfo($"{buildingId} total buildings processed.");
         Plugin.Log.LogInfo($"{unitId} total units processed.");
+
+        CoinPrefab = root.buildingInteractor.coinSpawner.coinPrefab;
     }
 
     private static void AssignId(BuildSlot self, int id)
