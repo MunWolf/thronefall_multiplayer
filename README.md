@@ -25,13 +25,13 @@ Run your executable either directly or through Steam.
 
 ## TODO
 
-* Sync loadout on level select
-* Handle restarts and exit to level select gracefully.
-* Players can drop coins for other players to pick up.
-* Make sure coins are not lost if 2 players try to build the same building.
-* Spawn exploding coins when player disconnects corresponding to his balance.
-* Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
 * Sync special ability usage.
+* Sync loadout on level select
 * Make death UI show up when the local player dies.
-* Sync unit positions
-* Sync allied units
+* Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
+* Handle restarts and exit to level select gracefully.
+
+* Make sure coins are not lost if 2 players try to build the same building.
+
+* Spawn exploding coins when player disconnects corresponding to his balance.
+* Players can drop coins for other players to pick up.
