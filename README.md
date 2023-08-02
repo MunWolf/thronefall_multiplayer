@@ -25,7 +25,6 @@ Run your executable either directly or through Steam.
 
 ## TODO
 
-* Sync loadout on level select
 * Make coins fly to closest player when day arrives (decide who it flies to on the server and then sync targets).
 * Handle restarts and exit to level select gracefully.
 

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using HarmonyLib;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
+using UnityEngine;
 
 namespace ThronefallMP;
 
@@ -93,6 +95,15 @@ public static class PacketHandler
     private static void HandleTransitionToScene(IPacket ipacket)
     {
         var packet = (TransitionToScenePacket)ipacket;
+        PerkManager.instance.CurrentlyEquipped.Clear();
+        Plugin.Log.LogInfo($"-------- Loading Level {packet.Level} --------");
+        foreach (var perk in packet.Perks)
+        {
+            var equippable = EquippableConverters.Convert(perk);
+            PerkManager.instance.CurrentlyEquipped.Add(equippable);
+            Plugin.Log.LogInfo($"- Perk {perk} : {equippable}");
+        }
+        
         SceneTransitionManagerPatch.DisableTransitionHook = true;
         SceneTransitionManager.instance.TransitionFromLevelSelectToLevel(packet.Level);
         SceneTransitionManagerPatch.DisableTransitionHook = false;

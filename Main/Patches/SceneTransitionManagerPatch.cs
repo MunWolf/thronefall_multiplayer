@@ -18,8 +18,14 @@ public static class SceneTransitionManagerPatch
             var packet = new TransitionToScenePacket
             {
                 Type = TransitionToScenePacket.TransitionType.LevelSelectToLevel,
-                Level = levelName
+                Level = levelName,
             };
+            
+            foreach (var item in PerkManager.instance.CurrentlyEquipped)
+            {
+                packet.Perks.Add(item.name);
+            }
+            
             Plugin.Instance.Network.Send(packet);
         }
 
