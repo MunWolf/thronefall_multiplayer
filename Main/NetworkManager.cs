@@ -51,9 +51,10 @@ public class NetworkManager
         
         player.SetActive(false);
         _playerPrefab = Object.Instantiate(player, null, true);
-        _playerPrefab.AddComponent<PlayerNetworkData>();
-        var data = _playerPrefab.GetComponent<PlayerNetworkData>();
+        _playerPrefab.SetActive(false);
+        var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;
+        _playerPrefab.AddComponent<Identifier>();
         player.SetActive(true);
         Plugin.Log.LogInfo("Initialized player prefab");
     }
@@ -152,8 +153,7 @@ public class NetworkManager
         _latestLocalData = null;
         _data.Clear();
         foreach (var player in PlayerManager.Instance.RegisteredPlayers)
-        {
-            Plugin.Log.LogInfo("Removing player");
+        {;
             PlayerManager.UnregisterPlayer(player);
             Object.Destroy(player.gameObject);
         }
@@ -330,6 +330,51 @@ public class NetworkManager
                 EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id);
                 break;
             }
+            case DamagePacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new DamagePacket();
+                packet.Receive(ref reader);
+                HpPatch.InflictDamage(
+                    packet.Target,
+                    packet.Source,
+                    packet.Damage,
+                    packet.CausedByPlayer,
+                    packet.InvokeFeedbackEvents
+                );
+                break;
+            }
+            case HealPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new HealPacket();
+                packet.Receive(ref reader);
+                HpPatch.Heal(packet.Target, packet.Amount);
+                break;
+            }
+            case ScaleHpPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new ScaleHpPacket();
+                packet.Receive(ref reader);
+                HpPatch.ScaleHp(packet.Target, packet.Multiplier);
+                break;
+            }
             default:
                 Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
                 break;
@@ -343,6 +388,8 @@ public class NetworkManager
         newPlayer.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, id);
         var data = newPlayer.GetComponent<PlayerNetworkData>();
         data.id = id;
+        var identifier = newPlayer.GetComponent<Identifier>();
+        identifier.SetIdentity(IdentifierType.Player, id);
         if (!_data.ContainsKey(id))
         {
             _data.Add(id, new NetworkPeerData());

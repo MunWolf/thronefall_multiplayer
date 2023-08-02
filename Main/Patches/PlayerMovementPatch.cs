@@ -41,12 +41,7 @@ static class PlayerMovementPatch
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
 		if (vanillaPlayer)
 		{
-			Plugin.Log.LogInfo("Ran start for vanilla player");
 			self.StartCoroutine(ReinstanciatePlayers(self));
-		}
-		else
-		{
-			Plugin.Log.LogInfo("Ran start for mp player");
 		}
 	}
 

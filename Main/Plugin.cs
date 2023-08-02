@@ -33,6 +33,7 @@ namespace ThronefallMP
             CameraRigPatch.Apply();
             DayNightCyclePatch.Apply();
             EnemySpawnerPatch.Apply();
+            HpPatch.Apply();
             LevelBorderPatch.Apply();
             NightCallPatch.Apply();
             PlayerInteractionPatch.Apply();

@@ -18,7 +18,6 @@ public static class PlayerSceptPatch
         // Need to do this because the reference is wrong for dynamically instantiated players.
         var transform = self.transform;
         self.loadoutParent = transform.Find("Horse_LOD1/Rig/root/body/Humanoid Model Base/Civil Loadout").gameObject;
-        Plugin.Log.LogInfo("Start " + Utils.GetPath(transform) + " loadout " + (self.loadoutParent != null));
     }
     
     private static void Update(On.PlayerScept.orig_Update original, PlayerScept self)
