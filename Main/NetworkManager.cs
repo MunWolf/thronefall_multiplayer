@@ -375,6 +375,58 @@ public class NetworkManager
                 HpPatch.ScaleHp(packet.Target, packet.Multiplier);
                 break;
             }
+            case PositionPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized position packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new PositionPacket();
+                packet.Receive(ref reader);
+                var target = Identifier.GetGameObject(packet.Target);
+                if (target != null)
+                {
+                    target.transform.position = packet.Position;
+                }
+                break;
+            }
+            case RespawnPacket.PacketID:
+            {
+                if (Server)
+                {
+                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {peer.Id}.");
+                    return;
+                }
+                
+                var packet = new RespawnPacket();
+                packet.Receive(ref reader);
+                var target = Identifier.GetGameObject(packet.Target);
+                if (target == null)
+                {
+                    return;
+                }
+                
+                switch (packet.Target.Type)
+                {
+                    case IdentifierType.Ally:
+                    {
+                        var hp = target.GetComponent<Hp>();
+                        UnitRespawnerForBuildingsPatch.RevivePlayerUnit(hp, packet.Position);
+                        break;
+                    }
+                    case IdentifierType.Invalid:
+                    case IdentifierType.Player:
+                    case IdentifierType.Building:
+                    case IdentifierType.Enemy:
+                    default:
+                        Plugin.Log.LogWarning($"Received unhandled respawn packet for {packet.Target.Type}:{packet.Target.Id}");
+                        break;
+                }
+                target.transform.position = packet.Position;
+                break;
+            }
             default:
                 Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
                 break;

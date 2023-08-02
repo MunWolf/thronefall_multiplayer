@@ -44,21 +44,29 @@ public static class BuildSlotPatch
     {
         yield return new WaitForEndOfFrame();
         Plugin.Log.LogInfo("Processing buildings");
-        Plugin.Log.LogInfo("Added " + 1 + " for processing");
-        var processed = 0;
+        Plugin.Log.LogInfo("Added 1 for processing");
         var slots = new List<BuildSlot> { root };
-        var id = 0;
+        var buildingId = 0;
+        var unitId = 0;
         while (slots.Count > 0)
         {
             var current = slots[0];
             slots.Remove(current);
             slots.AddRange(current.IsRootOf);
-            AssignId(current, id++);
-            ++processed;
-            Plugin.Log.LogInfo("Added " + current.BuiltSlotsThatRelyOnThisBuilding.Count + " for processing");
+            AssignId(current, buildingId++);
+            foreach (var respawn in current.GetComponentsInChildren<UnitRespawnerForBuildings>(true))
+            {
+                ProcessUnits(respawn, ref unitId);
+            }
+            
+            if (current.IsRootOf.Count != 0)
+            {
+                Plugin.Log.LogInfo($"Added {current.IsRootOf.Count} for processing");
+            }
         }
         
-        Plugin.Log.LogInfo(processed + " buildings processed.");
+        Plugin.Log.LogInfo($"{buildingId} total buildings processed.");
+        Plugin.Log.LogInfo($"{unitId} total units processed.");
     }
 
     private static void AssignId(BuildSlot self, int id)
@@ -66,6 +74,20 @@ public static class BuildSlotPatch
         var identifier = self.gameObject.AddComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Building, id);
         Plugin.Log.LogInfo("Building " + self.buildingName + " assigned id " + id);
+    }
+
+    private static void ProcessUnits(UnitRespawnerForBuildings respawn, ref int unitId)
+    {
+        Plugin.Log.LogInfo("Found respawner, processing units.");
+        for (var i = 0; i < respawn.transform.childCount; ++i)
+        {
+            var unit = respawn.transform.GetChild(i);
+            var identifier = unit.gameObject.AddComponent<Identifier>();
+            Plugin.Log.LogInfo($"Unit {unit.name} assigned id {unitId}");
+            identifier.SetIdentity(IdentifierType.Ally, unitId++);
+        }
+        
+        Plugin.Log.LogInfo($"{respawn.transform.childCount} units processed.");
     }
 
     private static void OnUpgradeChoiceComplete(

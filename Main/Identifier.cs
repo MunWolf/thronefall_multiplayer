@@ -9,6 +9,7 @@ public enum IdentifierType
     Invalid,
     Player,
     Building,
+    Ally,
     Enemy
 }
 
@@ -33,6 +34,7 @@ public class Identifier : MonoBehaviour
     {
         { IdentifierType.Player, new Dictionary<int, GameObject>() },
         { IdentifierType.Building, new Dictionary<int, GameObject>() },
+        { IdentifierType.Ally, new Dictionary<int, GameObject>() },
         { IdentifierType.Enemy, new Dictionary<int, GameObject>() }
     };
 

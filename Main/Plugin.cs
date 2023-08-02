@@ -36,6 +36,8 @@ namespace ThronefallMP
             HpPatch.Apply();
             LevelBorderPatch.Apply();
             NightCallPatch.Apply();
+            PathFinderMovementEnemyPatch.Apply();
+            PathfindMovementPlayerunitPatch.Apply();
             PlayerInteractionPatch.Apply();
             PlayerMovementPatch.Apply();
             PlayerSceptPatch.Apply();
