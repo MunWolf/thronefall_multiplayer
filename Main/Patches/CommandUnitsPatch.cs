@@ -45,23 +45,30 @@ public static class CommandUnitsPatch
             }
         }
         
-        self.commandingIndicator.SetActive(units.Value.Count > 0);
+        self.commandingIndicator.SetActive(units.Value.Count > 0 && !data.SharedData.CommandUnitsButton);
+        if (!data.SharedData.CommandUnitsButton && self.rangeIndicator.Active)
+        {
+            self.rangeIndicator.Deactivate();
+        }
     }
 
     private static void HandleNotCommanding(CommandUnits self, List<PathfindMovementPlayerunit> commanding, PlayerNetworkData data)
     {
         var tagManager = Traverse.Create(self).Field<TagManager>("tagManager");
         var hpPlayer = Traverse.Create(self).Field<Hp>("hpPlayer");
-        var rallying = data.SharedData.CommandUnitsButton && hpPlayer.Value.HpValue > 0f;
-        self.rangeIndicator.SetActive(rallying);
-        if (rallying)
+        if (data.SharedData.CommandUnitsButton && !data.CommandUnitsButtonLast && !self.rangeIndicator.Active)
+        {
+            self.rangeIndicator.Activate();
+        }
+        
+        var units = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommanding");
+        if (data.SharedData.CommandUnitsButton && hpPlayer.Value.HpValue > 0f)
         {
             if (!Plugin.Instance.Network.Server)
             {
                 return;
             }
             
-            var units = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommanding");
             var toAdd = new List<IdentifierData>();
             foreach (var taggedObject in TagManager.instance.PlayerUnits)
             {
@@ -88,9 +95,9 @@ public static class CommandUnitsPatch
                 Plugin.Instance.Network.Send(packet, true);
             }
         }
-        else
+        else if (units.Value.Count > 0)
         {
-            self.commanding = commanding.Count > 0;
+            self.commanding = true;
         }
     }
 
