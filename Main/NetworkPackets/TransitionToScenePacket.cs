@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using ThronefallMP.Network;
 
 namespace ThronefallMP.NetworkPackets;
 

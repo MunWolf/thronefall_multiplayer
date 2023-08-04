@@ -3,7 +3,7 @@ using HarmonyLib;
 using Rewired;
 using UnityEngine;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Components;
 
 public class PlayerNetworkData : MonoBehaviour
 {

@@ -1,6 +1,10 @@
-﻿using BepInEx;
+﻿using System.Reflection;
+using BepInEx;
 using BepInEx.Logging;
+using HarmonyLib;
+using ThronefallMP.Network;
 using ThronefallMP.Patches;
+using ThronefallMP.UI;
 using UnityEngine;
 using Input = UnityEngine.Input;
 
@@ -12,7 +16,7 @@ namespace ThronefallMP
     {
         public static Plugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
-        
+
         public NetworkManager Network;
         
         private void Awake()
@@ -21,6 +25,9 @@ namespace ThronefallMP
             Network = new NetworkManager();
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
             Log = Logger;
+
+            UIManager.Initialize();
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             
             // Patch all the methods.
             BuildingInteractorPatch.Apply();
@@ -51,26 +58,26 @@ namespace ThronefallMP
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.I))
-            {
-                Logger.LogInfo($"Local game");
-                Network.Local();
-            }
-            if (Input.GetKeyDown(KeyCode.O))
-            {
-                Logger.LogInfo($"Hosting game");
-                Network.Host(1000);
-            }
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                Logger.LogInfo($"Connecting...");
-                Network.Connect("127.0.0.1", 1000);
-            }
-            if (Input.GetKeyDown(KeyCode.K))
-            {
-                Logger.LogInfo($"Reinstanciating all players");
-                Network.ReinstanciatePlayers();
-            }
+            // if (Input.GetKeyDown(KeyCode.I))
+            // {
+            //     Logger.LogInfo($"Local game");
+            //     Network.Local();
+            // }
+            // if (Input.GetKeyDown(KeyCode.O))
+            // {
+            //     Logger.LogInfo($"Hosting game");
+            //     Network.Host(1000);
+            // }
+            // if (Input.GetKeyDown(KeyCode.P))
+            // {
+            //     Logger.LogInfo($"Connecting...");
+            //     Network.Connect("127.0.0.1", 1000);
+            // }
+            // if (Input.GetKeyDown(KeyCode.K))
+            // {
+            //     Logger.LogInfo($"Reinstanciating all players");
+            //     Network.ReinstanciatePlayers();
+            // }
             
             Network.Update();
         }

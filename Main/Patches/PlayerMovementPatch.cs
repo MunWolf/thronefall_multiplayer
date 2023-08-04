@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using HarmonyLib;
 using Pathfinding.RVO;
+using ThronefallMP.Components;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -156,10 +157,15 @@ static class PlayerMovementPatch
 
 			if (!playerNetworkData.IsLocal)
 			{
-				var deltaPosition = playerNetworkData.SharedData.Position - controller.Value.transform.position;
-				if (deltaPosition.sqrMagnitude > MaximumDevianceSquared || playerNetworkData.TeleportNext)
+				var deltaPosition = playerNetworkData.SharedData.Position - self.transform.position;
+				if (playerNetworkData.TeleportNext || deltaPosition.sqrMagnitude > MaximumDevianceSquared)
 				{
-					Plugin.Log.LogInfo("MaximumDeviance reached " + playerNetworkData.id);
+					if (!playerNetworkData.TeleportNext)
+					{
+						Plugin.Log.LogInfo("MaximumDeviance reached");
+					}
+					
+					Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
 					self.TeleportTo(playerNetworkData.SharedData.Position);
 					playerNetworkData.TeleportNext = false;
 				}
@@ -169,10 +175,16 @@ static class PlayerMovementPatch
 					controller.Value.Move(Vector3.Lerp(deltaPosition, velocity.Value * Time.deltaTime, 0.5f));
 				}
 			}
+			else if (playerNetworkData.TeleportNext)
+			{
+				Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
+				self.TeleportTo(playerNetworkData.SharedData.Position);
+				playerNetworkData.TeleportNext = false;
+			}
 			else
 			{
 				controller.Value.Move(velocity.Value * Time.deltaTime);
-				playerNetworkData.SharedData.Position = controller.Value.transform.position;
+				playerNetworkData.SharedData.Position = self.transform.position;
 			}
 		}
     }

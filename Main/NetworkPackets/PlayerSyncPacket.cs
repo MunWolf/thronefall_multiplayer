@@ -1,6 +1,8 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
 using MonoMod.InlineRT;
+using ThronefallMP.Components;
+using ThronefallMP.Network;
 using UnityEngine;
 
 namespace ThronefallMP.NetworkPackets;

@@ -1,4 +1,5 @@
-﻿using ThronefallMP.NetworkPackets;
+﻿using ThronefallMP.Components;
+using ThronefallMP.NetworkPackets;
 
 namespace ThronefallMP.Patches;
 

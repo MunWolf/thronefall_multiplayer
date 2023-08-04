@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Rewired;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using UnityEngine;
 

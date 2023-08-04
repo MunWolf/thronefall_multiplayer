@@ -2,6 +2,7 @@
 using System.Data.Common;
 using HarmonyLib;
 using Pathfinding;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using UnityEngine;
 
@@ -78,7 +79,8 @@ public static class CommandUnitsPatch
                 }
                 
                 var unit = taggedObject.GetComponent<PathfindMovementPlayerunit>();
-                if (!units.Value.Contains(unit))
+                var followingPlayer = Traverse.Create(unit).Field<bool>("followingPlayer");
+                if (!followingPlayer.Value && !units.Value.Contains(unit))
                 {
                     toAdd.Add(new IdentifierData(unit.GetComponent<Identifier>()));
                 }

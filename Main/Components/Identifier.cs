@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 using HarmonyLib;
 using UnityEngine;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Components;
 
 public enum IdentifierType
 {

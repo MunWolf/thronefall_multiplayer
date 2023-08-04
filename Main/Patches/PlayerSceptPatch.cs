@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using HarmonyLib;
 using I2.Loc;
+using ThronefallMP.Components;
 
 namespace ThronefallMP.Patches;
 

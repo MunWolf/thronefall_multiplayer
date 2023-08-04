@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using HarmonyLib;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Network;
 
 public enum PacketId
 {
@@ -73,7 +74,7 @@ public static class PacketHandler
         {
             if (Plugin.Instance.Network.GetPlayerData(data.Id) == null)
             {
-                Plugin.Log.LogInfo($"Creating player {data.Id}");
+                Plugin.Log.LogInfo($"Creating player {data.Id} at {data.Position}");
                 Plugin.Instance.Network.CreatePlayer(data.Id);
                 var playerData = Plugin.Instance.Network.GetPlayerData(data.Id);
                 playerData.SharedData.Position = data.Position;
@@ -81,8 +82,10 @@ public static class PacketHandler
             }
             else
             {
-                Plugin.Log.LogInfo($"Player {data.Id} exists");
-                Plugin.Instance.Network.GetPlayerData(data.Id).SharedData.Position = data.Position;
+                Plugin.Log.LogInfo($"Player {data.Id} exists at {data.Position}");
+                var playerData = Plugin.Instance.Network.GetPlayerData(data.Id);
+                playerData.SharedData.Position = data.Position;
+                playerData.TeleportNext = true;
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using ThronefallMP.Components;
 using UnityEngine;
 
 namespace ThronefallMP;

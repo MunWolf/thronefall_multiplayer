@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using ThronefallMP.Network;
 using UnityEngine;
 
 namespace ThronefallMP.NetworkPackets;

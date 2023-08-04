@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using HarmonyLib;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using UnityEngine;
 using UnityEngine.Serialization;

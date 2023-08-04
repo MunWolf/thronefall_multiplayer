@@ -33,6 +33,8 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
+install.cfg
+
 lib/Assembly-CSharp.dll
 lib/AstarPathfindingProject.dll
 lib/MoreMountains.Feedbacks.dll

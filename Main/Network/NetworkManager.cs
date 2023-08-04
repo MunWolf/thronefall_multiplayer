@@ -1,15 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Network;
 
 public class NetworkManager
 {
-    public class NetworkPeerData
+    public struct ConnectionResponse
+    {
+        public bool Succeeded;
+        public DisconnectReason Reason;
+    }
+    
+    private class NetworkPeerData
     {
         public int Id;
         public NetPeer Peer;
@@ -29,6 +38,7 @@ public class NetworkManager
     private GameObject _playerPrefab;
     private bool _playerUpdateQueued;
     private PlayerNetworkData.Shared? _latestLocalData;
+    private Action<ConnectionResponse> _connectionResponse;
 
     public NetworkManager()
     {
@@ -109,8 +119,13 @@ public class NetworkManager
 
     public void Local()
     {
-        Stop();
+        Plugin.Log.LogInfo($"Switching to Local");
+        if (_netManager.IsRunning)
+        {
+            _netManager.Stop(true);
+        }
         
+        ClearData();
         Online = false;
         Server = true;
         LocalPlayer = -1;
@@ -119,40 +134,31 @@ public class NetworkManager
 
     public void Host(int port)
     {
-        Stop();
-        
+        Plugin.Log.LogInfo($"Hosting on {port}");
+        ClearData();
         Online = true;
         Server = true;
         ActivePort = port;
+        _netManager.Stop(true);
         _netManager.Start(port);
         LocalPlayer = -1;
-        _data.Add(LocalPlayer, new NetworkPeerData());
-        _data[LocalPlayer].Id = LocalPlayer;
-        
-        var newPlayer = Object.Instantiate(_playerPrefab);
-        newPlayer.SetActive(true);
-        newPlayer.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, LocalPlayer);
-        var data = newPlayer.GetComponent<PlayerNetworkData>();
-        data.id = LocalPlayer;
-        _data[LocalPlayer].Data = data;
+        CreatePlayer(LocalPlayer);
     }
     
-    public void Connect(string address, int port)
+    public void Connect(string address, int port, Action<ConnectionResponse> response = null)
     {
-        Stop();
+        Plugin.Log.LogInfo($"Attempting to connect to {address}:{port}");
         Online = true;
         Server = false;
         ActivePort = port;
+        _connectionResponse = response;
+        _netManager.Stop(true);
         _netManager.Start();
-        _netManager.Connect(address, port, "test");
-        _data.Clear();
+        _netManager.Connect(address, port, $"thronefall_mp_{PluginInfo.PLUGIN_VERSION}");
     }
 
-    public void Stop()
+    private void ClearData()
     {
-        Online = false;
-        Server = true;
-        _netManager.Stop(true);
         _latestLocalData = null;
         _data.Clear();
         foreach (var player in PlayerManager.Instance.RegisteredPlayers)
@@ -164,23 +170,24 @@ public class NetworkManager
 
     public void Update()
     {
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            _netManager.SimulateLatency = !_netManager.SimulateLatency;
-            _netManager.SimulationMinLatency = 100;
-            _netManager.SimulationMaxLatency = 200;
-            Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulateLatency}");
-        }
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            _netManager.SimulatePacketLoss = !_netManager.SimulatePacketLoss;
-            Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulatePacketLoss}");
-        }
+        // if (Input.GetKeyDown(KeyCode.L))
+        // {
+        //     _netManager.SimulateLatency = !_netManager.SimulateLatency;
+        //     _netManager.SimulationMinLatency = 100;
+        //     _netManager.SimulationMaxLatency = 200;
+        //     Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulateLatency}");
+        // }
+        // if (Input.GetKeyDown(KeyCode.K))
+        // {
+        //     _netManager.SimulatePacketLoss = !_netManager.SimulatePacketLoss;
+        //     Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulatePacketLoss}");
+        // }
         
         _netManager.PollEvents();
         if (_playerUpdateQueued)
         {
             var packet = new PlayerListPacket();
+            Plugin.Log.LogInfo($"Sending player list");
             foreach (var pair in _data)
             {
                 packet.Players.Add(new PlayerListPacket.PlayerData
@@ -188,6 +195,8 @@ public class NetworkManager
                     Id = pair.Key,
                     Position = pair.Value.Data.SharedData.Position
                 });
+                
+                Plugin.Log.LogInfo($" {pair.Key} -> {pair.Value.Data.SharedData.Position}");
             }
             
             Send(packet);
@@ -210,7 +219,14 @@ public class NetworkManager
     {
         if (Server)
         {
-            request.Accept();
+            if (SceneTransitionManagerPatch.InLevelSelect)
+            {
+                request.AcceptIfKey($"thronefall_mp_{PluginInfo.PLUGIN_VERSION}");
+            }
+            else
+            {
+                request.Reject();
+            }
         }
     }
 
@@ -222,33 +238,60 @@ public class NetworkManager
             CreatePlayer(peer.Id);
             _data[peer.Id].Peer = peer;
             _playerUpdateQueued = true;
-            foreach (var pair in _data)
-            {
-                Plugin.Log.LogInfo($"peer data exists for {pair.Key}");
-            }
         }
         else
         {
+            Online = true;
+            Server = false;
+            ClearData();
             LocalPlayer = peer.RemoteId;
             Plugin.Log.LogInfo($"Connected to server with peer id {LocalPlayer}");
         }
-    }
 
+        if (_connectionResponse != null)
+        {
+            _connectionResponse(new ConnectionResponse()
+            {
+                Succeeded = true
+            });
+            _connectionResponse = null;
+        }
+    }
+    
     private void PeerDisconnected(NetPeer peer, DisconnectInfo info)
     {
         Plugin.Log.LogInfo($"Peer disconnected with id {peer.Id} and remote id {peer.RemoteId}");
-        var player = _data[peer.Id].Data;
-        _data.Remove(peer.Id);
-        Object.Destroy(player.gameObject);
+        if (_data.ContainsKey(peer.Id))
+        {
+            var player = _data[peer.Id].Data;
+            _data.Remove(peer.Id);
+            Object.Destroy(player.gameObject);
+        }
+        
+        if (_connectionResponse != null)
+        {
+            _connectionResponse(new ConnectionResponse()
+            {
+                Succeeded = false,
+                Reason = info.Reason
+            });
+            _connectionResponse = null;
+        }
+
+        if (!Server)
+        {
+            Local();
+        }
     }
 
     public GameObject CreatePlayer(int id)
     {
         var newPlayer = Object.Instantiate(_playerPrefab);
-        newPlayer.SetActive(true);
         newPlayer.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, id);
+        newPlayer.SetActive(true);
         var data = newPlayer.GetComponent<PlayerNetworkData>();
         data.id = id;
+        data.SharedData.Position = newPlayer.transform.position;
         var identifier = newPlayer.GetComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Player, id);
         if (!_data.ContainsKey(id))

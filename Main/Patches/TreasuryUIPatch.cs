@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using HarmonyLib;
+using ThronefallMP.Components;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;

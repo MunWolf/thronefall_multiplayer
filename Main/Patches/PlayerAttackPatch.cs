@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using ThronefallMP.Components;
 
 namespace ThronefallMP.Patches;
 
