@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using Mono.Nat;
 using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.Patches;
@@ -48,6 +49,10 @@ public class NetworkManager
         _listener.PeerConnectedEvent += PeerConnected;
         _listener.PeerDisconnectedEvent += PeerDisconnected;
         _listener.NetworkReceiveEvent += NetworkReceiveEvent;
+        _listener.NetworkReceiveUnconnectedEvent += (point, reader, type) =>
+        {
+            Plugin.Log.LogInfo($"Received data from {point.Address}:{point.Port}");
+        };
     }
 
     public void InitializeDefaultPlayer(GameObject player)
@@ -119,6 +124,7 @@ public class NetworkManager
 
     public void Local()
     {
+        NatUtility.StopDiscovery();
         Plugin.Log.LogInfo($"Switching to Local");
         if (_netManager.IsRunning)
         {
@@ -132,8 +138,24 @@ public class NetworkManager
         CreatePlayer(LocalPlayer);
     }
 
+    private async void OnDeviceFound(object sender, DeviceEventArgs args)
+    {
+        var device = args.Device;
+        Plugin.Log.LogInfo($"Device found {device.DeviceEndpoint.Address}:{device.DeviceEndpoint.Port}.");
+        var mapping = new Mapping(Protocol.Udp, ActivePort, ActivePort, 7200, "ThronefallMP");
+        try {
+            await device.CreatePortMapAsync(mapping);
+            var m = await device.GetSpecificMappingAsync(Protocol.Udp, ActivePort);
+            Plugin.Log.LogInfo($"Mapping for port {ActivePort} created.");
+        } catch (Exception e) {
+            Plugin.Log.LogInfo($"Failed to create mapping {e}.");
+        }
+    }
+    
     public void Host(int port)
     {
+        NatUtility.StartDiscovery();
+        NatUtility.DeviceFound += OnDeviceFound;
         Plugin.Log.LogInfo($"Hosting on {port}");
         ClearData();
         Online = true;
@@ -141,12 +163,16 @@ public class NetworkManager
         ActivePort = port;
         _netManager.Stop(true);
         _netManager.Start(port);
+        _netManager.BroadcastReceiveEnabled = true;
+        _netManager.IPv6Enabled = true;
+        _netManager.UnconnectedMessagesEnabled = true;
         LocalPlayer = -1;
         CreatePlayer(LocalPlayer);
     }
     
     public void Connect(string address, int port, Action<ConnectionResponse> response = null)
     {
+        NatUtility.StopDiscovery();
         Plugin.Log.LogInfo($"Attempting to connect to {address}:{port}");
         Online = true;
         Server = false;
