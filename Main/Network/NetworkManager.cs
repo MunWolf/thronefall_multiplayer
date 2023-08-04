@@ -280,6 +280,9 @@ public class NetworkManager
 
         if (!Server)
         {
+            Plugin.Log.LogInfo($"Reason: {info.Reason}");
+            Plugin.Log.LogInfo($"Error: {info.SocketErrorCode}");
+            
             Local();
         }
     }

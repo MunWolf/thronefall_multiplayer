@@ -63,7 +63,7 @@ static class PlayerMovementPatch
 			Plugin.Instance.Network.ReinstanciatePlayers();
 			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
 			{
-				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart + 100;
+				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart;
 			}
 		}
 	}
