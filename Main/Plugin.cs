@@ -49,6 +49,7 @@ namespace ThronefallMP
             PlayerSceptPatch.Apply();
             RevivePanelPatch.Apply();
             SceneTransitionManagerPatch.Apply();
+            SteamManagerPatch.Apply();
             TreasuryUIPatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
             
