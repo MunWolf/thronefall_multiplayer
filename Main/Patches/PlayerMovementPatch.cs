@@ -14,7 +14,7 @@ static class PlayerMovementPatch
 	public const float MaximumDeviance = 3.0f;
 	public const float MaximumDevianceSquared = MaximumDeviance * MaximumDeviance;
 
-	public static Vector3 SpawnLocation { get; private set; }
+	public static Vector3 SpawnLocation { get; set; }
 	
 	public static void Apply()
 	{
@@ -50,6 +50,7 @@ static class PlayerMovementPatch
 	{
 		yield return new WaitForEndOfFrame();
 		SpawnLocation = self.transform.position;
+		Plugin.Log.LogInfo($"Spawn position set to {SpawnLocation}");
 		// First initialization happens when we enter level select or the tutorial for the first time.
 		if (_firstInitialization)
 		{
@@ -60,7 +61,7 @@ static class PlayerMovementPatch
 		}
 		else
 		{
-			Plugin.Instance.Network.ReinstanciatePlayers();
+			Plugin.Instance.Network.ReinstantiatePlayers();
 			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
 			{
 				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart;

@@ -1,5 +1,4 @@
-﻿using LiteNetLib;
-using LiteNetLib.Utils;
+﻿using Lidgren.Network;
 using ThronefallMP.Components;
 using UnityEngine;
 
@@ -7,52 +6,52 @@ namespace ThronefallMP;
 
 public static class Ext
 {
-    public static void Put(this NetDataWriter writer, Vector3 vec)
+    public static void Write(this NetBuffer writer, Vector3 vec)
     {
-        writer.Put(vec.x);
-        writer.Put(vec.y);
-        writer.Put(vec.z);
+        writer.Write(vec.x);
+        writer.Write(vec.y);
+        writer.Write(vec.z);
     }
 
-    public static Vector3 GetVector3(this NetPacketReader reader)
+    public static Vector3 ReadVector3(this NetBuffer reader)
     {
         return new Vector3(
-            reader.GetFloat(),
-            reader.GetFloat(),
-            reader.GetFloat()
+            reader.ReadFloat(),
+            reader.ReadFloat(),
+            reader.ReadFloat()
         );
     }
     
-    public static void Put(this NetDataWriter writer, Quaternion quat)
+    public static void Write(this NetBuffer writer, Quaternion quat)
     {
-        writer.Put(quat.x);
-        writer.Put(quat.y);
-        writer.Put(quat.z);
-        writer.Put(quat.w);
+        writer.Write(quat.x);
+        writer.Write(quat.y);
+        writer.Write(quat.z);
+        writer.Write(quat.w);
     }
 
-    public static Quaternion GetQuaternion(this NetPacketReader reader)
+    public static Quaternion ReadQuaternion(this NetBuffer reader)
     {
         return new Quaternion(
-            reader.GetFloat(),
-            reader.GetFloat(),
-            reader.GetFloat(),
-            reader.GetFloat()
+            reader.ReadFloat(),
+            reader.ReadFloat(),
+            reader.ReadFloat(),
+            reader.ReadFloat()
         );
     }
 
-    public static void Put(this NetDataWriter writer, IdentifierData id)
+    public static void Write(this NetBuffer writer, IdentifierData id)
     {
-        writer.Put((int)id.Type);
-        writer.Put(id.Id);
+        writer.Write((int)id.Type);
+        writer.Write(id.Id);
     }
 
-    public static IdentifierData GetIdentifierData(this NetPacketReader reader)
+    public static IdentifierData ReadIdentifierData(this NetBuffer reader)
     {
         return new IdentifierData
         {
-            Type = (IdentifierType)reader.GetInt(),
-            Id = reader.GetInt(),
+            Type = (IdentifierType)reader.ReadInt32(),
+            Id = reader.ReadInt32(),
         };
     }
 }

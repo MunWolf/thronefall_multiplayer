@@ -1,5 +1,6 @@
 ﻿using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
+using ThronefallMP.NetworkPackets.Game;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;

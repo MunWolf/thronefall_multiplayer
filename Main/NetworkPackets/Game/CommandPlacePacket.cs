@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
-using LiteNetLib;
-using LiteNetLib.Utils;
+using Lidgren.Network;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 using UnityEngine;
 
-namespace ThronefallMP.NetworkPackets;
+namespace ThronefallMP.NetworkPackets.Game;
 
 public class CommandPlacePacket : IPacket
 {
@@ -20,33 +19,32 @@ public class CommandPlacePacket : IPacket
     public int Player;
     public List<UnitData> Units = new();
 
-    public PacketId TypeID()
-    {
-        return PacketID;
-    }
+    public PacketId TypeID => PacketID;
+    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int Channel => 0;
 
-    public void Send(ref NetDataWriter writer)
+    public void Send(NetBuffer writer)
     {
-        writer.Put(Player);
-        writer.Put(Units.Count);
+        writer.Write(Player);
+        writer.Write(Units.Count);
         foreach (var unit in Units)
         {
-            writer.Put(unit.Unit);
-            writer.Put(unit.Home);
+            writer.Write(unit.Unit);
+            writer.Write(unit.Home);
         }
     }
 
-    public void Receive(ref NetPacketReader reader)
+    public void Receive(NetBuffer reader)
     {
-        Player = reader.GetInt();
-        var count = reader.GetInt();
+        Player = reader.ReadInt32();
+        var count = reader.ReadInt32();
         Units.Clear();
         for (var i = 0; i < count; ++i)
         {
             Units.Add(new UnitData
             {
-                Unit = reader.GetIdentifierData(),
-                Home = reader.GetVector3()
+                Unit = reader.ReadIdentifierData(),
+                Home = reader.ReadVector3()
             });
         }
     }

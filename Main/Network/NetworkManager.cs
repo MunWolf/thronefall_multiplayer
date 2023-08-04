@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using LiteNetLib;
-using LiteNetLib.Utils;
-using Mono.Nat;
+using System.Linq;
+using Lidgren.Network;
 using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
+using ThronefallMP.NetworkPackets.Game;
 using ThronefallMP.Patches;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -13,47 +13,138 @@ namespace ThronefallMP.Network;
 
 public class NetworkManager
 {
-    public struct ConnectionResponse
+    private class NetworkPlayer
     {
-        public bool Succeeded;
-        public DisconnectReason Reason;
-    }
-    
-    private class NetworkPeerData
-    {
-        public int Id;
-        public NetPeer Peer;
+        public int ID;
         public PlayerNetworkData Data;
+        public NetConnection Connection = null;
     }
     
-    public int LocalPlayer { get; private set; } = -1;
+    public int LocalPlayer { get; set; } = -1;
     public PlayerNetworkData LocalPlayerData => GetPlayerData(LocalPlayer);
     public bool Online { get; private set; }
     public bool Server { get; private set; } = true;
     public int ActivePort { get; private set; }
 
-    private readonly EventBasedNetListener _listener;
-    private readonly NetManager _netManager;
-    private readonly Dictionary<int, NetworkPeerData> _data = new();
+    private readonly Dictionary<long, NetworkPlayer> _remoteIdToPlayer = new();
+    private readonly Dictionary<int, NetworkPlayer> _playerIdToPlayer = new();
+    private readonly List<NetConnection> _peers = new();
     
     private GameObject _playerPrefab;
     private bool _playerUpdateQueued;
     private PlayerNetworkData.Shared? _latestLocalData;
-    private Action<ConnectionResponse> _connectionResponse;
+
+    private NetServer _server;
+    private readonly NetClient _client;
+
+    private NetPeer Peer => Server ? _server : _client;
 
     public NetworkManager()
     {
-        NatUtility.DeviceFound += OnDeviceFound;
-        _listener = new EventBasedNetListener();
-        _netManager = new NetManager(_listener);
-        _listener.ConnectionRequestEvent += ConnectionRequestEvent;
-        _listener.PeerConnectedEvent += PeerConnected;
-        _listener.PeerDisconnectedEvent += PeerDisconnected;
-        _listener.NetworkReceiveEvent += NetworkReceiveEvent;
-        _listener.NetworkReceiveUnconnectedEvent += (point, reader, type) =>
+        var config = new NetPeerConfiguration("thronefall_mp");
+        _client = new NetClient(config);
+    }
+
+    private void Stop()
+    {
+        switch (Online)
         {
-            Plugin.Log.LogInfo($"Received data from {point.Address}:{point.Port}");
+            case true when Server:
+                _server.Shutdown("Server shutting down");
+                break;
+            case true when !Server:
+                _client.Shutdown("Client disconnecting");
+                break;
+        }
+
+        Online = false;
+        Server = true;
+    }
+
+    public void Local()
+    {
+        Plugin.Log.LogInfo($"Switching to Local");
+        Stop();
+        ClearData();
+        Online = false;
+        Server = true;
+        LocalPlayer = GeneratePlayerID();
+        CreatePlayer(LocalPlayer);
+    }
+    
+    public void Host(int port)
+    {
+        Plugin.Log.LogInfo($"Hosting on {port}");
+        Stop();
+        ClearData();
+        Online = true;
+        Server = true;
+        ActivePort = port;
+        
+        var config = new NetPeerConfiguration("thronefall_mp")
+        {
+            EnableUPnP = true,
+            Port = port
         };
+        
+        config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
+        _server = new NetServer(config);
+        _server.Start();
+        _server.UPnP.ForwardPort(config.Port, "Thronefall Multiplayer");
+        
+        LocalPlayer = GeneratePlayerID();
+        CreatePlayer(LocalPlayer);
+    }
+    
+    public void Connect(string address, int port, ApprovalPacket packet)
+    {
+        Plugin.Log.LogInfo($"Attempting to connect to {address}:{port}");
+        Stop();
+        Online = true;
+        Server = false;
+        ActivePort = port;
+        var message = _client.CreateMessage();
+        packet.Send(message);
+        _client.Start();
+        _client.Connect(address, port, message);
+    }
+    
+    public void Send(IPacket packet, bool handleLocal = false, long? except = null)
+    {
+        if (Online && _peers.Count > 0)
+        {
+            var writer = CreateMessage();
+            writer.Write((int)packet.TypeID);
+            packet.Send(writer);
+            if (except != null)
+            {
+                var peers = _peers.ToList();
+                peers.RemoveAll((p) => p.RemoteUniqueIdentifier == except);
+                _server.SendMessage(writer, peers, packet.Delivery, packet.Channel);
+            }
+            else
+            {
+                _server.SendMessage(writer, _peers, packet.Delivery, packet.Channel);
+            }
+        }
+
+        if (handleLocal)
+        {
+            PacketHandler.HandlePacket(packet);
+        }
+    }
+    
+    public void Send(NetConnection connection, IPacket packet)
+    {
+        var writer = CreateMessage();
+        writer.Write((int)packet.TypeID);
+        packet.Send(writer);
+        _server.SendMessage(writer, connection, packet.Delivery, packet.Channel);
+    }
+
+    private NetOutgoingMessage CreateMessage()
+    {
+        return Server ? _server.CreateMessage() : _client.CreateMessage();
     }
 
     public void InitializeDefaultPlayer(GameObject player)
@@ -75,38 +166,18 @@ public class NetworkManager
     
     public PlayerNetworkData GetPlayerData(int id)
     {
-        return _data.TryGetValue(id, out var data) ? data.Data : null;
+        return _playerIdToPlayer.TryGetValue(id, out var player) ? player.Data : null;
     }
     
     public IEnumerable<PlayerNetworkData> GetAllPlayerData()
     {
-        foreach (var pair in _data)
+        foreach (var pair in _playerIdToPlayer)
         {
             yield return pair.Value.Data;
         }
     }
 
-    public void Send(IPacket packet, bool handleLocal = false, DeliveryMethod delivery = DeliveryMethod.ReliableOrdered, NetPeer except = null)
-    {
-        NetDataWriter writer = new();
-        writer.Put((int)packet.TypeID());
-        packet.Send(ref writer);
-        if (except != null)
-        {
-            _netManager.SendToAll(writer, delivery, except);
-        }
-        else
-        {
-            _netManager.SendToAll(writer, delivery);
-        }
-
-        if (handleLocal)
-        {
-            PacketHandler.HandlePacket(packet);
-        }
-    }
-
-    public void ReinstanciatePlayers()
+    public void ReinstantiatePlayers()
     {
         if (PlayerManager.Instance != null)
         {
@@ -117,76 +188,17 @@ public class NetworkManager
             }
         }
 
-        foreach (var pair in _data)
+        foreach (var pair in _playerIdToPlayer)
         {
             CreatePlayer(pair.Key);
         }
     }
 
-    public void Local()
-    {
-        NatUtility.StopDiscovery();
-        Plugin.Log.LogInfo($"Switching to Local");
-        if (_netManager.IsRunning)
-        {
-            _netManager.Stop(true);
-        }
-        
-        ClearData();
-        Online = false;
-        Server = true;
-        LocalPlayer = -1;
-        CreatePlayer(LocalPlayer);
-    }
-
-    private async void OnDeviceFound(object sender, DeviceEventArgs args)
-    {
-        var device = args.Device;
-        Plugin.Log.LogInfo($"Device found {device.DeviceEndpoint.Address}:{device.DeviceEndpoint.Port}.");
-        var mapping = new Mapping(Protocol.Udp, ActivePort, ActivePort, 7200, "ThronefallMP");
-        try {
-            await device.CreatePortMapAsync(mapping);
-            var m = await device.GetSpecificMappingAsync(Protocol.Udp, ActivePort);
-            Plugin.Log.LogInfo($"Mapping for port {ActivePort} created.");
-        } catch (Exception e) {
-            Plugin.Log.LogInfo($"Failed to create mapping {e}.");
-        }
-    }
-    
-    public void Host(int port)
-    {
-        NatUtility.StartDiscovery();
-        Plugin.Log.LogInfo($"Hosting on {port}");
-        ClearData();
-        Online = true;
-        Server = true;
-        ActivePort = port;
-        _netManager.Stop(true);
-        _netManager.Start(port);
-        _netManager.BroadcastReceiveEnabled = true;
-        _netManager.IPv6Enabled = true;
-        _netManager.UnconnectedMessagesEnabled = true;
-        LocalPlayer = -1;
-        CreatePlayer(LocalPlayer);
-    }
-    
-    public void Connect(string address, int port, Action<ConnectionResponse> response = null)
-    {
-        NatUtility.StartDiscovery();
-        Plugin.Log.LogInfo($"Attempting to connect to {address}:{port}");
-        Online = true;
-        Server = false;
-        ActivePort = port;
-        _connectionResponse = response;
-        _netManager.Stop(true);
-        _netManager.Start();
-        _netManager.Connect(address, port, $"thronefall_mp_{PluginInfo.PLUGIN_VERSION}");
-    }
-
     private void ClearData()
     {
         _latestLocalData = null;
-        _data.Clear();
+        _playerIdToPlayer.Clear();
+        _remoteIdToPlayer.Clear();
         foreach (var player in PlayerManager.Instance.RegisteredPlayers)
         {
             PlayerManager.UnregisterPlayer(player);
@@ -194,41 +206,16 @@ public class NetworkManager
         }
     }
 
+    private int GeneratePlayerID()
+    {
+        int id;
+        do { id = Plugin.Random.Next(); }
+        while (_playerIdToPlayer.ContainsKey(id));
+        return id;
+    }
+
     public void Update()
     {
-        // if (Input.GetKeyDown(KeyCode.L))
-        // {
-        //     _netManager.SimulateLatency = !_netManager.SimulateLatency;
-        //     _netManager.SimulationMinLatency = 100;
-        //     _netManager.SimulationMaxLatency = 200;
-        //     Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulateLatency}");
-        // }
-        // if (Input.GetKeyDown(KeyCode.K))
-        // {
-        //     _netManager.SimulatePacketLoss = !_netManager.SimulatePacketLoss;
-        //     Plugin.Log.LogInfo($"Latency Simulation {_netManager.SimulatePacketLoss}");
-        // }
-        
-        _netManager.PollEvents();
-        if (_playerUpdateQueued)
-        {
-            var packet = new PlayerListPacket();
-            Plugin.Log.LogInfo($"Sending player list");
-            foreach (var pair in _data)
-            {
-                packet.Players.Add(new PlayerListPacket.PlayerData
-                {
-                    Id = pair.Key,
-                    Position = pair.Value.Data.SharedData.Position
-                });
-                
-                Plugin.Log.LogInfo($" {pair.Key} -> {pair.Value.Data.SharedData.Position}");
-            }
-            
-            Send(packet);
-            _playerUpdateQueued = false;
-        }
-
         var playerData = GetPlayerData(LocalPlayer);
         if (playerData != null && playerData.SharedData != _latestLocalData)
         {
@@ -237,79 +224,115 @@ public class NetworkManager
                 PlayerID = LocalPlayer,
                 Data = playerData.SharedData
             };
-            Send(packet, delivery: DeliveryMethod.ReliableSequenced);
-        }
-    }
-
-    private void ConnectionRequestEvent(ConnectionRequest request)
-    {
-        if (Server)
-        {
-            if (SceneTransitionManagerPatch.InLevelSelect)
-            {
-                request.AcceptIfKey($"thronefall_mp_{PluginInfo.PLUGIN_VERSION}");
-            }
-            else
-            {
-                request.Reject();
-            }
-        }
-    }
-
-    private void PeerConnected(NetPeer peer)
-    {
-        if (Server)
-        {
-            Plugin.Log.LogInfo($"Peer connected with id {peer.Id} and remote id {peer.RemoteId}");
-            CreatePlayer(peer.Id);
-            _data[peer.Id].Peer = peer;
-            _playerUpdateQueued = true;
-        }
-        else
-        {
-            Online = true;
-            Server = false;
-            ClearData();
-            LocalPlayer = peer.RemoteId;
-            Plugin.Log.LogInfo($"Connected to server with peer id {LocalPlayer}");
-        }
-
-        if (_connectionResponse != null)
-        {
-            _connectionResponse(new ConnectionResponse()
-            {
-                Succeeded = true
-            });
-            _connectionResponse = null;
-        }
-    }
-    
-    private void PeerDisconnected(NetPeer peer, DisconnectInfo info)
-    {
-        Plugin.Log.LogInfo($"Peer disconnected with id {peer.Id} and remote id {peer.RemoteId}");
-        if (_data.ContainsKey(peer.Id))
-        {
-            var player = _data[peer.Id].Data;
-            _data.Remove(peer.Id);
-            Object.Destroy(player.gameObject);
+            Send(packet);
         }
         
-        if (_connectionResponse != null)
+        if (!Server || !Online)
         {
-            _connectionResponse(new ConnectionResponse()
-            {
-                Succeeded = false,
-                Reason = info.Reason
-            });
-            _connectionResponse = null;
+            return;
         }
-
-        if (!Server)
+        
+        while (_server.ReadMessage() is { } msg)
         {
-            Plugin.Log.LogInfo($"Reason: {info.Reason}");
-            Plugin.Log.LogInfo($"Error: {info.SocketErrorCode}");
+            HandleMessage(msg);
+            _server.Recycle(msg);
+        }
+        
+        if (_playerUpdateQueued)
+        {
+            var packet = new PeerSyncPacket();
+            Plugin.Log.LogInfo($"Sending player list");
             
-            Local();
+            foreach (var pair in _playerIdToPlayer)
+            {
+                packet.Players.Add(new PeerSyncPacket.PlayerData
+                {
+                    Id = pair.Key,
+                    Position = pair.Value.Data.SharedData.Position
+                });
+                
+                Plugin.Log.LogInfo($" {pair.Key} -> {pair.Value.Data.SharedData.Position}");
+            }
+
+            foreach (var peer in _peers)
+            {
+                var player = _remoteIdToPlayer[peer.RemoteUniqueIdentifier];
+                packet.LocalPlayer = player.ID;
+                Send(player.Connection, packet);
+            }
+            
+            _playerUpdateQueued = false;
+        }
+    }
+
+    private void HandleMessage(NetIncomingMessage msg)
+    {
+        switch (msg.MessageType)
+        {
+            case NetIncomingMessageType.ConnectionApproval:
+            {
+                var approval = new ApprovalPacket();
+                approval.Receive(msg);
+                if (approval.Approved && SceneTransitionManagerPatch.InLevelSelect)
+                {
+                    msg.SenderConnection.Approve();
+                    if (Server)
+                    {
+                        var player = new NetworkPlayer
+                        {
+                            ID = GeneratePlayerID(),
+                            Connection = msg.SenderConnection
+                        };
+
+                        Plugin.Log.LogInfo($"Peer {msg.SenderConnection.RemoteUniqueIdentifier} connected assigned to {player.ID}");
+                        _remoteIdToPlayer[msg.SenderConnection.RemoteUniqueIdentifier] = player;
+                        _playerIdToPlayer[player.ID] = player;
+                        CreatePlayer(player.ID);
+                        _playerUpdateQueued = true;
+                        _peers.Add(msg.SenderConnection);
+                    }
+                    else
+                    {
+                        ClearData();
+                        Plugin.Log.LogInfo($"Connected to server");
+                    }
+                }
+                else
+                {
+                    msg.SenderConnection.Deny();
+                }
+                break;
+            }
+            case NetIncomingMessageType.Data:
+            {
+                HandlePacket(msg);
+                break;
+            }
+            case NetIncomingMessageType.VerboseDebugMessage:
+            case NetIncomingMessageType.DebugMessage:
+            case NetIncomingMessageType.WarningMessage:
+            case NetIncomingMessageType.ErrorMessage:
+                Console.WriteLine(msg.ReadString());
+                break;
+            case NetIncomingMessageType.StatusChanged:
+            {
+                var status = (NetConnectionStatus)msg.ReadByte();
+                if (status == NetConnectionStatus.Disconnected)
+                {
+                    Local();
+                }
+                break;
+            }
+            case NetIncomingMessageType.DiscoveryRequest: // TODO: Implement discovery.
+            case NetIncomingMessageType.DiscoveryResponse:
+                
+            case NetIncomingMessageType.UnconnectedData:
+            case NetIncomingMessageType.ConnectionLatencyUpdated:
+            case NetIncomingMessageType.NatIntroductionSuccess:
+            case NetIncomingMessageType.Error:
+            case NetIncomingMessageType.Receipt:
+            default:
+                break;
         }
     }
 
@@ -323,28 +346,24 @@ public class NetworkManager
         data.SharedData.Position = newPlayer.transform.position;
         var identifier = newPlayer.GetComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Player, id);
-        if (!_data.ContainsKey(id))
+        if (!_playerIdToPlayer.ContainsKey(id))
         {
-            _data.Add(id, new NetworkPeerData());
+            _playerIdToPlayer.Add(id, new NetworkPlayer());
         }
 
-        _data[id].Id = id;
-        _data[id].Data = data;
+        _playerIdToPlayer[id].ID = id;
+        _playerIdToPlayer[id].Data = data;
         return newPlayer;
     }
 
-    private void NetworkReceiveEvent(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery)
+    private void HandlePacket(NetIncomingMessage reader)
     {
-        var type = (PacketId)reader.GetInt();
+        var player = _remoteIdToPlayer[reader.SenderConnection.RemoteUniqueIdentifier];
+        var type = (PacketId)reader.ReadInt32();
         var shouldPropagate = false;
         IPacket packet = null;
         switch (type)
         {
-            case PlayerListPacket.PacketID:
-            {
-                packet = new PlayerListPacket();
-                break;
-            }
             case PlayerSyncPacket.PacketID:
             {
                 packet = new PlayerSyncPacket();
@@ -373,7 +392,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {player.ID}.");
                     return;
                 }
                 
@@ -384,7 +403,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {player.ID}.");
                     return;
                 }
                 
@@ -395,7 +414,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {player.ID}.");
                     return;
                 }
                 
@@ -406,7 +425,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {player.ID}.");
                     return;
                 }
                 
@@ -417,7 +436,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized position packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized position packet from {player.ID}.");
                     return;
                 }
                 
@@ -428,7 +447,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {player.ID}.");
                     return;
                 }
                 
@@ -438,7 +457,7 @@ public class NetworkManager
             case PacketId.CommandAddPacket:
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized command add packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized command add packet from {player.ID}.");
                     return;
                 }
 
@@ -448,7 +467,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized command place packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized command place packet from {player.ID}.");
                     return;
                 }
 
@@ -459,7 +478,7 @@ public class NetworkManager
             {
                 if (Server)
                 {
-                    Plugin.Log.LogWarning($"Received unauthorized command hold position packet from {peer.Id}.");
+                    Plugin.Log.LogWarning($"Received unauthorized command hold position packet from {player.ID}.");
                     return;
                 }
 
@@ -484,8 +503,14 @@ public class NetworkManager
                 shouldPropagate = true;
                 break;
             }
+            case PacketId.PeerSyncPacket:
+            {
+                packet = new PeerSyncPacket();
+                break;
+            }
+            case PacketId.ApprovalPacket:
             default:
-                Plugin.Log.LogWarning($"Received unknown packet {type} from {peer.Id} containing {reader.RawDataSize} bytes.");
+                Plugin.Log.LogWarning($"Received unknown packet {type} from {player.ID} containing {reader.LengthBytes} bytes.");
                 break;
         }
 
@@ -494,10 +519,10 @@ public class NetworkManager
             return;
         }
         
-        packet.Receive(ref reader);
-        if (shouldPropagate)
+        packet.Receive(reader);
+        if (shouldPropagate && Server)
         {
-            Send(packet, false, delivery, peer);
+            Send(packet);
         }
         
         PacketHandler.HandlePacket(packet);

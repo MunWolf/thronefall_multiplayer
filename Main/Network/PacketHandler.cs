@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
+using ThronefallMP.NetworkPackets.Game;
 using ThronefallMP.Patches;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -11,6 +12,9 @@ namespace ThronefallMP.Network;
 
 public enum PacketId
 {
+    ApprovalPacket,
+    PeerSyncPacket,
+    
     BalancePacket,
     BuildOrUpgradePacket,
     CommandAddPacket,
@@ -21,7 +25,6 @@ public enum PacketId
     EnemySpawnPacket,
     HealPacket,
     ManualAttack,
-    PlayerListPacket,
     PlayerSyncPacket,
     PositionPacket,
     RespawnPacket,
@@ -34,6 +37,8 @@ public static class PacketHandler
 {
     private static readonly Dictionary<PacketId, Action<IPacket>> Handlers = new()
     {
+        { PeerSyncPacket.PacketID, HandlePeerSync },
+        
         { BalancePacket.PacketID, HandleBalance },
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CommandAddPacket.PacketID, HandleCommandAdd },
@@ -44,7 +49,6 @@ public static class PacketHandler
         { EnemySpawnPacket.PacketID, HandleEnemySpawn },
         { HealPacket.PacketID, HandleHeal },
         { ManualAttackPacket.PacketID, HandleManualAttack },
-        { PlayerListPacket.PacketID, HandlePlayerList },
         { PlayerSyncPacket.PacketID, HandlePlayerSync },
         { PositionPacket.PacketID, HandlePosition },
         { RespawnPacket.PacketID, HandleRespawn },
@@ -55,21 +59,22 @@ public static class PacketHandler
 
     public static void HandlePacket(IPacket packet)
     {
-        var found = Handlers.TryGetValue(packet.TypeID(), out var handler);
+        var found = Handlers.TryGetValue(packet.TypeID, out var handler);
         if (found)
         {
             handler(packet);
         }
         else
         {
-            Plugin.Log.LogWarning($"No handler for packet {packet.TypeID()}.");
+            Plugin.Log.LogWarning($"No handler for packet {packet.TypeID}.");
         }
     }
 
-    private static void HandlePlayerList(IPacket ipacket)
+    private static void HandlePeerSync(IPacket ipacket)
     {
-        var packet = (PlayerListPacket)ipacket;
+        var packet = (PeerSyncPacket)ipacket;
         Plugin.Log.LogInfo("Received player list");
+        Plugin.Instance.Network.LocalPlayer = packet.LocalPlayer;
         foreach (var data in packet.Players)
         {
             if (Plugin.Instance.Network.GetPlayerData(data.Id) == null)

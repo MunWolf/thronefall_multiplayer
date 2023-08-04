@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using MPUIKIT;
 using ThronefallMP.NetworkPackets;
+using ThronefallMP.NetworkPackets.Game;
 using UnityEngine;
 using UnityEngine.Networking;
 

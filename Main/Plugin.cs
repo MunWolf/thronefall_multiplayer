@@ -14,6 +14,7 @@ namespace ThronefallMP
     [BepInProcess("Thronefall.exe")]
     public class Plugin : BaseUnityPlugin
     {
+        public static System.Random Random = new();
         public static Plugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
 

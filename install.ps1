@@ -14,7 +14,6 @@ function CopyDll {
 }
 
 CopyDll -dll com.badwolf.thronefall_mp.dll
-CopyDll -dll LiteNetLib.dll
+CopyDll -dll Lidgren.Network.dll
 CopyDll -dll MMHOOK_Assembly-CSharp.dll
-CopyDll -dll Mono.Nat.dll
 CopyDll -dll UniverseLib.Mono.dll

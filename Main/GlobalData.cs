@@ -1,4 +1,5 @@
 ﻿using ThronefallMP.NetworkPackets;
+using ThronefallMP.NetworkPackets.Game;
 using UnityEngine.PlayerLoop;
 
 namespace ThronefallMP;

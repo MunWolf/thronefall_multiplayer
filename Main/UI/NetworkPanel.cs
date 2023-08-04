@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using ThronefallMP.NetworkPackets;
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -51,17 +52,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
         exit.Component.image.enabled = false;
         exit.GameObject.AddComponent<EventTrigger>();
         exit.ButtonText.color = ExitButtonColor;
-        AddButtonEvent(exit, EventTriggerType.PointerExit, (BaseEventData data) =>
+        AddButtonEvent(exit, EventTriggerType.PointerExit, (data) =>
         {
             exit.ButtonText.fontSize = 14;
             exit.ButtonText.color = ExitButtonColor;
         });
-        AddButtonEvent(exit, EventTriggerType.PointerEnter, (BaseEventData data) =>
+        AddButtonEvent(exit, EventTriggerType.PointerEnter, (data) =>
         {
             exit.ButtonText.fontSize = 16;
             exit.ButtonText.color = ButtonHoverTextColor;
         });
-        AddButtonEvent(exit, EventTriggerType.Select, (BaseEventData data) =>
+        AddButtonEvent(exit, EventTriggerType.Select, (data) =>
         {
             exit.ButtonText.fontSize = 14;
             exit.ButtonText.color = ExitButtonColor;
@@ -127,17 +128,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             hostButton.ButtonText.color = ButtonTextColor;
             hostButton.GameObject.GetComponent<Image>().enabled = false;
             hostButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(hostButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.PointerExit, (data) =>
             {
                 hostButton.ButtonText.fontSize = 14;
                 hostButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(hostButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.PointerEnter, (data) =>
             {
                 hostButton.ButtonText.fontSize = 16;
                 hostButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(hostButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.Select, (data) =>
             {
                 hostButton.ButtonText.fontSize = 14;
                 hostButton.ButtonText.color = ButtonTextColor;
@@ -150,17 +151,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             connectButton.ButtonText.color = ButtonTextColor;
             connectButton.GameObject.GetComponent<Image>().enabled = false;
             connectButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(connectButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.PointerExit, (data) =>
             {
                 connectButton.ButtonText.fontSize = 14;
                 connectButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(connectButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.PointerEnter, (data) =>
             {
                 connectButton.ButtonText.fontSize = 16;
                 connectButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(connectButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.Select, (data) =>
             {
                 connectButton.ButtonText.fontSize = 14;
                 connectButton.ButtonText.color = ButtonTextColor;
@@ -175,17 +176,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
                 disconnectButton.ButtonText.color = ButtonTextColor;
                 disconnectButton.GameObject.GetComponent<Image>().enabled = false;
                 disconnectButton.GameObject.AddComponent<EventTrigger>();
-                AddButtonEvent(disconnectButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+                AddButtonEvent(disconnectButton, EventTriggerType.PointerExit, (data) =>
                 {
                     disconnectButton.ButtonText.fontSize = 14;
                     disconnectButton.ButtonText.color = ButtonTextColor;
                 });
-                AddButtonEvent(disconnectButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+                AddButtonEvent(disconnectButton, EventTriggerType.PointerEnter, (data) =>
                 {
                     disconnectButton.ButtonText.fontSize = 16;
                     disconnectButton.ButtonText.color = ButtonHoverTextColor;
                 });
-                AddButtonEvent(disconnectButton, EventTriggerType.Select, (BaseEventData data) =>
+                AddButtonEvent(disconnectButton, EventTriggerType.Select, (data) =>
                 {
                     disconnectButton.ButtonText.fontSize = 14;
                     disconnectButton.ButtonText.color = ButtonTextColor;
@@ -211,17 +212,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             hostButton.ButtonText.color = ButtonTextColor;
             hostButton.GameObject.GetComponent<Image>().enabled = false;
             hostButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(hostButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.PointerExit, (data) =>
             {
                 hostButton.ButtonText.fontSize = 14;
                 hostButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(hostButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.PointerEnter, (data) =>
             {
                 hostButton.ButtonText.fontSize = 16;
                 hostButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(hostButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(hostButton, EventTriggerType.Select, (data) =>
             {
                 hostButton.ButtonText.fontSize = 14;
                 hostButton.ButtonText.color = ButtonTextColor;
@@ -236,17 +237,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             backButton.ButtonText.color = ButtonTextColor;
             backButton.GameObject.GetComponent<Image>().enabled = false;
             backButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(backButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.PointerExit, (data) =>
             {
                 backButton.ButtonText.fontSize = 14;
                 backButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(backButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.PointerEnter, (data) =>
             {
                 backButton.ButtonText.fontSize = 16;
                 backButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(backButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.Select, (data) =>
             {
                 backButton.ButtonText.fontSize = 14;
                 backButton.ButtonText.color = ButtonTextColor;
@@ -278,24 +279,24 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             connectButton.ButtonText.color = ButtonTextColor;
             connectButton.GameObject.GetComponent<Image>().enabled = false;
             connectButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(connectButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.PointerExit, (data) =>
             {
                 connectButton.ButtonText.fontSize = 14;
                 connectButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(connectButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.PointerEnter, (data) =>
             {
                 connectButton.ButtonText.fontSize = 16;
                 connectButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(connectButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(connectButton, EventTriggerType.Select, (data) =>
             {
                 connectButton.ButtonText.fontSize = 14;
                 connectButton.ButtonText.color = ButtonTextColor;
                 main.SetActive(true);
                 connect.SetActive(false);
                 UIManager.CloseNetworkPanel();
-                Plugin.Instance.Network.Connect(ip.Component.text, int.Parse(port.Component.text));
+                Plugin.Instance.Network.Connect(ip.Component.text, int.Parse(port.Component.text), new ApprovalPacket());
             });
             
             var backButton = UIFactory.CreateButton(connect, "back", "Back", BackgroundColor);
@@ -303,17 +304,17 @@ public class NetworkPanel : UniverseLib.UI.Panels.PanelBase
             backButton.ButtonText.color = ButtonTextColor;
             backButton.GameObject.GetComponent<Image>().enabled = false;
             backButton.GameObject.AddComponent<EventTrigger>();
-            AddButtonEvent(backButton, EventTriggerType.PointerExit, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.PointerExit, (data) =>
             {
                 backButton.ButtonText.fontSize = 14;
                 backButton.ButtonText.color = ButtonTextColor;
             });
-            AddButtonEvent(backButton, EventTriggerType.PointerEnter, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.PointerEnter, (data) =>
             {
                 backButton.ButtonText.fontSize = 16;
                 backButton.ButtonText.color = ButtonHoverTextColor;
             });
-            AddButtonEvent(backButton, EventTriggerType.Select, (BaseEventData data) =>
+            AddButtonEvent(backButton, EventTriggerType.Select, (data) =>
             {
                 backButton.ButtonText.fontSize = 14;
                 backButton.ButtonText.color = ButtonTextColor;
