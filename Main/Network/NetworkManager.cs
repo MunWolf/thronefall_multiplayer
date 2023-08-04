@@ -43,6 +43,7 @@ public class NetworkManager
 
     public NetworkManager()
     {
+        NatUtility.DeviceFound += OnDeviceFound;
         _listener = new EventBasedNetListener();
         _netManager = new NetManager(_listener);
         _listener.ConnectionRequestEvent += ConnectionRequestEvent;
@@ -155,7 +156,6 @@ public class NetworkManager
     public void Host(int port)
     {
         NatUtility.StartDiscovery();
-        NatUtility.DeviceFound += OnDeviceFound;
         Plugin.Log.LogInfo($"Hosting on {port}");
         ClearData();
         Online = true;
@@ -172,7 +172,7 @@ public class NetworkManager
     
     public void Connect(string address, int port, Action<ConnectionResponse> response = null)
     {
-        NatUtility.StopDiscovery();
+        NatUtility.StartDiscovery();
         Plugin.Log.LogInfo($"Attempting to connect to {address}:{port}");
         Online = true;
         Server = false;
