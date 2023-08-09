@@ -31,7 +31,7 @@ public class MpFlagInteractor : MonoBehaviour
         Indicator.SetActive(inside);
         if (inside && !LocalGamestate.Instance.PlayerFrozen && _input.GetButtonDown("Interact"))
         {
-            UIManager.OpenNetworkPanel();
+            //UIManager.OpenNetworkPanel();
         }
     }
 }

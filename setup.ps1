@@ -10,6 +10,7 @@ if (Test-Path (Join-Path $path Thronefall.exe) -PathType Leaf) {
     Copy-Item (Join-Path $library_path Rewired_Core.dll) .\lib\Rewired_Core.dll
     Copy-Item (Join-Path $library_path Unity.TextMeshPro.dll) .\lib\Unity.TextMeshPro.dll
     Copy-Item (Join-Path $library_path UnityEngine.UI.dll) .\lib\UnityEngine.UI.dll
+    Copy-Item (Join-Path $library_path com.rlabrecque.steamworks.net.dll) .\lib\com.rlabrecque.steamworks.net.dll
     $cfg = "InstallPath = $([RegEx]::Escape($(Join-Path $path BepInEx\plugins\ThronefallMultiplayer)))"
     Out-File -InputObject $cfg -FilePath .\install.cfg
 }

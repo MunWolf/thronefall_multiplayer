@@ -4,9 +4,10 @@ using BepInEx.Logging;
 using HarmonyLib;
 using ThronefallMP.Network;
 using ThronefallMP.Patches;
+using ThronefallMP.Steam;
 using ThronefallMP.UI;
 using UnityEngine;
-using Input = UnityEngine.Input;
+using UnityEngine.SceneManagement;
 
 namespace ThronefallMP
 {
@@ -14,7 +15,7 @@ namespace ThronefallMP
     [BepInProcess("Thronefall.exe")]
     public class Plugin : BaseUnityPlugin
     {
-        public static System.Random Random = new();
+        public static readonly System.Random Random = new();
         public static Plugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
 
@@ -27,7 +28,6 @@ namespace ThronefallMP
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
             Log = Logger;
 
-            UIManager.Initialize();
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             
             // Patch all the methods.
@@ -53,9 +53,14 @@ namespace ThronefallMP
             SteamManagerPatch.Apply();
             TreasuryUIPatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
+
+            var networkManager = new GameObject("Network Manager");
+            DontDestroyOnLoad(networkManager);
+            networkManager.AddComponent<Matchmaking>();
             
             // Apply settings.
             Application.runInBackground = true;
+            SceneManager.sceneLoaded += OnSceneChanged;
         }
 
         private void Update()
@@ -82,6 +87,14 @@ namespace ThronefallMP
             // }
             
             Network.Update();
+        }
+        
+        private static void OnSceneChanged(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "_UI")
+            {
+                UIManager.Initialize();
+            }
         }
     }
 }
