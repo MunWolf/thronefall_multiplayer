@@ -23,7 +23,9 @@ public class ApprovalPacket : IPacket
 
     public void Receive(Buffer reader)
     {
+        Plugin.Log.LogInfo("Reading version");
         SameVersion = reader.ReadString() == Plugin.VersionString;
+        Plugin.Log.LogInfo("Reading password");
         Password = reader.ReadString();
     }
 }

@@ -29,7 +29,7 @@ public static class UIHelper
         var textObject = UIFactory.CreateUIObject(name, root);
         var textComponent = textObject.AddComponent<TextMeshProUGUI>();
         textComponent.text = text;
-        textComponent.color = UIManager.ButtonTextColor;
+        textComponent.color = UIManager.TextColor;
         textComponent.font = UIManager.DefaultFont;
         textComponent.fontSize = 24;
         textComponent.alignment = TextAlignmentOptions.Center;
@@ -153,6 +153,72 @@ public static class UIHelper
         
         toggleObject.AddComponent<EventTrigger>();
         return toggleObject.AddComponent<ToggleControl>();
+    }
+    
+    public static TMP_InputField CreateInputField(GameObject panel, string name, string label, string value,
+        int? labelWidth = null, int limit = 32, TMP_InputField.ContentType type = TMP_InputField.ContentType.Alphanumeric)
+    {
+        var group = UIFactory.CreateUIObject($"{name}Group", panel);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            group,
+            false,
+            false,
+            true,
+            false,
+            20,
+            5,
+            5,
+            5,
+            5,
+            TextAnchor.MiddleLeft
+        );
+        UIFactory.SetLayoutElement(group, flexibleWidth: 1);
+
+        if (label != null)
+        {
+            var bg = CreateBox(group, $"{name}_label_bg", Color.clear);
+            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+                bg,
+                childControlWidth: true,
+                childAlignment: TextAnchor.MiddleLeft
+            );
+            UIFactory.SetLayoutElement(bg.gameObject, minWidth: labelWidth, flexibleWidth: 0);
+            bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var labelText = CreateText(bg, $"{name}_label", $"{label}: ");
+            labelText.alignment = TextAlignmentOptions.Left;
+        }
+
+        {
+            var bg = CreateBox(group, $"{name}_bg",  new Color(0.2f, 0.2f, 0.2f));
+            UIFactory.SetLayoutElement(bg, flexibleWidth: 1);
+            bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var inputField = bg.AddComponent<TMP_InputField>();
+            inputField.textViewport = inputField.transform.parent.GetComponent<RectTransform>();
+            inputField.targetGraphic = bg.GetComponent<Image>();
+        
+            var textArea = new GameObject("area", typeof(RectTransform));
+            inputField.textViewport = textArea.GetComponent<RectTransform>();
+            textArea.transform.SetParent(bg.transform);
+            inputField.textViewport.localPosition = Vector3.zero;
+            inputField.textViewport.anchorMin = new Vector2(0, 0);
+            inputField.textViewport.anchorMax = new Vector2(1, 1);
+            textArea.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            
+            var text = CreateText(textArea, $"{name}", $"{value}");
+            text.color = UIManager.TextColor;
+            text.fontSize = 20;
+            inputField.textComponent = text;
+            inputField.text = text.text;
+            inputField.contentType = type;
+            inputField.characterLimit = limit;
+            var transform = text.GetComponent<RectTransform>();
+            transform.localPosition = Vector3.zero;
+            transform.anchorMin = new Vector2(0, 0);
+            transform.anchorMax = new Vector2(1, 1);
+            inputField.onFocusSelectAll = false;
+
+            return inputField;
+        }
     }
 
     public static void AddEvent(GameObject button, EventTriggerType type, UnityAction<BaseEventData> action)

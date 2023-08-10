@@ -12,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
-public partial class LobbyListPanel
+public partial class LobbyListUI
 {
     public override void ConstructPanelContent()
     {
@@ -192,12 +192,10 @@ public partial class LobbyListPanel
         _connect = UIHelper.CreateButton(buttons, "connect", "Connect");
         _connect.OnClick += () =>
         {
-            // TODO: Add callbacks to this function for status of request.
-            Plugin.Instance.Network.ConnectLobby(
-                _currentlySelectedLobby.LobbyInfo.Id
+            UIManager.CreatePasswordDialog(
+                ConnectToLobby,
+                () => {}
             );
-            Close();
-            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         _connect.OnExit += () => { _muteSound = false; };
         _connect.OnSelected += PlaySelectSound;
@@ -207,8 +205,8 @@ public partial class LobbyListPanel
         Host = UIHelper.CreateButton(buttons, "host", "Host");
         Host.OnClick += () =>
         {
-            UIManager.HostPanel.Enabled = true;
-            UIManager.HostPanel.Host.Button.Select();
+            UIManager.HostUI.Enabled = true;
+            UIManager.HostUI.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         Host.OnExit += () => { _muteSound = false; };
@@ -228,6 +226,16 @@ public partial class LobbyListPanel
         Host.NavRight = _back.Button;
         _back.NavLeft = Host.Button;
         _back.NavRight = Host.Button;
+    }
+
+    private void ConnectToLobby(string password)
+    {
+        // TODO: Add callbacks to this function for status of request.
+        Plugin.Instance.Network.ConnectLobby(
+            _currentlySelectedLobby.LobbyInfo.Id,
+            password
+        );
+        ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
     }
 
     private void AddLobbyEntry(Lobby info)

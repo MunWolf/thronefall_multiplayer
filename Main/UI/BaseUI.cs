@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 
-namespace ThronefallMP.UI.Panels;
+namespace ThronefallMP.UI;
 
-public abstract class BasePanel : MonoBehaviour
+public abstract class BaseUI : MonoBehaviour
 {
     public Canvas Canvas { get; set; }
     public GameObject PanelRoot { get; set; }
@@ -16,7 +16,7 @@ public abstract class BasePanel : MonoBehaviour
     public abstract string Name { get; }
     public abstract void ConstructPanelContent();
 
-    public static T Create<T>(GameObject canvas, GameObject container) where T : BasePanel
+    public static T Create<T>(GameObject canvas, GameObject container) where T : BaseUI
     {
         var panelObject = new GameObject("Temp", typeof(RectTransform));
         panelObject.transform.SetParent(container.transform, false);

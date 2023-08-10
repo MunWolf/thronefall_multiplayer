@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,6 +8,7 @@ using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.NetworkPackets.Game;
 using ThronefallMP.Patches;
+using ThronefallMP.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -36,7 +38,7 @@ public class Network : MonoBehaviour
     private CallResult<LobbyEnter_t> _lobbyEnterResult;
 
     private readonly PlayerNetworkData.Shared _latestLocalData = new PlayerNetworkData.Shared();
-    private readonly List<CSteamID> _peers = new();
+    private readonly HashSet<CSteamID> _peers = new();
     private readonly Dictionary<CSteamID, PlayerManager.Player> _players = new();
     private readonly IntPtr[] _messages = new IntPtr[MaxMessages];
 
@@ -96,6 +98,8 @@ public class Network : MonoBehaviour
     
     public bool Authenticate(string password)
     {
+        Plugin.Log.LogInfo($"Comparing {password} with {_password}");
+        
         return string.IsNullOrEmpty(_password) || _password == password;
     }
     
@@ -143,7 +147,6 @@ public class Network : MonoBehaviour
             DisconnectReason = reason
         };
         SendSingle(packet, sid);
-        SteamNetworkingMessages.CloseSessionWithUser(ref sid);
     }
     
     private void OnSessionFailed(SteamNetworkingMessagesSessionFailed_t failed)
@@ -176,9 +179,13 @@ public class Network : MonoBehaviour
                 for (var i = 0; i < received; ++i)
                 {
                     var message = Marshal.PtrToStructure<SteamNetworkingMessage_t>(_messages[i]);
-                    var buffer = new Buffer(message.m_cbSize);
-                    Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
-                    HandlePacket(ref message.m_identityPeer, buffer);
+                    if (_peers.Contains(message.m_identityPeer.GetSteamID()))
+                    {
+                        var buffer = new Buffer(message.m_cbSize);
+                        Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
+                        HandlePacket(ref message.m_identityPeer, buffer);
+                    }
+                    
                     SteamNetworkingMessage_t.Release(_messages[i]);
                 }
             }
@@ -201,6 +208,7 @@ public class Network : MonoBehaviour
 
     private void CloseLobby()
     {
+        PacketHandler.AwaitingConnectionApproval = false;
         if (_lobby.IsValid())
         {
             Plugin.Log.LogInfo($"Leaving lobby {_lobby.m_SteamID}");
@@ -215,16 +223,17 @@ public class Network : MonoBehaviour
             _peers.Clear();
             _lobby.Clear();
         }
+
+        _password = null;
     }
     
     public void Local()
     {
+        CloseLobby();
+        
         Plugin.Log.LogInfo("Switched to Local");
-        _password = null;
         Server = true;
         Online = false;
-        
-        CloseLobby();
         
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
@@ -247,9 +256,10 @@ public class Network : MonoBehaviour
         SteamMatchmaking.SetLobbyJoinable(lobby, true);
     }
 
-    public void ConnectLobby(CSteamID lobby)
+    public void ConnectLobby(CSteamID lobby, string password)
     {
         CloseLobby();
+        _password = password;
         _lobbyEnterResult.Set(SteamMatchmaking.JoinLobby(lobby));
     }
 
@@ -264,6 +274,7 @@ public class Network : MonoBehaviour
         _owner = SteamMatchmaking.GetLobbyOwner(lobby);
         
         Plugin.Log.LogInfo($"Sending approval packet to server {_owner.m_SteamID}");
+        PacketHandler.AwaitingConnectionApproval = true;
         var approvalPacket = new ApprovalPacket()
         {
             Password = password
@@ -344,7 +355,7 @@ public class Network : MonoBehaviour
         SteamNetworkingMessages.SendMessageToUser(
             ref target,
             pointer,
-            (uint)buffer.WriteHead,
+            (uint)buffer.WriteHead + 1,
             flags,
             channel
         );
@@ -534,7 +545,7 @@ public class Network : MonoBehaviour
     private void OnGameLobbyJoinRequested(GameLobbyJoinRequested_t request)
     {
         Plugin.Log.LogInfo($"Got lobby join request {request.m_steamIDLobby} : {request.m_steamIDFriend}");
-        ConnectLobby(request.m_steamIDLobby);
+        ConnectLobby(request.m_steamIDLobby, null);
     }
 
     private void OnLobbyEntered(LobbyEnter_t entered, bool ioFailure)
@@ -553,15 +564,25 @@ public class Network : MonoBehaviour
             Local();
             return;
         }
-        
-        // TODO: Figure out password with invite.
-        Connect(new CSteamID(entered.m_ulSteamIDLobby), null);
-        // Currently we only allow joining a lobby if we are in level select.
-        SceneTransitionManagerPatch.DisableTransitionHook = true;
-        SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
-        SceneTransitionManagerPatch.DisableTransitionHook = false;
-    }
 
+        var id = new CSteamID(entered.m_ulSteamIDLobby);
+        if (SteamMatchmaking.GetLobbyData(id, "password") == "yes" && _password == null)
+        {
+            UIManager.CreatePasswordDialog(
+                (password) =>
+                {
+                    _password = password;
+                    Connect(id, _password);
+                },
+                CloseLobby
+            );
+        }
+        else
+        {
+            Connect(id, _password);
+        }
+    }
+    
     private void OnSessionRequest(SteamNetworkingMessagesSessionRequest_t request)
     {
         Plugin.Log.LogInfo($"Received session request {request.m_identityRemote.GetSteamID().m_SteamID}");

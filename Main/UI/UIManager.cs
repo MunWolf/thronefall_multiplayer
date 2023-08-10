@@ -1,5 +1,7 @@
-﻿using I2.Loc;
+﻿using System.Collections;
+using I2.Loc;
 using Rewired.Integration.UnityUI;
+using ThronefallMP.UI.Dialogs;
 using ThronefallMP.UI.Panels;
 using TMPro;
 using UnityEngine;
@@ -10,8 +12,8 @@ namespace ThronefallMP.UI;
 public static class UIManager
 {
     public static GameObject TitleScreen { get; private set; }
-    public static Panels.LobbyListPanel LobbyListPanel { get; private set; }
-    public static Panels.HostPanel HostPanel { get; private set; }
+    public static LobbyListUI LobbyListUI { get; private set; }
+    public static HostUI HostUI { get; private set; }
 
     public static bool ExitHandled = false;
     
@@ -27,6 +29,8 @@ public static class UIManager
     public static TMP_FontAsset DefaultFont;
 
     private static bool _initialized;
+    private static GameObject _canvas;
+    private static GameObject _container;
     
     public static void Initialize()
     {
@@ -35,23 +39,24 @@ public static class UIManager
             return;
         }
 
-        var canvas = GameObject.Find("UI Canvas");
-        var input = canvas.AddComponent<StandaloneInputModule>();
+        _canvas = GameObject.Find("UI Canvas");
+        var input = _canvas.AddComponent<StandaloneInputModule>();
         
-        var container = new GameObject("Mod UI", typeof(RectTransform)).GetComponent<RectTransform>();
-        container.SetParent(canvas.transform, false);
-        container.anchorMin = new Vector2(0, 0);
-        container.anchorMax = new Vector2(1, 1);
-        container.offsetMin = new Vector2(0, 0);
-        container.offsetMax = new Vector2(0, 0);
+        _container = new GameObject("Mod UI", typeof(RectTransform));
+        var containerTransform = _container.GetComponent<RectTransform>();
+        containerTransform.SetParent(_canvas.transform, false);
+        containerTransform.anchorMin = new Vector2(0, 0);
+        containerTransform.anchorMax = new Vector2(1, 1);
+        containerTransform.offsetMin = new Vector2(0, 0);
+        containerTransform.offsetMax = new Vector2(0, 0);
         
         TitleScreen = GameObject.Find("UI Canvas/Title Frame").gameObject;
         var play = TitleScreen.transform.Find("Menu Items/Play").GetComponent<ThronefallUIElement>();
         var settings = TitleScreen.transform.Find("Menu Items/Settings").GetComponent<ThronefallUIElement>();
         DefaultFont = settings.GetComponent<TextMeshProUGUI>().font;
 
-        LobbyListPanel = BasePanel.Create<LobbyListPanel>(canvas, container.gameObject);
-        HostPanel = BasePanel.Create<HostPanel>(canvas, container.gameObject);
+        LobbyListUI = BaseUI.Create<LobbyListUI>(_canvas, _container);
+        HostUI = BaseUI.Create<HostUI>(_canvas, _container);
         
         var multiplayer = Utils.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
@@ -64,7 +69,7 @@ public static class UIManager
         button.onApply.m_PersistentCalls.m_Calls.Clear();
         button.onApply.AddListener(() =>
         {
-            LobbyListPanel.Open();
+            LobbyListUI.Open();
             TitleScreen.SetActive(false);
         });
  
@@ -83,5 +88,34 @@ public static class UIManager
         
         multiplayer.SetActive(true);
         _initialized = true;
+}
+
+    public static void CloseAllPanels()
+    {
+        LobbyListUI.Enabled = false;
+        HostUI.Enabled = false;
+    }
+
+    public static PasswordDialog CreatePasswordDialog(PasswordDialog.Confirm confirm, PasswordDialog.Cancel cancel)
+    {
+        var dialog = BaseUI.Create<PasswordDialog>(_canvas, _container);
+        dialog.OnConfirm += confirm;
+        dialog.OnCancel += cancel;
+        dialog.Enabled = true;
+        return dialog;
+    }
+
+    public static MessageDialog CreateMessageDialog(string title, string message, Color? color = null)
+    {
+        var dialog = BaseUI.Create<MessageDialog>(_canvas, _container);
+        dialog.Title = title;
+        dialog.Message = message;
+        if (color.HasValue)
+        {
+            dialog.Color = color.Value;
+        }
+
+        dialog.Enabled = true;
+        return dialog;
     }
 }

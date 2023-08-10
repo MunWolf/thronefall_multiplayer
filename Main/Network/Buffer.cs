@@ -37,15 +37,15 @@ public class Buffer
     
     public void Write(bool value)
     {
-        EnsureSize(sizeof(bool));
         var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
         if (!BitConverter.IsLittleEndian)
         {
             Array.Reverse(output);
         }
 
         output.CopyTo(Data, WriteHead);
-        WriteHead += sizeof(bool);
+        WriteHead += output.Length;
     }
     
     public void Write(byte value)
@@ -57,8 +57,8 @@ public class Buffer
     
     public void Write(int value)
     {
-        EnsureSize(sizeof(int));
         var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
         if (!BitConverter.IsLittleEndian)
         {
             Array.Reverse(output);
@@ -70,8 +70,8 @@ public class Buffer
     
     public void Write(long value)
     {
-        EnsureSize(sizeof(long));
         var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
         if (!BitConverter.IsLittleEndian)
         {
             Array.Reverse(output);
@@ -83,8 +83,8 @@ public class Buffer
     
     public void Write(float value)
     {
-        EnsureSize(sizeof(float));
         var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
         if (!BitConverter.IsLittleEndian)
         {
             Array.Reverse(output);
@@ -134,6 +134,7 @@ public class Buffer
     {
         if (!CanRead(sizeof(bool)))
         {
+            Plugin.Log.LogInfo("Failed to read bool");
             return false;
         }
 
@@ -156,6 +157,7 @@ public class Buffer
     {
         if (!CanRead(sizeof(int)))
         {
+            Plugin.Log.LogInfo("Failed to read int");
             return 0;
         }
 
@@ -178,6 +180,7 @@ public class Buffer
     {
         if (!CanRead(sizeof(long)))
         {
+            Plugin.Log.LogInfo("Failed to read long");
             return 0;
         }
 
@@ -200,6 +203,7 @@ public class Buffer
     {
         if (!CanRead(sizeof(float)))
         {
+            Plugin.Log.LogInfo("Failed to read float");
             return 0;
         }
         
@@ -224,6 +228,7 @@ public class Buffer
         var size = ReadInt32();
         if (!CanRead(size))
         {
+            Plugin.Log.LogInfo($"Failed to read string of length {size} ({old}:{Data.Length})");
             ReadHead = old;
             return "";
         }
@@ -238,6 +243,7 @@ public class Buffer
         var output = new Vector3();
         if (!CanRead(3 * sizeof(float)))
         {
+            Plugin.Log.LogInfo("Failed to read vector3");
             return output;
         }
 
@@ -252,6 +258,7 @@ public class Buffer
         var output = new Quaternion();
         if (!CanRead(4 * sizeof(float)))
         {
+            Plugin.Log.LogInfo("Failed to read quaternion");
             return output;
         }
 
@@ -266,6 +273,7 @@ public class Buffer
     {
         if (!CanRead(2 * sizeof(int)))
         {
+            Plugin.Log.LogInfo("Failed to read identifier");
             return IdentifierData.Invalid;
         }
 

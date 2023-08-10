@@ -22,11 +22,13 @@ public class DisconnectPacket : IPacket
     
     public void Send(Buffer writer)
     {
+        Plugin.Log.LogInfo($"Sending disconnect reason {DisconnectReason}");
         writer.Write((int)DisconnectReason);
     }
 
     public void Receive(Buffer reader)
     {
         DisconnectReason = (Reason)reader.ReadInt32();
+        Plugin.Log.LogInfo($"Receiving disconnect reason {DisconnectReason}");
     }
 }

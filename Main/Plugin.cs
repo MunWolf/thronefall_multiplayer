@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
@@ -56,6 +57,7 @@ namespace ThronefallMP
             SceneTransitionManagerPatch.Apply();
             SteamManagerPatch.Apply();
             TreasuryUIPatch.Apply();
+            UIFramePatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
             
             // Apply settings.
@@ -65,7 +67,7 @@ namespace ThronefallMP
         
         public delegate void LoadCallback();
 
-        private static Dictionary<string, List<LoadCallback>> _loadCallbacks = new(); 
+        private static Dictionary<string, List<(bool waitForTransition, LoadCallback callback)>> _loadCallbacks = new(); 
         private static void OnSceneChanged(Scene scene, LoadSceneMode mode)
         {
             if (scene.name == "_UI")
@@ -75,24 +77,46 @@ namespace ThronefallMP
 
             if (_loadCallbacks.TryGetValue(scene.name, out var callbacks))
             {
-                foreach (var callback in callbacks)
+                foreach (var data in callbacks)
                 {
-                    callback();
+                    if (data.waitForTransition)
+                    {
+                        CallbackOnFinishTransition(data.callback);
+                    }
+                    else
+                    {
+                        data.callback();
+                    }
                 }
                 
                 callbacks.Clear();
             }
         }
 
-        public static void CallbackOnLoad(string scene, LoadCallback callback)
+        public static void CallbackOnLoad(string scene, bool waitForTransition, LoadCallback callback)
         {
             if (!_loadCallbacks.TryGetValue(scene, out var callbacks))
             {
-                callbacks = new List<LoadCallback>();
+                callbacks = new List<(bool waitForTransition, LoadCallback callback)>();
                 _loadCallbacks[scene] = callbacks;
             }
             
-            callbacks.Add(callback);
+            callbacks.Add((waitForTransition, callback));
+        }
+
+        private static void CallbackOnFinishTransition(LoadCallback callback)
+        {
+            Instance.StartCoroutine(WaitForTransition(callback));
+        }
+    
+        private static IEnumerator WaitForTransition(LoadCallback callback)
+        {
+            while (SceneTransitionManager.instance.SceneTransitionIsRunning)
+            {
+                yield return null;
+            }
+        
+            callback?.Invoke();
         }
     }
 }

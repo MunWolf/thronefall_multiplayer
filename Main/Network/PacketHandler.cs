@@ -38,6 +38,8 @@ public enum PacketId
 
 public static class PacketHandler
 {
+    public static bool AwaitingConnectionApproval;
+    
     private static readonly Dictionary<PacketId, Action<SteamNetworkingIdentity, IPacket>> Handlers = new()
     {
         { ApprovalPacket.PacketID, HandleApproval },
@@ -78,6 +80,17 @@ public static class PacketHandler
     private static void HandlePeerSync(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (PeerSyncPacket)ipacket;
+
+        if (AwaitingConnectionApproval)
+        {
+            // Currently we only allow joining a lobby if we are in level select.
+            SceneTransitionManagerPatch.DisableTransitionHook = true;
+            SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
+            SceneTransitionManagerPatch.DisableTransitionHook = false;
+            UIManager.CloseAllPanels();
+            AwaitingConnectionApproval = false;
+        }
+        
         Plugin.Log.LogInfo("Received player list");
         Plugin.Instance.PlayerManager.LocalId = packet.LocalPlayer;
         foreach (var data in packet.Players)
@@ -343,8 +356,16 @@ public static class PacketHandler
     private static void HandleDisconnect(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (DisconnectPacket)ipacket;
+        AwaitingConnectionApproval = false;
         Plugin.Log.LogInfo($"Disconnected with reason {packet.DisconnectReason}");
-        // TODO: Show dialog
-        Plugin.Instance.Network.Local();
+        var message = packet.DisconnectReason switch
+        {
+            DisconnectPacket.Reason.Kicked => "You were kicked!",
+            DisconnectPacket.Reason.WrongPassword => "You gave the wrong password.",
+            DisconnectPacket.Reason.WrongVersion => "Different multiplayer mod version.",
+            _ => "Unknown"
+        };
+            
+        UIManager.CreateMessageDialog("Disconnected", message);
     }
 }

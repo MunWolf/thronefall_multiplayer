@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
-public class HostPanel : BasePanel
+public class HostUI : BaseUI
 {
     public override string Name => "Host Panel";
 
@@ -23,11 +23,11 @@ public class HostPanel : BasePanel
 
     public ButtonControl Host { get; private set; }
     
-    private const int LabelSize = 140;
+    private const int LabelWidth = 140;
     private readonly CallResult<LobbyCreated_t> _onLobbyCreatedCallResult;
     private LobbyCreationRequest? _currentRequest;
 
-    public HostPanel()
+    public HostUI()
     {
         if (!SteamManager.Initialized)
         {
@@ -97,9 +97,9 @@ public class HostPanel : BasePanel
         
         // TODO: Add validation on the fields, don't allow hosting unless options are valid.
         var placeholder = SteamManager.Initialized ? SteamFriends.GetPersonaName() : "Unavailable";
-        var nameField = CreateField(panel, "name", "Name", $"{placeholder}'s Game", 24);
-        var passwordField = CreateField(panel, "password", "Password", "", 24, TMP_InputField.ContentType.Password);
-        var maxPlayersField = CreateField(panel, "max_players", "Players", "8", 2, TMP_InputField.ContentType.DecimalNumber);
+        var nameField = UIHelper.CreateInputField(panel, "name", "Name", $"{placeholder}'s Game", LabelWidth, 24);
+        var passwordField = UIHelper.CreateInputField(panel, "password", "Password", "", LabelWidth, 24, TMP_InputField.ContentType.Password);
+        var maxPlayersField = UIHelper.CreateInputField(panel, "max_players", "Players", "8", LabelWidth, 2, TMP_InputField.ContentType.DecimalNumber);
         var friendsOnlyToggle = CreateToggle(panel, "friends_only", "Friends Only", false);
         
         var buttons = UIFactory.CreateUIObject("buttons", panel);
@@ -139,7 +139,7 @@ public class HostPanel : BasePanel
             if (success)
             {
                 Enabled = false;
-                UIManager.LobbyListPanel.Close();
+                UIManager.LobbyListUI.Close();
                 ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
             }
         };
@@ -149,7 +149,7 @@ public class HostPanel : BasePanel
         back.OnClick += () =>
         {
             Enabled = false;
-            UIManager.LobbyListPanel.Host.Button.Select();
+            UIManager.LobbyListUI.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
 
@@ -168,66 +168,6 @@ public class HostPanel : BasePanel
         back.NavRight = Host.Button;
         
         LayoutRebuilder.ForceRebuildLayoutImmediate(panelBorders.GetComponent<RectTransform>());
-    }
-
-    private static TMP_InputField CreateField(GameObject panel, string name, string label, string value, int limit = 32, TMP_InputField.ContentType type = TMP_InputField.ContentType.Alphanumeric)
-    {
-        var group = UIFactory.CreateUIObject($"{name}Group", panel);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
-            group,
-            false,
-            false,
-            true,
-            false,
-            20,
-            5,
-            5,
-            5,
-            5,
-            TextAnchor.MiddleLeft
-        );
-        UIFactory.SetLayoutElement(group, flexibleWidth: 1);
-
-        var bg = UIHelper.CreateBox(group, $"{name}_label_bg", Color.clear);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
-            bg,
-            childControlWidth: true,
-            childAlignment: TextAnchor.MiddleLeft
-        );
-        UIFactory.SetLayoutElement(bg.gameObject, minWidth: LabelSize, flexibleWidth: 0);
-        bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        var labelText = UIHelper.CreateText(bg, $"{name}_label", $"{label}: ");
-        labelText.alignment = TextAlignmentOptions.Left;
-        
-        bg = UIHelper.CreateBox(group, $"{name}_bg",  new Color(0.2f, 0.2f, 0.2f));
-        UIFactory.SetLayoutElement(bg, flexibleWidth: 1);
-        bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        var inputField = bg.AddComponent<TMP_InputField>();
-        inputField.textViewport = inputField.transform.parent.GetComponent<RectTransform>();
-        inputField.targetGraphic = bg.GetComponent<Image>();
-        
-        var textArea = new GameObject("area", typeof(RectTransform));
-        inputField.textViewport = textArea.GetComponent<RectTransform>();
-        textArea.transform.SetParent(bg.transform);
-        inputField.textViewport.localPosition = Vector3.zero;
-        inputField.textViewport.anchorMin = new Vector2(0, 0);
-        inputField.textViewport.anchorMax = new Vector2(1, 1);
-        textArea.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        
-        var text = UIHelper.CreateText(textArea, $"{name}", $"{value}");
-        text.color = UIManager.TextColor;
-        text.fontSize = 20;
-        inputField.textComponent = text;
-        inputField.text = text.text;
-        inputField.contentType = type;
-        inputField.characterLimit = limit;
-        var transform = text.GetComponent<RectTransform>();
-        transform.localPosition = Vector3.zero;
-        transform.anchorMin = new Vector2(0, 0);
-        transform.anchorMax = new Vector2(1, 1);
-        inputField.onFocusSelectAll = false;
-
-        return inputField;
     }
 
     private static ToggleControl CreateToggle(GameObject panel, string name, string label, bool value)
@@ -254,7 +194,7 @@ public class HostPanel : BasePanel
             childControlWidth: true,
             childAlignment: TextAnchor.MiddleLeft
         );
-        UIFactory.SetLayoutElement(bg.gameObject, minWidth: LabelSize, flexibleWidth: 0);
+        UIFactory.SetLayoutElement(bg.gameObject, minWidth: LabelWidth, flexibleWidth: 0);
         bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var labelText = UIHelper.CreateText(bg, $"{name}_label", $"{label}: ");
         labelText.alignment = TextAlignmentOptions.Left;
@@ -323,7 +263,7 @@ public class HostPanel : BasePanel
         SteamMatchmaking.SetLobbyData(id, "password", hasPassword);
         SteamMatchmaking.SetLobbyData(id, "version", Plugin.VersionString);
         Plugin.Log.LogInfo($"Lobby {created.m_ulSteamIDLobby} created with name '{_currentRequest.Value.Name}' password '{hasPassword}'");
-        Plugin.CallbackOnLoad("_LevelSelect", () =>
+        Plugin.CallbackOnLoad("_LevelSelect", false, () =>
         {
             Plugin.Instance.Network.Host(id, _currentRequest.Value.Password);
             _currentRequest = null;
