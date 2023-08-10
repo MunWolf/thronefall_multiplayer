@@ -1,15 +1,14 @@
-﻿using System.Collections;
-using I2.Loc;
+﻿using I2.Loc;
+using Rewired.Integration.UnityUI;
+using ThronefallMP.UI.Panels;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using UniverseLib.UI;
+using UnityEngine.EventSystems;
 
 namespace ThronefallMP.UI;
 
 public static class UIManager
 {
-    private static UIBase UiBase { get; set; }
     public static GameObject TitleScreen { get; private set; }
     public static Panels.LobbyListPanel LobbyListPanel { get; private set; }
     public static Panels.HostPanel HostPanel { get; private set; }
@@ -35,20 +34,25 @@ public static class UIManager
         {
             return;
         }
+
+        var canvas = GameObject.Find("UI Canvas");
+        var input = canvas.AddComponent<StandaloneInputModule>();
         
-        UniverseLib.Universe.Init(OnInitialized, OnLogging);
-        _initialized = true;
-    }
-    
-    private static void OnInitialized()
-    {
+        var container = new GameObject("Mod UI", typeof(RectTransform)).GetComponent<RectTransform>();
+        container.SetParent(canvas.transform, false);
+        container.anchorMin = new Vector2(0, 0);
+        container.anchorMax = new Vector2(1, 1);
+        container.offsetMin = new Vector2(0, 0);
+        container.offsetMax = new Vector2(0, 0);
+        
         TitleScreen = GameObject.Find("UI Canvas/Title Frame").gameObject;
         var play = TitleScreen.transform.Find("Menu Items/Play").GetComponent<ThronefallUIElement>();
         var settings = TitleScreen.transform.Find("Menu Items/Settings").GetComponent<ThronefallUIElement>();
         DefaultFont = settings.GetComponent<TextMeshProUGUI>().font;
-        UiBase = UniversalUI.RegisterUI("com.badwolf.thronefall_mp", OnUpdate);
-        LobbyListPanel = new Panels.LobbyListPanel(UiBase) { Enabled = false };
-        HostPanel =  new Panels.HostPanel(UiBase) { Enabled = false };
+
+        LobbyListPanel = BasePanel.Create<LobbyListPanel>(canvas, container.gameObject);
+        HostPanel = BasePanel.Create<HostPanel>(canvas, container.gameObject);
+        
         var multiplayer = Utils.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
         multiplayer.transform.SetSiblingIndex(1);
@@ -78,31 +82,6 @@ public static class UIManager
         }
         
         multiplayer.SetActive(true);
-    }
-    
-    private static void OnLogging(string text, LogType type)
-    {
-        switch (type)
-        {
-            case LogType.Assert:
-            case LogType.Exception:
-                Plugin.Log.LogFatal(text);
-                break;
-            case LogType.Error:
-                Plugin.Log.LogError(text);
-                break;
-            case LogType.Warning:
-                Plugin.Log.LogWarning(text);
-                break;
-            case LogType.Log:
-            default:
-                Plugin.Log.LogInfo(text);
-                break;
-        }
-    }
-
-    private static void OnUpdate()
-    {
-        ExitHandled = false;
+        _initialized = true;
     }
 }

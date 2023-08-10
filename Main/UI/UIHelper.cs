@@ -95,8 +95,8 @@ public static class UIHelper
         checkBackgroundObject.anchorMin = new Vector2(0.1f, 0.1f);
         checkBackgroundObject.anchorMax = new Vector2(0.9f, 0.9f);
         var checkObject = UIFactory.CreateUIObject("check", checkBorderObject).GetComponent<RectTransform>();
-        checkObject.anchorMin = new Vector2(0.2f, 0.2f);
-        checkObject.anchorMax = new Vector2(0.8f, 0.8f);
+        checkObject.anchorMin = new Vector2(0.3f, 0.3f);
+        checkObject.anchorMax = new Vector2(0.7f, 0.7f);
 
         var image = checkBorderObject.gameObject.AddComponent<Image>();
         image.type = Image.Type.Sliced;

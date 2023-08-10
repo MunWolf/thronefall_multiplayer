@@ -15,7 +15,7 @@ public class PlayerManager
         public int SpawnID;
         public GameObject Object;
         public PlayerNetworkData Data;
-        public PlayerNetworkData.Shared Shared;
+        public readonly PlayerNetworkData.Shared Shared = new();
         public CharacterController Controller;
     }
 
@@ -23,9 +23,8 @@ public class PlayerManager
     public Player LocalPlayer => _players.TryGetValue(LocalId, out var value) ? value : null;
     
     private Dictionary<int, Player> _players = new();
+    private GameObject _playerContainer;
     private GameObject _playerPrefab;
-
-    private HashSet<int> _queuedPlayerCreation = new();
 
     private Vector3 _spawn;
 
@@ -60,7 +59,7 @@ public class PlayerManager
     {
         if (!_players.TryGetValue(id, out var player))
         {
-            Plugin.Log.LogInfo($"Creating player {id}");
+            Plugin.Log.LogInfo($"Creating player {id} (local {LocalId})");
             player = new Player
             {
                 Id = id
@@ -69,11 +68,7 @@ public class PlayerManager
             _players[id] = player;
         }
 
-        if (_playerPrefab == null)
-        {
-            _queuedPlayerCreation.Add(id);
-        }
-        else if (player.Object == null)
+        if (_playerPrefab != null && player.Object == null)
         {
             InstantiatePlayer(player);
         }
@@ -83,20 +78,20 @@ public class PlayerManager
 
     private void InstantiatePlayer(Player player)
     {
-        player.Object = Object.Instantiate(_playerPrefab, _playerPrefab.transform.parent);
+        Plugin.Log.LogInfo($"Instantiating player '{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}'");
+        player.Object = Object.Instantiate(_playerPrefab, _playerContainer.transform);
         player.Controller = player.Object.GetComponent<CharacterController>();
         player.Data = player.Object.GetComponent<PlayerNetworkData>();
-        player.Shared = player.Data.SharedData;
+        player.Data.Player = player;
+        player.Data.SharedData = player.Shared;
         player.Data.id = player.Id;
         player.SpawnID = !_players.Any() ? 0 : _players.Max(p => p.Value.SpawnID) + 1;
-        player.Object.SetActive(true);
         
         var identifier = player.Object.GetComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Player, player.Id);
-        player.Controller.enabled = false;
         player.Object.transform.position = Utils.GetSpawnLocation(_spawn, player.SpawnID);
         player.Data.SharedData.Position = player.Object.transform.position;
-        player.Controller.enabled = true;
+        player.Object.SetActive(true);
     }
 
     public Player Get(int id)
@@ -115,19 +110,19 @@ public class PlayerManager
         {
             Object.Destroy(_playerPrefab);
         }
+
+        _playerContainer = prefab.transform.parent.gameObject;
+        _playerPrefab = Utils.InstantiateDisabled(prefab, Plugin.Instance.transform, worldPositionStays: true);
         
-        _playerPrefab = Utils.InstantiateDisabled(prefab, prefab.transform.parent, worldPositionStays: true);
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;
         _playerPrefab.AddComponent<Identifier>();
         Plugin.Log.LogInfo("Initialized player prefab");
 
         SpawnLocation = prefab.transform.position;
-        while (_queuedPlayerCreation.Count > 0)
+        foreach (var player in _players)
         {
-            var item = _queuedPlayerCreation.First();
-            _queuedPlayerCreation.Remove(item);
-            InstantiatePlayer(_players[item]);
+            InstantiatePlayer(player.Value);
         }
     }
 

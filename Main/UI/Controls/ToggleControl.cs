@@ -46,19 +46,19 @@ public class ToggleControl : MonoBehaviour
     public Selectable NavRight
     {
         get => Toggle.navigation.selectOnRight;
-        set => Toggle.navigation = Toggle.navigation with { selectOnLeft = value };
+        set => Toggle.navigation = Toggle.navigation with { selectOnRight = value };
     }
 
     public Selectable NavUp
     {
         get => Toggle.navigation.selectOnUp;
-        set => Toggle.navigation = Toggle.navigation with { selectOnLeft = value };
+        set => Toggle.navigation = Toggle.navigation with { selectOnUp = value };
     }
 
     public Selectable NavDown
     {
         get => Toggle.navigation.selectOnDown;
-        set => Toggle.navigation = Toggle.navigation with { selectOnLeft = value };
+        set => Toggle.navigation = Toggle.navigation with { selectOnDown = value };
     }
 
     public int CheckmarkSize

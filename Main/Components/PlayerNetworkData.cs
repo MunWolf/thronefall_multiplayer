@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
 using UnityEngine;
 using UniverseLib;
-using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.Components;
 
@@ -99,11 +97,12 @@ public class PlayerNetworkData : MonoBehaviour
     }
     
     public int id;
+    public Network.PlayerManager.Player Player;
     
     public bool IsLocal => Plugin.Instance.PlayerManager.LocalId == id;
 
     // Shared variables
-    public readonly Shared SharedData = new();
+    public Shared SharedData = new();
     
     // Local variables
     public bool PlayerMovementSprintLast { get; set; }

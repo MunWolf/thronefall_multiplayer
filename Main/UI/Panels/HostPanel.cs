@@ -1,26 +1,17 @@
 ﻿using Steamworks;
+using ThronefallMP.Patches;
 using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
 using Debug = System.Diagnostics.Debug;
-using Object = UnityEngine.Object;
 
 namespace ThronefallMP.UI.Panels;
 
-public class HostPanel : UniverseLib.UI.Panels.PanelBase
+public class HostPanel : BasePanel
 {
     public override string Name => "Host Panel";
-    public override int MinWidth => 0;
-    public override int MinHeight => 0;
-    public override Vector2 DefaultAnchorMin => new(0.0f, 0.0f);
-    public override Vector2 DefaultAnchorMax => new(1.0f, 1.0f);
-    public override bool CanDragAndResize => false;
-    public override Vector2 DefaultPosition => new(
-        -Owner.Canvas.renderingDisplaySize.x / 2,
-        Owner.Canvas.renderingDisplaySize.y / 2
-    );
 
     private struct LobbyCreationRequest
     {
@@ -30,11 +21,13 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         public ELobbyType Type;
     }
 
-    private const int LabelSize = 120;
+    public ButtonControl Host { get; private set; }
+    
+    private const int LabelSize = 140;
     private readonly CallResult<LobbyCreated_t> _onLobbyCreatedCallResult;
     private LobbyCreationRequest? _currentRequest;
 
-    public HostPanel(UIBase owner) : base(owner)
+    public HostPanel()
     {
         if (!SteamManager.Initialized)
         {
@@ -44,12 +37,19 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         _onLobbyCreatedCallResult = CallResult<LobbyCreated_t>.Create(OnLobbyCreated);
     }
     
-    protected override void ConstructPanelContent()
+    public override void ConstructPanelContent()
     {
-        Object.Destroy(uiRoot.GetComponent<Image>());
-        ContentRoot.GetComponent<Image>().color = UIManager.TransparentBackgroundColor;
+        var background = UIFactory.CreateUIObject("background", PanelRoot);
+        {
+            var image = background.AddComponent<Image>();
+            image.type = Image.Type.Sliced;
+            image.color = UIManager.TransparentBackgroundColor;
+            var rectTransform = background.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0, 0);
+            rectTransform.anchorMax = new Vector2(1, 1);
+        }
         
-        var panelBorders = UIFactory.CreateUIObject("panel", ContentRoot);
+        var panelBorders = UIFactory.CreateUIObject("panel", background);
         {
             var image = panelBorders.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -67,10 +67,9 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
                 5,
                 TextAnchor.MiddleLeft
             );
-            UIFactory.SetLayoutElement(panelBorders, ignoreLayout: true);
-            var transform = panelBorders.GetComponent<RectTransform>();
-            transform.anchorMin = new Vector2(0.35f, 0.3f);
-            transform.anchorMax = new Vector2(0.65f, 0.7f);
+            var rectTransform = panelBorders.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.35f, 0.3f);
+            rectTransform.anchorMax = new Vector2(0.65f, 0.7f);
         }
         
         var panel = UIFactory.CreateUIObject("panel", panelBorders);
@@ -91,17 +90,17 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
                 60,
                 TextAnchor.MiddleLeft
             );
-            var transform = panel.GetComponent<RectTransform>();
-            transform.anchorMin = new Vector2(0.0f, 0.0f);
-            transform.anchorMax = new Vector2(1.0f, 1.0f);
+            var rectTransform = panel.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.0f, 0.0f);
+            rectTransform.anchorMax = new Vector2(1.0f, 1.0f);
         }
         
         // TODO: Add validation on the fields, don't allow hosting unless options are valid.
         var placeholder = SteamManager.Initialized ? SteamFriends.GetPersonaName() : "Unavailable";
-        var name = CreateField(panel, "name", "Name", $"{placeholder}'s Game");
-        var password = CreateField(panel, "password", "Password", "", 32, TMP_InputField.ContentType.Password);
-        var maxPlayers = CreateField(panel, "max_players", "Players", "8", 2, TMP_InputField.ContentType.DecimalNumber);
-        var friendsOnly = CreateToggle(panel, "friends_only", "Friends Only", false);
+        var nameField = CreateField(panel, "name", "Name", $"{placeholder}'s Game", 24);
+        var passwordField = CreateField(panel, "password", "Password", "", 24, TMP_InputField.ContentType.Password);
+        var maxPlayersField = CreateField(panel, "max_players", "Players", "8", 2, TMP_InputField.ContentType.DecimalNumber);
+        var friendsOnlyToggle = CreateToggle(panel, "friends_only", "Friends Only", false);
         
         var buttons = UIFactory.CreateUIObject("buttons", panel);
         {
@@ -119,21 +118,21 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
                 TextAnchor.MiddleCenter
             );
             UIFactory.SetLayoutElement(buttons, ignoreLayout: true);
-            var transform = buttons.GetComponent<RectTransform>();
-            transform.anchorMin = new Vector2(0.0f, 0.1f);
-            transform.anchorMax = new Vector2(1.0f, 0.3f);
+            var rectTransform = buttons.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.0f, 0.1f);
+            rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
 
-        var host = UIHelper.CreateButton(buttons, "host", "Host");
-        UIFactory.SetLayoutElement(host.gameObject, minWidth: 100);
-        host.OnClick += () =>
+        Host = UIHelper.CreateButton(buttons, "host", "Host");
+        UIFactory.SetLayoutElement(Host.gameObject, minWidth: 100);
+        Host.OnClick += () =>
         {
             var success = CreateLobby(new LobbyCreationRequest
             {
-                Name = name.text,
-                MaxPlayers = int.Parse(maxPlayers.text),
-                Password = password.text,
-                Type = friendsOnly.Toggle.isOn ? ELobbyType.k_ELobbyTypeFriendsOnly : ELobbyType.k_ELobbyTypePublic
+                Name = nameField.text,
+                MaxPlayers = int.Parse(maxPlayersField.text),
+                Password = passwordField.text,
+                Type = friendsOnlyToggle.Toggle.isOn ? ELobbyType.k_ELobbyTypeFriendsOnly : ELobbyType.k_ELobbyTypePublic
             });
 
             if (success)
@@ -149,8 +148,25 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         back.OnClick += () =>
         {
             Enabled = false;
+            UIManager.LobbyListPanel.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
+
+        nameField.navigation = nameField.navigation with { selectOnDown = passwordField, selectOnUp = Host.Button };
+        passwordField.navigation = passwordField.navigation with { selectOnDown = maxPlayersField, selectOnUp = nameField };
+        maxPlayersField.navigation = maxPlayersField.navigation with { selectOnDown = friendsOnlyToggle.Toggle, selectOnUp = passwordField };
+        friendsOnlyToggle.NavUp = maxPlayersField;
+        friendsOnlyToggle.NavDown = Host.Button;
+        Host.NavUp = friendsOnlyToggle.Toggle;
+        Host.NavDown = nameField;
+        Host.NavLeft = back.Button;
+        Host.NavRight = back.Button;
+        back.NavUp = friendsOnlyToggle.Toggle;
+        back.NavDown = nameField;
+        back.NavLeft = Host.Button;
+        back.NavRight = Host.Button;
+        
+        LayoutRebuilder.ForceRebuildLayoutImmediate(panelBorders.GetComponent<RectTransform>());
     }
 
     private static TMP_InputField CreateField(GameObject panel, string name, string label, string value, int limit = 32, TMP_InputField.ContentType type = TMP_InputField.ContentType.Alphanumeric)
@@ -209,7 +225,6 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         transform.anchorMin = new Vector2(0, 0);
         transform.anchorMax = new Vector2(1, 1);
         inputField.onFocusSelectAll = false;
-        inputField.ActivateInputField();
 
         return inputField;
     }
@@ -256,7 +271,7 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         return toggle;
     }
 
-    public override void Update()
+    public void Update()
     {
         if (UIManager.ExitHandled || !Input.GetKeyDown(KeyCode.Escape))
         {
@@ -308,7 +323,9 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         {
             Plugin.Instance.Network.Host(id, _currentRequest.Value.Password);
         });
-        
+
+        SceneTransitionManagerPatch.DisableTransitionHook = true;
         SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
+        SceneTransitionManagerPatch.DisableTransitionHook = false;
     }
 }

@@ -178,6 +178,18 @@ public class Network : MonoBehaviour
         _password = null;
         Server = true;
         Online = false;
+        
+        if (_lobby.IsValid())
+        {
+            SteamMatchmaking.LeaveLobby(_lobby);
+            foreach (var peer in _peers)
+            {
+                var peerMutable = peer;
+                SteamNetworkingMessages.CloseSessionWithUser(ref peerMutable);
+            }
+            _lobby.Clear();
+        }
+        
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
         Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.LocalId);
@@ -224,6 +236,13 @@ public class Network : MonoBehaviour
 
     private void OnSceneChanged(Scene scene, LoadSceneMode mode)
     {
+        Plugin.Log.LogInfo($"Scene loaded '{scene.name}'");
+        if (scene.name == "_StartMenu")
+        {
+            Local();
+            return;
+        }
+        
         if (!Server || !Online || !_lobby.IsValid())
         {
             return;

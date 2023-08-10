@@ -14,7 +14,7 @@ namespace ThronefallMP.UI.Panels;
 
 public partial class LobbyListPanel
 {
-    protected override void ConstructPanelContent()
+    public override void ConstructPanelContent()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resource = assembly.GetManifestResourceNames()
@@ -29,10 +29,8 @@ public partial class LobbyListPanel
         }
         
         // TODO: Fix select sound and click sound playing when you click a button with the mouse.
-        Object.DestroyImmediate(uiRoot.GetComponent<Image>());
-        Object.DestroyImmediate(ContentRoot.GetComponent<Image>());
         
-        var multiplayer = UIFactory.CreateUIObject("multiplayer", ContentRoot);
+        var multiplayer = UIFactory.CreateUIObject("multiplayer", PanelRoot);
         UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
             multiplayer,
             false,
@@ -46,6 +44,9 @@ public partial class LobbyListPanel
             120,
             TextAnchor.MiddleCenter
         );
+        var rectTransform = multiplayer.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
         
         var lobbiesUI = UIFactory.CreateUIObject("lobbies", multiplayer);
         UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
@@ -117,9 +118,9 @@ public partial class LobbyListPanel
         var sizeFitter = _lobbyList.AddComponent<ContentSizeFitter>();
         sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        var transform = _lobbyList.GetComponent<RectTransform>();
-        transform.anchorMin = new Vector2(0, 0);
-        transform.anchorMax = new Vector2(1, 1);
+        rectTransform = _lobbyList.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(1, 1);
         
         _scrollRect = scroller.gameObject.AddComponent<CustomScrollRect>();
         _scrollRect.horizontal = false;
@@ -164,7 +165,7 @@ public partial class LobbyListPanel
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         UIFactory.SetLayoutElement(refresh.gameObject, minWidth: 120, preferredWidth: 160);
-        _friendsOnly = UIHelper.CreateLeftToggle(filters, "friends_only", "Friends Only", false);
+        _friendsOnly = UIHelper.CreateLeftToggle(filters, "friends_only", "Friends Only");
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_friendsOnly.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
         _showWithPassword = UIHelper.CreateLeftToggle(filters, "show_with_password", "Show with Password", true);
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_showWithPassword.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
@@ -198,15 +199,16 @@ public partial class LobbyListPanel
         UIFactory.SetLayoutElement(_connect.gameObject, minWidth: 160, preferredWidth: 300);
         _connect.SetInteractable(false);
 
-        _host = UIHelper.CreateButton(buttons, "host", "Host");
-        _host.OnClick += () =>
+        Host = UIHelper.CreateButton(buttons, "host", "Host");
+        Host.OnClick += () =>
         {
-            UIManager.HostPanel.SetActive(true);
+            UIManager.HostPanel.Enabled = true;
+            UIManager.HostPanel.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
-        _host.OnExit += () => { _muteSound = false; };
-        _host.OnSelected += PlaySelectSound;
-        UIFactory.SetLayoutElement(_host.gameObject, minWidth: 100, preferredWidth: 300);
+        Host.OnExit += () => { _muteSound = false; };
+        Host.OnSelected += PlaySelectSound;
+        UIFactory.SetLayoutElement(Host.gameObject, minWidth: 100, preferredWidth: 300);
 
         _back = UIHelper.CreateButton(buttons, "back", "Back");
         _back.OnClick += Back;
@@ -216,13 +218,11 @@ public partial class LobbyListPanel
 
         // Navigation
         _connect.NavLeft = _back.Button;
-        _connect.NavRight = _host.Button;
-        _host.NavLeft = _back.Button;
-        _host.NavRight = _back.Button;
-        _back.NavLeft = _host.Button;
-        _back.NavRight = _host.Button;
-        
-        LayoutRebuilder.ForceRebuildLayoutImmediate(uiRoot.GetComponent<RectTransform>());
+        _connect.NavRight = Host.Button;
+        Host.NavLeft = _back.Button;
+        Host.NavRight = _back.Button;
+        _back.NavLeft = Host.Button;
+        _back.NavRight = Host.Button;
     }
 
     private LobbyItem AddLobbyEntry(Lobby info)

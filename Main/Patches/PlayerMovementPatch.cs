@@ -25,10 +25,9 @@ static class PlayerMovementPatch
 	// Noop because we do this work in PlayerMovement.Awake instead
 	private static void Start(On.CameraRig.orig_Start original, CameraRig self) {}
 
-	private static bool _firstInitialization = true;
 	private static void Awake(On.PlayerMovement.orig_Awake original, PlayerMovement self)
 	{
-		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
+		var vanillaPlayer = self.GetComponent<PlayerNetworkData>() == null;
 		if (!vanillaPlayer)
 		{
 			return;
@@ -83,14 +82,14 @@ static class PlayerMovementPatch
         }
         
         // Normal code
-		Vector2 zero = new Vector2(playerNetworkData.SharedData.MoveVertical, playerNetworkData.SharedData.MoveHorizontal);
+		var zero = new Vector2(playerNetworkData.SharedData.MoveVertical, playerNetworkData.SharedData.MoveHorizontal);
 		if (LocalGamestate.Instance.PlayerFrozen)
 		{
 			zero = Vector2.zero;
 		}
 		
-		Vector3 normalized = Vector3.ProjectOnPlane(viewTransform.Value.forward, Vector3.up).normalized;
-		Vector3 normalized2 = Vector3.ProjectOnPlane(viewTransform.Value.right, Vector3.up).normalized;
+		var normalized = Vector3.ProjectOnPlane(viewTransform.Value.forward, Vector3.up).normalized;
+		var normalized2 = Vector3.ProjectOnPlane(viewTransform.Value.right, Vector3.up).normalized;
 		velocity.Value = Vector3.zero;
 		velocity.Value += normalized * zero.x;
 		velocity.Value += normalized2 * zero.y;
@@ -128,50 +127,66 @@ static class PlayerMovementPatch
 		
 		self.meshAnimator.SetBool(Moving, moving.Value);
 		self.meshAnimator.SetBool(Sprinting, sprinting.Value);
-		if (controller.Value.enabled)
+		if (!controller.Value.enabled)
 		{
-			if (controller.Value.isGrounded)
-			{
-				yVelocity.Value = 0f;
-			}
-			else
-			{
-				yVelocity.Value += -9.81f * Time.deltaTime;
-			}
+			return;
+		}
+		
+		if (controller.Value.isGrounded)
+		{
+			yVelocity.Value = 0f;
+		}
+		else
+		{
+			yVelocity.Value += -9.81f * Time.deltaTime;
+		}
 			
-			velocity.Value += Vector3.up * yVelocity.Value;
+		velocity.Value += Vector3.up * yVelocity.Value;
 
-			if (!playerNetworkData.IsLocal)
+		if (!playerNetworkData.IsLocal)
+		{
+			var deltaPosition = playerNetworkData.SharedData.Position - self.transform.position;
+			if (playerNetworkData.TeleportNext || deltaPosition.sqrMagnitude > MaximumDevianceSquared)
 			{
-				var deltaPosition = playerNetworkData.SharedData.Position - self.transform.position;
-				if (playerNetworkData.TeleportNext || deltaPosition.sqrMagnitude > MaximumDevianceSquared)
+				if (!playerNetworkData.TeleportNext)
 				{
-					if (!playerNetworkData.TeleportNext)
-					{
-						Plugin.Log.LogInfo("MaximumDeviance reached");
-					}
+					Plugin.Log.LogInfo("MaximumDeviance reached");
+				}
 					
-					Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
-					self.TeleportTo(playerNetworkData.SharedData.Position);
-					playerNetworkData.TeleportNext = false;
-				}
-				else
-				{
-					velocity.Value = Vector3.Lerp(deltaPosition, velocity.Value, 0.5f);
-					controller.Value.Move(Vector3.Lerp(deltaPosition, velocity.Value * Time.deltaTime, 0.5f));
-				}
-			}
-			else if (playerNetworkData.TeleportNext)
-			{
 				Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
 				self.TeleportTo(playerNetworkData.SharedData.Position);
 				playerNetworkData.TeleportNext = false;
 			}
 			else
 			{
-				controller.Value.Move(velocity.Value * Time.deltaTime);
-				playerNetworkData.SharedData.Position = self.transform.position;
+				var yFallThroughMapDetection = Traverse.Create(self).Field<float>("yFallThroughMapDetection");
+				velocity.Value = Vector3.Lerp(deltaPosition, velocity.Value, 0.5f);
+				controller.Value.Move(Vector3.Lerp(deltaPosition, velocity.Value * Time.deltaTime, 0.5f));
+				if (!(self.transform.position.y < yFallThroughMapDetection.Value))
+				{
+					return;
+				}
+					
+				velocity.Value = Vector3.zero;
+				yVelocity.Value = 0f;
+				self.TeleportTo(
+					Utils.GetSpawnLocation(
+						Plugin.Instance.PlayerManager.SpawnLocation,
+						playerNetworkData.Player.SpawnID
+					)
+				);
 			}
+		}
+		else if (playerNetworkData.TeleportNext)
+		{
+			Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
+			self.TeleportTo(playerNetworkData.SharedData.Position);
+			playerNetworkData.TeleportNext = false;
+		}
+		else
+		{
+			controller.Value.Move(velocity.Value * Time.deltaTime);
+			playerNetworkData.SharedData.Position = self.transform.position;
 		}
     }
 }

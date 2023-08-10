@@ -3,35 +3,26 @@ using Steamworks;
 using ThronefallMP.Network;
 using ThronefallMP.UI.Controls;
 using UnityEngine;
-using UniverseLib.UI;
 using Image = UnityEngine.UI.Image;
 
 namespace ThronefallMP.UI.Panels;
 
-public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
+public partial class LobbyListPanel : BasePanel
 {
     private Callback<LobbyDataUpdate_t> _lobbyUpdated;
     private readonly CallResult<LobbyMatchList_t> _onLobbyMatchListCallResult;
     
     public override string Name => "Lobby List Panel";
-    public override int MinWidth => 0;
-    public override int MinHeight => 0;
-    public override Vector2 DefaultAnchorMin => new(0.0f, 0.0f);
-    public override Vector2 DefaultAnchorMax => new(1.0f, 1.0f);
-    public override bool CanDragAndResize => false;
     public LobbyItem CurrentlySelectedLobby { get; private set; }
-    public override Vector2 DefaultPosition => new(
-        -Owner.Canvas.renderingDisplaySize.x / 2,
-        Owner.Canvas.renderingDisplaySize.y / 2
-    );
 
+    public ButtonControl Host { get; private set; }
+    
     private Texture2D _lockTexture;
     private GameObject _lobbyList;
     private ToggleControl _friendsOnly;
     private ToggleControl _showWithPassword;
     private ToggleControl _showFull;
     private ButtonControl _connect;
-    private ButtonControl _host;
     private ButtonControl _back;
     private CustomScrollRect _scrollRect;
     private bool _muteSound;
@@ -39,7 +30,7 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
     private List<LobbyItem> _lobbies = new();
     private Dictionary<CSteamID, LobbyItem> _idToLobbies = new();
 
-    public LobbyListPanel(UIBase owner) : base(owner)
+    public LobbyListPanel()
     {
         if (!SteamManager.Initialized)
         {
@@ -54,7 +45,7 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
     {
         if (!_muteSound)
         {
-            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonSelect);
+            //ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonSelect);
         }
 
         _muteSound = false;
@@ -114,7 +105,7 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         image2.color = UIManager.SelectedTransparentBackgroundColor;
 
         _connect.SetInteractable(true);
-        _host.Button.navigation = _host.Button.navigation with { selectOnLeft = _connect.Button };
+        Host.Button.navigation = Host.Button.navigation with { selectOnLeft = _connect.Button };
         _back.Button.navigation = _back.Button.navigation with { selectOnRight = _connect.Button };
     }
 
@@ -130,15 +121,15 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         CurrentlySelectedLobby = null;
         
         _connect.SetInteractable(false);
-        _host.NavLeft = _back.Button;
-        _back.NavRight = _host.Button;
+        Host.NavLeft = _back.Button;
+        _back.NavRight = Host.Button;
     }
     
     public void Open()
     {
         Enabled = true;
         RefreshLobbies();
-        _host.Button.Select();
+        Host.Button.Select();
     }
 
     public void Close()
@@ -155,7 +146,7 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
 
     private const float UpdateCooldown = 2.0f;
     private float _timer;
-    public override void Update()
+    public void Update()
     {
         if (!UIManager.HostPanel.Enabled && !UIManager.ExitHandled && Input.GetKeyDown(KeyCode.Escape))
         {
@@ -221,7 +212,7 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         var id = new CSteamID(data.m_ulSteamIDLobby);
         if (!_idToLobbies.TryGetValue(id, out var lobby))
         {
-            lobby = AddLobbyEntry(new Lobby()
+            AddLobbyEntry(new Lobby()
             {
                 Id = id,
                 Name = SteamMatchmaking.GetLobbyData(id, "name"),
@@ -236,11 +227,11 @@ public partial class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
             {
                 CurrentlySelectedLobby = null;
                 _connect.SetInteractable(false);
-                _host.NavLeft = _back.Button;
-                _back.NavRight = _host.Button;
+                Host.NavLeft = _back.Button;
+                _back.NavRight = Host.Button;
             }
             
-            Object.Destroy(lobby.gameObject);
+            Destroy(lobby.gameObject);
             _lobbies.Remove(lobby);
             _idToLobbies.Remove(lobby.LobbyInfo.Id);
         }

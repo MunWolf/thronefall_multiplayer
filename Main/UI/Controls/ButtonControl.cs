@@ -1,5 +1,4 @@
 ﻿using System;
-using Rewired.Data.Mapping;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -44,19 +43,19 @@ public class ButtonControl : MonoBehaviour
     public Selectable NavRight
     {
         get => Button.navigation.selectOnRight;
-        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+        set => Button.navigation = Button.navigation with { selectOnRight = value };
     }
 
     public Selectable NavUp
     {
         get => Button.navigation.selectOnUp;
-        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+        set => Button.navigation = Button.navigation with { selectOnUp = value };
     }
 
     public Selectable NavDown
     {
         get => Button.navigation.selectOnDown;
-        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+        set => Button.navigation = Button.navigation with { selectOnDown = value };
     }
     
     private bool _hovering;
@@ -83,7 +82,7 @@ public class ButtonControl : MonoBehaviour
         _startSize = Normal.Size;
         _endSize = Normal.Size;
         _lerpSize = 1.0f;
-        Apply(Button.interactable ? Normal : Noninteractive);
+        Apply(Button.interactable ? Normal : Noninteractive, true);
         UIHelper.AddEvent(gameObject, EventTriggerType.PointerEnter, (_) =>
         {
             if (!Button.interactable)
@@ -161,10 +160,9 @@ public class ButtonControl : MonoBehaviour
 
     public void Reset()
     {
-        _lerpSize = 1.0f;
         _hovering = false;
         Selected = false;
-        Apply(Button.interactable ? Normal : Noninteractive);
+        Apply(Button.interactable ? Normal : Noninteractive, true);
     }
     
     private void OnDisable()
@@ -172,14 +170,23 @@ public class ButtonControl : MonoBehaviour
         Reset();
     }
 
-    private void Apply(Style style, bool resetLerp = true)
+    private void Apply(Style style, bool instant = false, bool resetLerp = true)
     {
         Text.color = style.Color;
-        _startSize = Text.fontSize;
         _endSize = style.Size;
-        if (resetLerp)
+        if (!instant)
         {
-            _lerpSize = 1.0f - _lerpSize;
+            _startSize = Text.fontSize;
+            if (resetLerp)
+            {
+                _lerpSize = 1.0f - _lerpSize;
+            }
+        }
+        else
+        {
+            _lerpSize = 1.0f;
+            _startSize = _endSize;
+            Text.fontSize = _endSize;
         }
     }
 }

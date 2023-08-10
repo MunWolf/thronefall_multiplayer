@@ -1,4 +1,5 @@
-﻿using ThronefallMP.Components;
+﻿using System.Collections.Generic;
+using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.NetworkPackets.Game;
 using TMPro;
@@ -19,11 +20,18 @@ public static class SceneTransitionManagerPatch
         SceneManager.sceneLoaded += OnSceneChanged;
     }
 
+    private static HashSet<string> DontSendTransitionPacket = new HashSet<string>()
+    {
+        "_StartMenu"
+    };
+    
     private static void TransitionToScene(On.SceneTransitionManager.orig_TransitionToScene original, SceneTransitionManager self, string scene)
     {
         InLevelSelect = self.levelSelectScene == scene;
-        if (!DisableTransitionHook)
+        Plugin.Log.LogInfo($"Transitioning '{scene}'");
+        if (!DisableTransitionHook && !DontSendTransitionPacket.Contains(scene))
         {
+            Plugin.Log.LogInfo($"Sending transition packet'");
             var packet = new TransitionToScenePacket
             {
                 ComingFromGameplayScene = self.ComingFromGameplayScene,
@@ -40,7 +48,16 @@ public static class SceneTransitionManagerPatch
         
         foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
         {
-            PlayerManager.UnregisterPlayer(data.GetComponent<PlayerMovement>());
+            if (data == null)
+            {
+                continue;
+            }
+            
+            if (PlayerManager.Instance != null)
+            {
+                PlayerManager.UnregisterPlayer(data.GetComponent<PlayerMovement>());
+            }
+                
             Object.Destroy(data.gameObject);
         }
         
