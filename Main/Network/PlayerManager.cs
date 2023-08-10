@@ -2,7 +2,6 @@
 using System.Linq;
 using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.Patches;
 using UnityEngine;
 
 namespace ThronefallMP.Network;
@@ -26,6 +25,29 @@ public class PlayerManager
     private Dictionary<int, Player> _players = new();
     private GameObject _playerPrefab;
 
+    private HashSet<int> _queuedPlayerCreation = new();
+
+    private Vector3 _spawn;
+
+    public Vector3 SpawnLocation
+    {
+        get => _spawn;
+        set
+        {
+            _spawn = value;
+            foreach (var pair in _players)
+            {
+                if (pair.Value.Object != null)
+                {
+                    pair.Value.Object.transform.position = Utils.GetSpawnLocation(
+                        _spawn,
+                        pair.Value.SpawnID
+                    );
+                }
+            }
+        }
+    }
+    
     public int GenerateID()
     {
         int id;
@@ -38,29 +60,43 @@ public class PlayerManager
     {
         if (!_players.TryGetValue(id, out var player))
         {
+            Plugin.Log.LogInfo($"Creating player {id}");
             player = new Player
             {
-                Id = id,
-                Object = Object.Instantiate(_playerPrefab)
+                Id = id
             };
-
-            player.Controller = player.Object.GetComponent<CharacterController>();
-            player.Data = player.Object.GetComponent<PlayerNetworkData>();
-            player.Shared = player.Data.SharedData;
-            player.Object.SetActive(true);
-            player.Data.id = id;
-            player.SpawnID = _players.Max(p => p.Value.SpawnID) + 1;
-            var identifier = player.Object.GetComponent<Identifier>();
-            identifier.SetIdentity(IdentifierType.Player, id);
         
             _players[id] = player;
         }
 
+        if (_playerPrefab == null)
+        {
+            _queuedPlayerCreation.Add(id);
+        }
+        else if (player.Object == null)
+        {
+            InstantiatePlayer(player);
+        }
+
+        return player;
+    }
+
+    private void InstantiatePlayer(Player player)
+    {
+        player.Object = Object.Instantiate(_playerPrefab, _playerPrefab.transform.parent);
+        player.Controller = player.Object.GetComponent<CharacterController>();
+        player.Data = player.Object.GetComponent<PlayerNetworkData>();
+        player.Shared = player.Data.SharedData;
+        player.Data.id = player.Id;
+        player.SpawnID = !_players.Any() ? 0 : _players.Max(p => p.Value.SpawnID) + 1;
+        player.Object.SetActive(true);
+        
+        var identifier = player.Object.GetComponent<Identifier>();
+        identifier.SetIdentity(IdentifierType.Player, player.Id);
         player.Controller.enabled = false;
-        player.Object.transform.position = Utils.GetSpawnLocation(PlayerMovementPatch.SpawnLocation, player.SpawnID);
+        player.Object.transform.position = Utils.GetSpawnLocation(_spawn, player.SpawnID);
         player.Data.SharedData.Position = player.Object.transform.position;
         player.Controller.enabled = true;
-        return _players[id];
     }
 
     public Player Get(int id)
@@ -80,11 +116,19 @@ public class PlayerManager
             Object.Destroy(_playerPrefab);
         }
         
-        _playerPrefab = Utils.InstantiateDisabled(prefab);
+        _playerPrefab = Utils.InstantiateDisabled(prefab, prefab.transform.parent, worldPositionStays: true);
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;
         _playerPrefab.AddComponent<Identifier>();
         Plugin.Log.LogInfo("Initialized player prefab");
+
+        SpawnLocation = prefab.transform.position;
+        while (_queuedPlayerCreation.Count > 0)
+        {
+            var item = _queuedPlayerCreation.First();
+            _queuedPlayerCreation.Remove(item);
+            InstantiatePlayer(_players[item]);
+        }
     }
 
     public void Clear()
@@ -95,16 +139,5 @@ public class PlayerManager
         }
         
         _players.Clear();
-    }
-
-    public void ResetPlayersToSpawn()
-    {
-        foreach (var pair in _players)
-        {
-            pair.Value.Object.transform.position = Utils.GetSpawnLocation(
-                PlayerMovementPatch.SpawnLocation,
-                pair.Value.SpawnID
-            );
-        }
     }
 }

@@ -13,62 +13,47 @@ static class PlayerMovementPatch
 
 	public const float MaximumDeviance = 3.0f;
 	public const float MaximumDevianceSquared = MaximumDeviance * MaximumDeviance;
-
-	public static Vector3 SpawnLocation { get; set; }
 	
 	public static void Apply()
 	{
 		On.PlayerMovement.Awake += Awake;
 		On.PlayerMovement.Start += Start;
         On.PlayerMovement.Update += Update;
-    }
+        On.CameraRig.Start += Start;
+	}
+
+	// Noop because we do this work in PlayerMovement.Awake instead
+	private static void Start(On.CameraRig.orig_Start original, CameraRig self) {}
 
 	private static bool _firstInitialization = true;
 	private static void Awake(On.PlayerMovement.orig_Awake original, PlayerMovement self)
 	{
-		original(self);
-		
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
-		if (vanillaPlayer)
+		if (!vanillaPlayer)
 		{
-			Plugin.Instance.PlayerManager.SetPrefab(self.gameObject);
+			return;
 		}
+		
+		var rig = self.GetComponentInChildren<CameraRig>();
+		Traverse.Create(rig).Field<Quaternion>("startRotation").Value = rig.transform.rotation;
+		Traverse.Create(rig).Field<Transform>("cameraTarget").Value = rig.transform.parent;
+		rig.transform.SetParent(null);
+		
+		Plugin.Instance.PlayerManager.SetPrefab(self.gameObject);
+		self.enabled = false;
+		Object.Destroy(self.gameObject);
 	}
+	
 	
 	private static void Start(On.PlayerMovement.orig_Start original, PlayerMovement self)
 	{
-		original(self);
-		
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
-		if (vanillaPlayer)
+		if (!vanillaPlayer)
 		{
-			Plugin.Instance.StartCoroutine(ReinstanciatePlayers(self));
+			original(self);
 		}
 	}
 
-	private static IEnumerator ReinstanciatePlayers(PlayerMovement self)
-	{
-		yield return new WaitForEndOfFrame();
-		SpawnLocation = self.transform.position;
-		Plugin.Log.LogInfo($"Spawn position set to {SpawnLocation}");
-		// First initialization happens when we enter level select or the tutorial for the first time.
-		if (_firstInitialization)
-		{
-			// We need this otherwise we get a null value in Camera.Main when starting a level.
-			yield return new WaitForEndOfFrame();
-			Plugin.Instance.Network.Local();
-			_firstInitialization = false;
-		}
-		else
-		{
-			Plugin.Instance.PlayerManager.ResetPlayersToSpawn();
-			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
-			{
-				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart;
-			}
-		}
-	}
-	
 	private static void Update(On.PlayerMovement.orig_Update original, PlayerMovement self)
     {
 	    var playerNetworkData = self.GetComponent<PlayerNetworkData>();

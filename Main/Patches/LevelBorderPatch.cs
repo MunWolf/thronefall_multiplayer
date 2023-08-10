@@ -8,7 +8,17 @@ public class LevelBorderPatch
 {
     public static void Apply()
     {
+        On.LevelBorder.Start += Start;
         On.LevelBorder.Update += Update;
+    }
+
+    private static void Start(On.LevelBorder.orig_Start original, LevelBorder self)
+    {
+        var defaultColor = Traverse.Create(self).Field<Color>("defaultColor");
+        var fadeOutColor = Traverse.Create(self).Field<Color>("fadeOutColor");
+        defaultColor.Value = self.line.Color;
+        fadeOutColor.Value = defaultColor.Value with { a = 0f };
+        self.line.Color = fadeOutColor.Value;
     }
 
     private static void Update(On.LevelBorder.orig_Update original, LevelBorder self)
@@ -31,11 +41,16 @@ public class LevelBorderPatch
         var fadeOut =  Traverse.Create(self).Method("FadeOut");
         
         timer.Value += Time.deltaTime;
-        if (timer.Value >= tickTime.Value)
+        if (!(timer.Value >= tickTime.Value))
         {
-            timer.Value = 0f;
-            float num = Vector3.Distance(position, boxCol.Value.ClosestPoint(position));
-            if (fadedIn.Value && num > fadeInDistance.Value)
+            return;
+        }
+        
+        timer.Value = 0f;
+        var num = Vector3.Distance(position, boxCol.Value.ClosestPoint(position));
+        switch (fadedIn.Value)
+        {
+            case true when num > fadeInDistance.Value:
             {
                 if (currentFade.Value == null)
                 {
@@ -45,7 +60,7 @@ public class LevelBorderPatch
                 fadedIn.Value = false;
                 return;
             }
-            if (!fadedIn.Value && num <= fadeInDistance.Value)
+            case false when num <= fadeInDistance.Value:
             {
                 if (currentFade.Value == null)
                 {
@@ -53,6 +68,7 @@ public class LevelBorderPatch
                     currentFade.Value = self.StartCoroutine(iterator);
                 }
                 fadedIn.Value = true;
+                break;
             }
         }
     }

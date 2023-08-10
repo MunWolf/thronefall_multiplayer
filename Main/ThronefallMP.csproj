@@ -50,6 +50,9 @@
     <Reference Include="Rewired_Core">
       <HintPath>..\lib\Rewired_Core.dll</HintPath>
     </Reference>
+    <Reference Include="ShapesRuntime">
+      <HintPath>..\lib\ShapesRuntime.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>..\lib\Unity.TextMeshPro.dll</HintPath>
     </Reference>

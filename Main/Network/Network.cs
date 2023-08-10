@@ -174,6 +174,7 @@ public class Network : MonoBehaviour
 
     public void Local()
     {
+        Plugin.Log.LogInfo("Switched to Local");
         _password = null;
         Server = true;
         Online = false;
@@ -184,6 +185,7 @@ public class Network : MonoBehaviour
 
     public void Host(CSteamID lobby, string password)
     {
+        Plugin.Log.LogInfo("Switched to Host");
         _password = password;
         _lobby = lobby;
         _owner = SteamUser.GetSteamID();
@@ -198,6 +200,7 @@ public class Network : MonoBehaviour
 
     public bool Connect(CSteamID lobby, string password)
     {
+        Plugin.Log.LogInfo("Switched to Connect");
         _password = password;
         _lobby = lobby;
         Server = false;

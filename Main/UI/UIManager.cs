@@ -65,7 +65,7 @@ public static class UIManager
         });
  
         button.rightNav = settings;
-        if (SteamManager.Initialized || true) // TODO: Remember to remove this true
+        if (SteamManager.Initialized)
         {
             play.rightNav = button;
             settings.leftNav = button;

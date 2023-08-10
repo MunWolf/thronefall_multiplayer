@@ -97,7 +97,8 @@ public class HostPanel : UniverseLib.UI.Panels.PanelBase
         }
         
         // TODO: Add validation on the fields, don't allow hosting unless options are valid.
-        var name = CreateField(panel, "name", "Name", "Placeholder's Game");
+        var placeholder = SteamManager.Initialized ? SteamFriends.GetPersonaName() : "Unavailable";
+        var name = CreateField(panel, "name", "Name", $"{placeholder}'s Game");
         var password = CreateField(panel, "password", "Password", "", 32, TMP_InputField.ContentType.Password);
         var maxPlayers = CreateField(panel, "max_players", "Players", "8", 2, TMP_InputField.ContentType.DecimalNumber);
         var friendsOnly = CreateToggle(panel, "friends_only", "Friends Only", false);
