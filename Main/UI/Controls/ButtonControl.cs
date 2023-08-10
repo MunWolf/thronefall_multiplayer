@@ -1,11 +1,12 @@
 ﻿using System;
+using Rewired.Data.Mapping;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements.Experimental;
 
-namespace ThronefallMP.UI;
+namespace ThronefallMP.UI.Controls;
 
 public class ButtonControl : MonoBehaviour
 {
@@ -34,6 +35,30 @@ public class ButtonControl : MonoBehaviour
     public Style HoverSelected = new() { Color = UIManager.ButtonHoverTextColor, Size = 40 };
     public Style Noninteractive = new() { Color = UIManager.NoninteractiveButtonTextColor, Size = 30 };
 
+    public Selectable NavLeft
+    {
+        get => Button.navigation.selectOnLeft;
+        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+    }
+
+    public Selectable NavRight
+    {
+        get => Button.navigation.selectOnRight;
+        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+    }
+
+    public Selectable NavUp
+    {
+        get => Button.navigation.selectOnUp;
+        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+    }
+
+    public Selectable NavDown
+    {
+        get => Button.navigation.selectOnDown;
+        set => Button.navigation = Button.navigation with { selectOnLeft = value };
+    }
+    
     private bool _hovering;
     private float _startSize;
     private float _endSize;
@@ -54,11 +79,12 @@ public class ButtonControl : MonoBehaviour
     {
         Button = GetComponent<Button>();
         Text = GetComponentInChildren<TextMeshProUGUI>();
+        Button.navigation = Button.navigation with { mode = Navigation.Mode.Explicit };
         _startSize = Normal.Size;
         _endSize = Normal.Size;
         _lerpSize = 1.0f;
-        Apply(Normal);
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.PointerEnter, (_) =>
+        Apply(Button.interactable ? Normal : Noninteractive);
+        UIHelper.AddEvent(gameObject, EventTriggerType.PointerEnter, (_) =>
         {
             if (!Button.interactable)
             {
@@ -69,7 +95,7 @@ public class ButtonControl : MonoBehaviour
             Apply(Selected ? HoverSelected : Hover);
             OnEnter?.Invoke();
         });
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.PointerExit, (_) =>
+        UIHelper.AddEvent(gameObject, EventTriggerType.PointerExit, (_) =>
         {
             if (!Button.interactable)
             {
@@ -80,7 +106,7 @@ public class ButtonControl : MonoBehaviour
             Apply(Selected ? NormalSelected : Normal);
             OnExit?.Invoke();
         });
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.Select, (_) =>
+        UIHelper.AddEvent(gameObject, EventTriggerType.Select, (_) =>
         {
             if (!Button.interactable)
             {
@@ -91,7 +117,7 @@ public class ButtonControl : MonoBehaviour
             Apply(_hovering ? HoverSelected : NormalSelected);
             OnSelected?.Invoke();
         });
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.Deselect, (_) =>
+        UIHelper.AddEvent(gameObject, EventTriggerType.Deselect, (_) =>
         {
             if (!Button.interactable)
             {
@@ -102,7 +128,7 @@ public class ButtonControl : MonoBehaviour
             Apply(_hovering ? Hover : Normal);
             OnDeselected?.Invoke();
         });
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.PointerClick, (_) =>
+        UIHelper.AddEvent(gameObject, EventTriggerType.PointerClick, (_) =>
         {
             if (!Button.interactable)
             {
@@ -111,7 +137,7 @@ public class ButtonControl : MonoBehaviour
 
             OnClick?.Invoke();
         });
-        UIHelper.AddButtonEvent(gameObject, EventTriggerType.Submit, (_) =>
+        UIHelper.AddEvent(gameObject, EventTriggerType.Submit, (_) =>
         {
             if (!Button.interactable)
             {
@@ -133,11 +159,17 @@ public class ButtonControl : MonoBehaviour
         Text.fontSize = Lerp.Interpolate(_startSize, _endSize, _lerpSize);
     }
 
-    private void OnDisable()
+    public void Reset()
     {
         _lerpSize = 1.0f;
         _hovering = false;
         Selected = false;
+        Apply(Button.interactable ? Normal : Noninteractive);
+    }
+    
+    private void OnDisable()
+    {
+        Reset();
     }
 
     private void Apply(Style style, bool resetLerp = true)

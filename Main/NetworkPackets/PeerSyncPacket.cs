@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Lidgren.Network;
+using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 using UnityEngine;
@@ -17,13 +17,13 @@ public class PeerSyncPacket : IPacket
     public const PacketId PacketID = PacketId.PeerSyncPacket;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
     public List<PlayerData> Players = new();
     public int LocalPlayer;
     
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(LocalPlayer);
         writer.Write(Players.Count);
@@ -34,7 +34,7 @@ public class PeerSyncPacket : IPacket
         }
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         LocalPlayer = reader.ReadInt32();
         Players.Clear();

@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Network;
 
 namespace ThronefallMP.NetworkPackets.Game;
@@ -10,15 +10,15 @@ public class BalancePacket : IPacket
     public int Delta;
     
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Delta);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Delta = reader.ReadInt32();
     }

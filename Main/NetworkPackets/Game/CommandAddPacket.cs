@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Lidgren.Network;
+using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -13,10 +13,10 @@ public class CommandAddPacket : IPacket
     public List<IdentifierData> Units = new();
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Player);
         writer.Write(Units.Count);
@@ -26,7 +26,7 @@ public class CommandAddPacket : IPacket
         }
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Player = reader.ReadInt32();
         var count = reader.ReadInt32();

@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -15,10 +15,10 @@ public class DamagePacket : IPacket
     public bool InvokeFeedbackEvents;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Target);
         writer.Write(Source);
@@ -27,7 +27,7 @@ public class DamagePacket : IPacket
         writer.Write(InvokeFeedbackEvents);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Target = reader.ReadIdentifierData();
         Source = reader.ReadIdentifierData();

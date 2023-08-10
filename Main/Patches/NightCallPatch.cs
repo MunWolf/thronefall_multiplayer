@@ -17,7 +17,7 @@ public static class NightCallPatch
     private static void UpdateFill(On.NightCall.orig_UpdateFill original, NightCall self)
     {
         HandleNightCallAudio(self);
-        var data = Plugin.Instance.Network.LocalPlayerData;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
         if (data == null)
         {
             return;
@@ -95,7 +95,7 @@ public static class NightCallPatch
         var maxVolume = 0.0f;
         if (active.Value)
         {
-            foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
+            foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
             {
                 if (!data.CallNightLast && data.SharedData.CallNightButton)
                 {

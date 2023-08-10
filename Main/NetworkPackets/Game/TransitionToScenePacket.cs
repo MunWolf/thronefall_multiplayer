@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Lidgren.Network;
+using Steamworks;
 using ThronefallMP.Network;
 
 namespace ThronefallMP.NetworkPackets.Game;
@@ -13,10 +13,10 @@ public class TransitionToScenePacket : IPacket
     public List<string> Perks = new();
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(ComingFromGameplayScene);
         writer.Write(Level);
@@ -27,7 +27,7 @@ public class TransitionToScenePacket : IPacket
         }
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         ComingFromGameplayScene = reader.ReadString();
         Level = reader.ReadString();

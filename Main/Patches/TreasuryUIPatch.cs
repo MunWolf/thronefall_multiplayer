@@ -56,12 +56,12 @@ public class TreasuryUIPatch
     private static void SetPlayerTarget(TreasuryUI self)
     {
         var targetPlayer = Traverse.Create(self).Field<PlayerInteraction>("targetPlayer");
-        if (Plugin.Instance.Network.LocalPlayerData == null)
+        if (Plugin.Instance.PlayerManager.LocalPlayer.Data == null)
         {
             return;
         }
         
-        targetPlayer.Value = Plugin.Instance.Network.LocalPlayerData.GetComponent<PlayerInteraction>();
+        targetPlayer.Value = Plugin.Instance.PlayerManager.LocalPlayer.Data.GetComponent<PlayerInteraction>();
 
         var addCoins = (CoinsDelegate)self.GetType()
             .GetMethod("AddCoins", BindingFlags.NonPublic | BindingFlags.Instance)?

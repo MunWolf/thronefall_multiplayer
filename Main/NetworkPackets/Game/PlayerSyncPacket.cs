@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -12,10 +12,10 @@ public class PlayerSyncPacket : IPacket
     public PlayerNetworkData.Shared Data;
     
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableSequenced;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_UnreliableNoNagle;
     public int Channel => 0;
     
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(PlayerID);
         writer.Write(Data.Position);
@@ -29,7 +29,7 @@ public class PlayerSyncPacket : IPacket
         writer.Write(Data.CommandUnitsButton);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         PlayerID = reader.ReadInt32();
         Data.Position = reader.ReadVector3();

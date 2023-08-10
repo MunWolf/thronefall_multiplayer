@@ -1,4 +1,5 @@
-﻿using Lidgren.Network;
+﻿
+using Steamworks;
 using ThronefallMP.Network;
 using UnityEngine;
 
@@ -15,10 +16,10 @@ public class EnemySpawnPacket : IPacket
     public int Coins;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Wave);
         writer.Write(Spawn);
@@ -27,7 +28,7 @@ public class EnemySpawnPacket : IPacket
         writer.Write(Coins);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Wave = reader.ReadInt32();
         Spawn = reader.ReadInt32();

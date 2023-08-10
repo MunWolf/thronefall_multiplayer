@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -10,37 +10,19 @@ public class ApprovalPacket : IPacket
     
     public const PacketId PacketID = PacketId.ApprovalPacket;
 
-    public bool Approved { get; private set; }
-    public long? Secret;
-    public int PlayerId;
+    public string Password;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
     
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
-        writer.Write(ApprovalString);
-        if (Secret.HasValue)
-        {
-            writer.Write(Secret.Value);
-            writer.Write(PlayerId);
-        }
+        writer.Write(Password);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
-        var value = reader.ReadString();
-        Approved = value == ApprovalString;
-        if (reader.PositionInBytes != reader.LengthBytes)
-        {
-            Secret = reader.ReadInt64();
-            PlayerId = reader.ReadInt32();
-        }
-        else
-        {
-            Secret = null;
-            PlayerId = 0;
-        }
+        Password = reader.ReadString();
     }
 }

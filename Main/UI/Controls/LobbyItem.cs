@@ -1,10 +1,10 @@
-﻿using On.I2.Loc;
-using ThronefallMP.Steam;
+﻿using ThronefallMP.Network;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UIElements;
+// ReSharper disable InconsistentNaming
 
-namespace ThronefallMP.UI;
+namespace ThronefallMP.UI.Controls;
 
 public class LobbyItem : MonoBehaviour, IPointerClickHandler
 {
@@ -13,6 +13,7 @@ public class LobbyItem : MonoBehaviour, IPointerClickHandler
 
     public GameObject LobbyGameObject;
     public Lobby LobbyInfo;
+    public TextMeshProUGUI PlayerCount;
     
     public void OnPointerClick(PointerEventData eventData)
     {

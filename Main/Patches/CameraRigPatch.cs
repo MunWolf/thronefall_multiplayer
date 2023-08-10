@@ -13,7 +13,7 @@ public static class CameraRigPatch
     private static void Update(On.CameraRig.orig_Update original, CameraRig self)
     {
         var cameraTarget = Traverse.Create(self).Field<Transform>("cameraTarget");
-        var localData = Plugin.Instance.Network.LocalPlayerData;
+        var localData = Plugin.Instance.PlayerManager.LocalPlayer.Data;
         if (localData != null)
         {
             cameraTarget.Value = localData.transform;

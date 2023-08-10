@@ -1,45 +1,19 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
-using Steamworks;
-using ThronefallMP.Steam;
+using ThronefallMP.Network;
+using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UI;
 using UniverseLib.UI;
 using Debug = System.Diagnostics.Debug;
-using Image = UnityEngine.UI.Image;
 
-namespace ThronefallMP.UI;
+namespace ThronefallMP.UI.Panels;
 
-public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
+public partial class LobbyListPanel
 {
-    public override string Name => "Lobby List Panel";
-    public override int MinWidth => 0;
-    public override int MinHeight => 0;
-    public override Vector2 DefaultAnchorMin => new(0.0f, 0.0f);
-    public override Vector2 DefaultAnchorMax => new(1.0f, 1.0f);
-    public override bool CanDragAndResize => false;
-    public override Vector2 DefaultPosition => new(
-        -Owner.Canvas.renderingDisplaySize.x / 2,
-        Owner.Canvas.renderingDisplaySize.y / 2
-    );
-    
-    public LobbyListPanel(UIBase owner) : base(owner) {}
-
-    private Texture2D _lockTexture;
-    private GameObject _lobbyList;
-    private ButtonControl _connect;
-    private ButtonControl _host;
-    private ButtonControl _back;
-    private CustomScrollRect _scrollRect;
-    private bool _muteSound;
-
-    private List<GameObject> _lobbies = new();
-    public LobbyItem _currentlySelectedLobby;
-    
     protected override void ConstructPanelContent()
     {
         var assembly = Assembly.GetExecutingAssembly();
@@ -55,8 +29,8 @@ public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         }
         
         // TODO: Fix select sound and click sound playing when you click a button with the mouse.
-        uiRoot.GetComponent<Image>().color = UIManager.BackgroundColor;
-        ContentRoot.GetComponent<Image>().color = UIManager.BackgroundColor;
+        Object.DestroyImmediate(uiRoot.GetComponent<Image>());
+        Object.DestroyImmediate(ContentRoot.GetComponent<Image>());
         
         var multiplayer = UIFactory.CreateUIObject("multiplayer", ContentRoot);
         UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
@@ -155,6 +129,48 @@ public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         _scrollRect.content = _lobbyList.GetComponent<RectTransform>();
         UIFactory.SetLayoutElement(scroller, flexibleHeight: 999999);
         
+        separator = UIFactory.CreateUIObject("separator", lobbiesUI);
+        image = separator.AddComponent<Image>();
+        image.type = Image.Type.Sliced;
+        image.color = UIManager.TextColor;
+        UIFactory.SetLayoutElement(separator, minHeight: 2, flexibleHeight: 0);
+        
+        var filters = UIFactory.CreateUIObject("filters", multiplayer);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            filters,
+            false,
+            true,
+            true,
+            true,
+            0,
+            0,
+            0,
+            20,
+            20,
+            TextAnchor.MiddleLeft
+        );
+        UIFactory.SetLayoutElement(filters, minHeight: 40, flexibleHeight: 0);
+
+        var refresh = UIHelper.CreateButton(filters, "refresh", "Refresh");
+        refresh.Normal.Size = 24;
+        refresh.Hover.Size = 28;
+        refresh.NormalSelected.Size = 28;
+        refresh.HoverSelected.Size = 28;
+        refresh.Noninteractive.Size = 24;
+        refresh.Reset();
+        refresh.OnClick += () =>
+        {
+            RefreshLobbies();
+            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
+        };
+        UIFactory.SetLayoutElement(refresh.gameObject, minWidth: 120, preferredWidth: 160);
+        _friendsOnly = UIHelper.CreateLeftToggle(filters, "friends_only", "Friends Only", false);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_friendsOnly.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        _showWithPassword = UIHelper.CreateLeftToggle(filters, "show_with_password", "Show with Password", true);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_showWithPassword.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        _showFull = UIHelper.CreateLeftToggle(filters, "show_full", "Show Full", true);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_showFull.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        
         var buttons = UIFactory.CreateUIObject("buttons", multiplayer);
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
             buttons,
@@ -174,7 +190,8 @@ public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         _connect = UIHelper.CreateButton(buttons, "connect", "Connect");
         _connect.OnClick += () =>
         {
-            
+            Close();
+            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         _connect.OnExit += () => { _muteSound = false; };
         _connect.OnSelected += PlaySelectSound;
@@ -184,63 +201,31 @@ public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         _host = UIHelper.CreateButton(buttons, "host", "Host");
         _host.OnClick += () =>
         {
-            
+            UIManager.HostPanel.SetActive(true);
+            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         _host.OnExit += () => { _muteSound = false; };
         _host.OnSelected += PlaySelectSound;
         UIFactory.SetLayoutElement(_host.gameObject, minWidth: 100, preferredWidth: 300);
 
         _back = UIHelper.CreateButton(buttons, "back", "Back");
-        _back.OnClick += Close;
+        _back.OnClick += Back;
         _back.OnExit += () => { _muteSound = false; };
         _back.OnSelected += PlaySelectSound;
         UIFactory.SetLayoutElement(_back.gameObject, minWidth: 100, preferredWidth: 300);
 
-        _connect.Button.navigation = new Navigation
-        {
-            mode = Navigation.Mode.Explicit,
-            selectOnRight = _host.Button,
-            selectOnLeft = _back.Button,
-            wrapAround = false
-        };
-
-        _host.Button.navigation = new Navigation
-        {
-            mode = Navigation.Mode.Explicit,
-            selectOnRight = _back.Button,
-            selectOnLeft = _back.Button,
-            wrapAround = false
-        };
-
-        _back.Button.navigation = new Navigation
-        {
-            mode = Navigation.Mode.Explicit,
-            selectOnRight = _host.Button,
-            selectOnLeft = _host.Button,
-            wrapAround = false
-        };
+        // Navigation
+        _connect.NavLeft = _back.Button;
+        _connect.NavRight = _host.Button;
+        _host.NavLeft = _back.Button;
+        _host.NavRight = _back.Button;
+        _back.NavLeft = _host.Button;
+        _back.NavRight = _host.Button;
         
         LayoutRebuilder.ForceRebuildLayoutImmediate(uiRoot.GetComponent<RectTransform>());
     }
 
-    private void PlaySelectSound()
-    {
-        if (!_muteSound)
-        {
-            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonSelect);
-        }
-
-        _muteSound = false;
-    }
-
-    private void Close()
-    {
-        Enabled = false;
-        UIManager.TitleScreen.SetActive(true);
-        ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
-    }
-
-    private void AddLobbyEntry(Lobby info)
+    private LobbyItem AddLobbyEntry(Lobby info)
     {
         var lobby = UIHelper.CreateBox(_lobbyList, info.Name, UIManager.TransparentBackgroundColor);
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
@@ -296,82 +281,11 @@ public class LobbyListPanel : UniverseLib.UI.Panels.PanelBase
         var lobbyItem = lobby.AddComponent<LobbyItem>();
         lobbyItem.LobbyGameObject = lobby;
         lobbyItem.LobbyInfo = info;
+        lobbyItem.PlayerCount = text;
         lobbyItem.OnClick += () => SelectLobby(lobbyItem);
-        
-        _lobbies.Add(lobby);
-    }
 
-    private void RefreshLobbies()
-    {
-        ClearLobbyEntries();
-        
-        AddLobbyEntry(new Lobby
-        {
-            Name = "Test Lobby",
-            PlayerCount = 1,
-            MaxPlayerCount = 4,
-            HasPassword = false
-        });
-
-        AddLobbyEntry(new Lobby
-        {
-            Name = "The Cool Club",
-            PlayerCount = 2,
-            MaxPlayerCount = 8,
-            HasPassword = true
-        });
-
-        for (var i = 0; i < 60; ++i)
-        {
-            AddLobbyEntry(new Lobby
-            {
-                Name = $"Sorry nobody is home {i}",
-                PlayerCount = 0,
-                MaxPlayerCount = 99,
-                HasPassword = false
-            });
-        }
-        
-        _scrollRect.verticalNormalizedPosition = 1.0f;
-    }
-    
-    private void SelectLobby(LobbyItem item)
-    {
-        if (_currentlySelectedLobby != null)
-        {
-            var image = _currentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
-            image.color = UIManager.TransparentBackgroundColor;
-        }
-            
-        _currentlySelectedLobby = item;
-        var image2 = _currentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
-        image2.color = UIManager.SelectedTransparentBackgroundColor;
-
-        _connect.SetInteractable(true);
-        _host.Button.navigation = _host.Button.navigation with { selectOnLeft = _connect.Button };
-        _back.Button.navigation = _back.Button.navigation with { selectOnRight = _connect.Button };
-    }
-
-    private void ClearLobbyEntries()
-    {
-        foreach (var lobby in _lobbies)
-        {
-            Object.Destroy(lobby);
-        }
-        
-        _lobbies.Clear();
-        _currentlySelectedLobby = null;
-    }
-    
-    public void Open()
-    {
-        Enabled = true;
-        RefreshLobbies();
-        _host.Button.Select();
-    }
-    
-    public override void Update()
-    {
-        
+        _lobbies.Add(lobbyItem);
+        _idToLobbies.Add(info.Id, lobbyItem);
+        return lobbyItem;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -12,16 +12,16 @@ public class HealPacket : IPacket
     public float Amount;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Target);
         writer.Write(Amount);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Target = reader.ReadIdentifierData();
         Amount = reader.ReadFloat();

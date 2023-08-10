@@ -16,6 +16,8 @@ public enum IdentifierType
 
 public struct IdentifierData
 {
+    public static readonly IdentifierData Invalid = new() { Type = IdentifierType.Invalid, Id = -1 };
+    
     public IdentifierType Type;
     public int Id;
 

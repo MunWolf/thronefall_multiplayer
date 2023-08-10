@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Network;
 using UnityEngine;
 
@@ -13,17 +13,17 @@ public class SpawnCoinPacket : IPacket
     public Quaternion Rotation;
     
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
     
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(Player);
         writer.Write(Position);
         writer.Write(Rotation);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Player = reader.ReadInt32();
         Position = reader.ReadVector3();

@@ -13,7 +13,7 @@ public class LevelBorderPatch
 
     private static void Update(On.LevelBorder.orig_Update original, LevelBorder self)
     {
-        var data = Plugin.Instance.Network.LocalPlayerData;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
         if (data == null)
         {
             return;

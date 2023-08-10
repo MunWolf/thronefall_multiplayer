@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network;
 
@@ -12,17 +12,17 @@ public class ScaleHpPacket : IPacket
     public float Multiplier;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write((int)Target.Type);
         writer.Write(Target.Id);
         writer.Write(Multiplier);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         Target.Type = (IdentifierType)reader.ReadInt32();
         Target.Id = reader.ReadInt32();

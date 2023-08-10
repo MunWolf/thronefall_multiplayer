@@ -38,7 +38,7 @@ public static class DayNightCyclePatch
         num += TagManager.instance.freeCoins.Count;
         num += self.CoinCountToBeHarvested;
         levelDataForActiveScene.dayToDayNetworth.Add(num);
-        var players = Plugin.Instance.Network.GetAllPlayerData().Select(x => x.GetComponent<PlayerInteraction>()).ToArray();
+        var players = Plugin.Instance.PlayerManager.GetAllPlayerData().Select(x => x.GetComponent<PlayerInteraction>()).ToArray();
         foreach (var coin in TagManager.instance.freeCoins)
         {
             var closest = Utils.FindClosest(players, coin.transform.position);

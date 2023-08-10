@@ -38,7 +38,7 @@ public static class SceneTransitionManagerPatch
             Plugin.Instance.Network.Send(packet);
         }
         
-        foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
+        foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
         {
             PlayerManager.UnregisterPlayer(data.GetComponent<PlayerMovement>());
             Object.Destroy(data.gameObject);

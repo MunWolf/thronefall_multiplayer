@@ -11,8 +11,12 @@ public static class UIManager
 {
     private static UIBase UiBase { get; set; }
     public static GameObject TitleScreen { get; private set; }
-    public static LobbyListPanel LobbyListPanel { get; private set; }
+    public static Panels.LobbyListPanel LobbyListPanel { get; private set; }
+    public static Panels.HostPanel HostPanel { get; private set; }
+
+    public static bool ExitHandled = false;
     
+    public static readonly Color DarkBackgroundColor = new(0.06f, 0.06f, 0.06f, 1.0f);
     public static readonly Color BackgroundColor = new(0.11f, 0.11f, 0.11f, 1.0f);
     public static readonly Color TransparentBackgroundColor = new(0.0f, 0.0f, 0.0f, 0.3f);
     public static readonly Color SelectedTransparentBackgroundColor = new(0.2f, 0.2f, 0.2f, 0.3f);
@@ -43,12 +47,14 @@ public static class UIManager
         var settings = TitleScreen.transform.Find("Menu Items/Settings").GetComponent<ThronefallUIElement>();
         DefaultFont = settings.GetComponent<TextMeshProUGUI>().font;
         UiBase = UniversalUI.RegisterUI("com.badwolf.thronefall_mp", OnUpdate);
-        LobbyListPanel = new LobbyListPanel(UiBase) { Enabled = false };
-        var multiplayer = Object.Instantiate(settings.gameObject, settings.transform.parent);
+        LobbyListPanel = new Panels.LobbyListPanel(UiBase) { Enabled = false };
+        HostPanel =  new Panels.HostPanel(UiBase) { Enabled = false };
+        var multiplayer = Utils.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
         multiplayer.transform.SetSiblingIndex(1);
         Object.DestroyImmediate(multiplayer.GetComponent<Localize>());
-        multiplayer.GetComponent<TextMeshProUGUI>().text = "Multiplayer";
+        var textMesh = multiplayer.GetComponent<TextMeshProUGUI>();
+        textMesh.text = "Multiplayer";
         var button = multiplayer.GetComponent<TFUITextButton>();
         button.onSelectionStateChange.m_PersistentCalls.m_Calls.Clear();
         button.onApply.m_PersistentCalls.m_Calls.Clear();
@@ -57,19 +63,21 @@ public static class UIManager
             LobbyListPanel.Open();
             TitleScreen.SetActive(false);
         });
-
+ 
         button.rightNav = settings;
-        play.rightNav = button;
-        settings.leftNav = button;
-
-        //var border = UIFactory.CreateUIObject("test", multiplayer.transform.parent.gameObject);
-        //var image = border.gameObject.AddComponent<Image>();
-        //image.type = Image.Type.Filled;
-        //image.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-        //var transform = border.GetComponent<RectTransform>();
-        //transform.anchoredPosition = new Vector2(0.0f, 0.0f);
-        //transform.anchorMin = new Vector2(0.0f, 0.0f);
-        //transform.anchorMax = new Vector2(1.0f, 1.0f);
+        if (SteamManager.Initialized || true) // TODO: Remember to remove this true
+        {
+            play.rightNav = button;
+            settings.leftNav = button;
+        }
+        else
+        {
+            button.ignoreMouse = true;
+            button.cannotBeSelected = true;
+            textMesh.color = NoninteractiveButtonTextColor;
+        }
+        
+        multiplayer.SetActive(true);
     }
     
     private static void OnLogging(string text, LogType type)
@@ -95,6 +103,6 @@ public static class UIManager
 
     private static void OnUpdate()
     {
-        
+        ExitHandled = false;
     }
 }

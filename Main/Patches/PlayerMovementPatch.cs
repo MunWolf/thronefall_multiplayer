@@ -31,7 +31,7 @@ static class PlayerMovementPatch
 		var vanillaPlayer = self.gameObject.GetComponent<PlayerNetworkData>() == null;
 		if (vanillaPlayer)
 		{
-			Plugin.Instance.Network.InitializeDefaultPlayer(self.gameObject);
+			Plugin.Instance.PlayerManager.SetPrefab(self.gameObject);
 		}
 	}
 	
@@ -61,7 +61,7 @@ static class PlayerMovementPatch
 		}
 		else
 		{
-			Plugin.Instance.Network.ReinstantiatePlayers();
+			Plugin.Instance.PlayerManager.ResetPlayersToSpawn();
 			if (Plugin.Instance.Network.Server && EnemySpawner.instance != null)
 			{
 				GlobalData.Balance = EnemySpawner.instance.goldBalanceAtStart;

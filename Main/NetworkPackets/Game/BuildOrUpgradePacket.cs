@@ -1,4 +1,4 @@
-﻿using Lidgren.Network;
+﻿using Steamworks;
 using ThronefallMP.Network;
 
 namespace ThronefallMP.NetworkPackets.Game;
@@ -12,17 +12,17 @@ public class BuildOrUpgradePacket : IPacket
     public int Choice;
 
     public PacketId TypeID => PacketID;
-    public NetDeliveryMethod Delivery => NetDeliveryMethod.ReliableOrdered;
+    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public int Channel => 0;
 
-    public void Send(NetBuffer writer)
+    public void Send(Buffer writer)
     {
         writer.Write(BuildingId);
         writer.Write(Level);
         writer.Write(Choice);
     }
 
-    public void Receive(NetBuffer reader)
+    public void Receive(Buffer reader)
     {
         BuildingId = reader.ReadInt32();
         Level = reader.ReadInt32();

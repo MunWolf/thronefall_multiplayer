@@ -1,11 +1,10 @@
 ﻿using Rewired;
-
-namespace ThronefallMP.UI;
-
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
- 
+
+namespace ThronefallMP.UI.Controls;
+
 public class CustomScrollRect : ScrollRect
 {
     private bool _swallowMouseWheelScrolls = true;

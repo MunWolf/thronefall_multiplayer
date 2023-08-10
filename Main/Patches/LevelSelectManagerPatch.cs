@@ -26,7 +26,7 @@ public static class LevelSelectManagerPatch
         {
             if (level.sceneName == sceneTransitionManager.ComingFromGameplayScene)
             {
-                foreach (var data in Plugin.Instance.Network.GetAllPlayerData())
+                foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
                 {
                     var playerMovement = data.GetComponent<PlayerMovement>();
                     var spawnLocation = level.transform.position + self.spawnOnLevelOffsetPositon;

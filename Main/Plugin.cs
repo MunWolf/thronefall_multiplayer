@@ -1,13 +1,14 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using ThronefallMP.Network;
 using ThronefallMP.Patches;
-using ThronefallMP.Steam;
 using ThronefallMP.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using PlayerManager = ThronefallMP.Network.PlayerManager;
 
 namespace ThronefallMP
 {
@@ -18,13 +19,15 @@ namespace ThronefallMP
         public static readonly System.Random Random = new();
         public static Plugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
-
-        public NetworkManager Network;
+        
+        public Network.Network Network { get; private set; }
+        public Network.PlayerManager PlayerManager { get; private set; }
         
         private void Awake()
         {
             Instance = this;
-            Network = new NetworkManager();
+            Network = Instance.gameObject.AddComponent<Network.Network>();
+            PlayerManager = new Network.PlayerManager();
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
             Log = Logger;
 
@@ -53,48 +56,42 @@ namespace ThronefallMP
             SteamManagerPatch.Apply();
             TreasuryUIPatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
-
-            var networkManager = new GameObject("Network Manager");
-            DontDestroyOnLoad(networkManager);
-            networkManager.AddComponent<Matchmaking>();
             
             // Apply settings.
             Application.runInBackground = true;
             SceneManager.sceneLoaded += OnSceneChanged;
         }
-
-        private void Update()
-        {
-            // if (Input.GetKeyDown(KeyCode.I))
-            // {
-            //     Logger.LogInfo($"Local game");
-            //     Network.Local();
-            // }
-            // if (Input.GetKeyDown(KeyCode.O))
-            // {
-            //     Logger.LogInfo($"Hosting game");
-            //     Network.Host(1000);
-            // }
-            // if (Input.GetKeyDown(KeyCode.P))
-            // {
-            //     Logger.LogInfo($"Connecting...");
-            //     Network.Connect("127.0.0.1", 1000);
-            // }
-            // if (Input.GetKeyDown(KeyCode.K))
-            // {
-            //     Logger.LogInfo($"Reinstanciating all players");
-            //     Network.ReinstanciatePlayers();
-            // }
-            
-            Network.Update();
-        }
         
+        public delegate void LoadCallback();
+
+        private static Dictionary<string, List<LoadCallback>> _loadCallbacks = new(); 
         private static void OnSceneChanged(Scene scene, LoadSceneMode mode)
         {
             if (scene.name == "_UI")
             {
                 UIManager.Initialize();
             }
+
+            if (_loadCallbacks.TryGetValue(scene.name, out var callbacks))
+            {
+                foreach (var callback in callbacks)
+                {
+                    callback();
+                }
+                
+                callbacks.Clear();
+            }
+        }
+
+        public static void CallbackOnLoad(string scene, LoadCallback callback)
+        {
+            if (!_loadCallbacks.TryGetValue(scene, out var callbacks))
+            {
+                callbacks = new List<LoadCallback>();
+                _loadCallbacks[scene] = callbacks;
+            }
+            
+            callbacks.Add(callback);
         }
     }
 }

@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
 using UnityEngine;
+using UniverseLib;
+using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.Components;
 
 public class PlayerNetworkData : MonoBehaviour
 {
-    public struct Shared
+    public class Shared
     {
         public Vector3 Position { get; set; }
         public float MoveHorizontal { get; set; }
@@ -20,34 +23,68 @@ public class PlayerNetworkData : MonoBehaviour
         public float CallNightFill { get; set; }
         public bool CommandUnitsButton { get; set; }
         
-        public static bool operator ==(Shared a, Shared b) 
+        public static bool operator ==(Shared a, Shared b)
         {
-            return a.Equals(b);
+            var isANull = a.ReferenceEqual(null);
+            var isBNull = b.ReferenceEqual(null);
+            if (isANull && isBNull)
+            {
+                return true;
+            }
+            
+            var output = a?.Equals(b);
+            return output.HasValue && output.Value;
         }
 
-        public static bool operator !=(Shared a, Shared b) 
+        public static bool operator !=(Shared a, Shared b)
         {
-            return !a.Equals(b);
+            var isANull = a.ReferenceEqual(null);
+            var isBNull = b.ReferenceEqual(null);
+            if (isANull && isBNull)
+            {
+                return false;
+            }
+            
+            var output = a?.Equals(b);
+            return !(output.HasValue && output.Value);
+        }
+
+        public void Set(Shared a)
+        {
+            Position = a.Position;
+            MoveHorizontal = a.MoveHorizontal;
+            MoveVertical = a.MoveVertical;
+            SprintToggleButton = a.SprintToggleButton;
+            SprintButton = a.SprintButton;
+            InteractButton = a.InteractButton;
+            CallNightButton = a.CallNightButton;
+            CallNightFill = a.CallNightFill;
+            CommandUnitsButton = a.CommandUnitsButton;
         }
 
         public override bool Equals(object obj)
         {
-            var b = obj as Shared?;
-            return b != null
-                && Position == b.Value.Position
-                && Math.Abs(MoveHorizontal - b.Value.MoveHorizontal) < 0.01f
-                && Math.Abs(MoveVertical - b.Value.MoveVertical) < 0.01f
-                && SprintToggleButton == b.Value.SprintToggleButton
-                && SprintButton == b.Value.SprintButton
-                && InteractButton == b.Value.InteractButton
-                && CallNightButton == b.Value.CallNightButton
-                && Math.Abs(CallNightFill - b.Value.CallNightFill) < 0.01f
-                && CommandUnitsButton == b.Value.CommandUnitsButton;
+            var b = obj as Shared;
+            if (b.ReferenceEqual(null))
+            {
+                return false;
+            }
+            
+            return Position == b.Position
+                && Math.Abs(MoveHorizontal - b.MoveHorizontal) < 0.01f
+                && Math.Abs(MoveVertical - b.MoveVertical) < 0.01f
+                && SprintToggleButton == b.SprintToggleButton
+                && SprintButton == b.SprintButton
+                && InteractButton == b.InteractButton
+                && CallNightButton == b.CallNightButton
+                && Math.Abs(CallNightFill - b.CallNightFill) < 0.01f
+                && CommandUnitsButton == b.CommandUnitsButton;
         }
 
+        [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
-            int hashCode = 648391;
+            var hashCode = 648391;
             hashCode *= 37139213 ^ Position.GetHashCode();
             hashCode *= 174440041 ^ MoveHorizontal.GetHashCode();
             hashCode *= 17624813 ^ MoveVertical.GetHashCode();
@@ -63,17 +100,10 @@ public class PlayerNetworkData : MonoBehaviour
     
     public int id;
     
-    public bool IsLocal
-    {
-        get
-        {
-            var network = Plugin.Instance.Network;
-            return !network.Online || network.LocalPlayer == id;
-        }
-    }
+    public bool IsLocal => Plugin.Instance.PlayerManager.LocalId == id;
 
     // Shared variables
-    public Shared SharedData;
+    public readonly Shared SharedData = new();
     
     // Local variables
     public bool PlayerMovementSprintLast { get; set; }

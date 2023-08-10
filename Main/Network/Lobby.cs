@@ -1,6 +1,6 @@
 ﻿using Steamworks;
 
-namespace ThronefallMP.Steam;
+namespace ThronefallMP.Network;
 
 public struct Lobby
 {
