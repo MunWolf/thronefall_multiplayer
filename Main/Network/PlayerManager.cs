@@ -76,6 +76,13 @@ public class PlayerManager
         return player;
     }
 
+    public void Remove(int player)
+    {
+        var data = _players[player];
+        Object.Destroy(data.Object);
+        _players.Remove(player);
+    }
+
     private void InstantiatePlayer(Player player)
     {
         Plugin.Log.LogInfo($"Instantiating player '{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}'");
@@ -109,8 +116,14 @@ public class PlayerManager
         if (_playerPrefab != null)
         {
             Object.Destroy(_playerPrefab);
+            _playerPrefab = null;
         }
 
+        if (prefab == null)
+        {
+            return;
+        }
+        
         _playerContainer = prefab.transform.parent.gameObject;
         _playerPrefab = Utils.InstantiateDisabled(prefab, Plugin.Instance.transform, worldPositionStays: true);
         

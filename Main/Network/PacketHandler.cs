@@ -269,7 +269,7 @@ public static class PacketHandler
     {
         var packet = (BalancePacket)ipacket;
         GlobalData.Internal.Balance += packet.Delta;
-        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer?.Data;
         if (packet.Delta > 0)
         {
             GlobalData.Internal.Networth += packet.Delta;
@@ -296,13 +296,14 @@ public static class PacketHandler
     private static void HandleApproval(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (ApprovalPacket)ipacket;
+        Plugin.Log.LogInfo($"Handling approval of {sender.GetSteamID64()}");
         if (Plugin.Instance.Network.Authenticate(packet.Password))
         {
             Plugin.Instance.Network.AddPlayer(sender);
         }
         else
         {
-            // TODO: Send kick packet.
+            Plugin.Instance.Network.KickPeer(sender);
         }
     }
 }

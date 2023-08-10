@@ -11,7 +11,7 @@ public static class RevivePanelPatch
 
     private static void Update(On.RevivePanel.orig_Update original, RevivePanel self)
     {
-        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer?.Data;
         if (data != null)
         {
             self.playerReviveComponent = data.GetComponent<AutoRevive>();

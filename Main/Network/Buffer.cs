@@ -96,6 +96,12 @@ public class Buffer
     
     public void Write(string value)
     {
+        if (value == null)
+        {
+            Write(0);
+            return;
+        }
+        
         var output = Encoding.ASCII.GetBytes(value);
         Write(output.Length);
         EnsureSize(output.Length);

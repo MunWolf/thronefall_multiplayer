@@ -127,6 +127,7 @@ public class HostPanel : BasePanel
         UIFactory.SetLayoutElement(Host.gameObject, minWidth: 100);
         Host.OnClick += () =>
         {
+            Plugin.Log.LogInfo($"Creating {(friendsOnlyToggle.Toggle.isOn ? "friends only" : "public")} lobby");
             var success = CreateLobby(new LobbyCreationRequest
             {
                 Name = nameField.text,
@@ -314,14 +315,17 @@ public class HostPanel : BasePanel
             return;
         }
 
-        var id = new CSteamID(created.m_ulSteamIDLobby);
         Debug.Assert(_currentRequest != null, nameof(_currentRequest) + " != null");
+        var id = new CSteamID(created.m_ulSteamIDLobby);
+        var password = _currentRequest.Value.Password;
+        var hasPassword = string.IsNullOrEmpty(password) ? "no" : "yes";
         SteamMatchmaking.SetLobbyData(id, "name", _currentRequest.Value.Name);
-        SteamMatchmaking.SetLobbyData(id, "password", _currentRequest.Value.Password != null ? "yes" : "no");
-        SteamMatchmaking.SetLobbyMemberData(id, "hostorder", "0");
+        SteamMatchmaking.SetLobbyData(id, "password", hasPassword);
+        Plugin.Log.LogInfo($"Lobby {created.m_ulSteamIDLobby} created with name '{_currentRequest.Value.Name}' password '{hasPassword}'");
         Plugin.CallbackOnLoad("_LevelSelect", () =>
         {
             Plugin.Instance.Network.Host(id, _currentRequest.Value.Password);
+            _currentRequest = null;
         });
 
         SceneTransitionManagerPatch.DisableTransitionHook = true;

@@ -17,7 +17,7 @@ public static class NightCallPatch
     private static void UpdateFill(On.NightCall.orig_UpdateFill original, NightCall self)
     {
         HandleNightCallAudio(self);
-        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer?.Data;
         if (data == null)
         {
             return;

@@ -105,7 +105,7 @@ public partial class LobbyListPanel
         UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
             _lobbyList,
             true,
-            true,
+            false,
             true,
             true,
             4,
@@ -115,20 +115,21 @@ public partial class LobbyListPanel
             0,
             TextAnchor.UpperCenter
         );
-        var sizeFitter = _lobbyList.AddComponent<ContentSizeFitter>();
-        sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-        sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         rectTransform = _lobbyList.GetComponent<RectTransform>();
+        rectTransform.pivot = new Vector2(0.5f, 1);
         rectTransform.anchorMin = new Vector2(0, 0);
         rectTransform.anchorMax = new Vector2(1, 1);
+        var fitter = _lobbyList.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         
         _scrollRect = scroller.gameObject.AddComponent<CustomScrollRect>();
+        _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        _scrollRect.inertia = false;
         _scrollRect.horizontal = false;
         _scrollRect.vertical = true;
         _scrollRect.scrollSensitivity = 50.0f;
-        _scrollRect.elasticity = 0.0f;
         _scrollRect.content = _lobbyList.GetComponent<RectTransform>();
-        UIFactory.SetLayoutElement(scroller, flexibleHeight: 999999);
+        UIFactory.SetLayoutElement(scroller, flexibleHeight: 1);
         
         separator = UIFactory.CreateUIObject("separator", lobbiesUI);
         image = separator.AddComponent<Image>();
@@ -191,6 +192,10 @@ public partial class LobbyListPanel
         _connect = UIHelper.CreateButton(buttons, "connect", "Connect");
         _connect.OnClick += () =>
         {
+            // TODO: Add callbacks to this function for status of request.
+            Plugin.Instance.Network.ConnectLobby(
+                _currentlySelectedLobby.LobbyInfo.Id
+            );
             Close();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
@@ -225,7 +230,7 @@ public partial class LobbyListPanel
         _back.NavRight = Host.Button;
     }
 
-    private LobbyItem AddLobbyEntry(Lobby info)
+    private void AddLobbyEntry(Lobby info)
     {
         var lobby = UIHelper.CreateBox(_lobbyList, info.Name, UIManager.TransparentBackgroundColor);
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
@@ -241,6 +246,8 @@ public partial class LobbyListPanel
             0,
             TextAnchor.MiddleCenter
         );
+        var fitter = lobby.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         
         var text = UIHelper.CreateText(lobby, "name", info.Name);
         text.alignment = TextAlignmentOptions.Left;
@@ -285,7 +292,9 @@ public partial class LobbyListPanel
         lobbyItem.OnClick += () => SelectLobby(lobbyItem);
 
         _lobbies.Add(lobbyItem);
-        _idToLobbies.Add(info.Id, lobbyItem);
-        return lobbyItem;
+        if (!_idToLobbies.ContainsKey(info.Id))
+        {
+            _idToLobbies.Add(info.Id, lobbyItem);
+        }
     }
 }

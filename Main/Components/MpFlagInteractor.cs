@@ -20,7 +20,7 @@ public class MpFlagInteractor : MonoBehaviour
     
     public void Update()
     {
-        var data = Plugin.Instance.PlayerManager.LocalPlayer.Data;
+        var data = Plugin.Instance.PlayerManager.LocalPlayer?.Data;
         if (data == null)
         {
             return;

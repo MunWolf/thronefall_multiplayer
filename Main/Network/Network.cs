@@ -5,6 +5,7 @@ using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.NetworkPackets.Game;
+using ThronefallMP.Patches;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,9 +22,12 @@ public class Network : MonoBehaviour
     private const int MaxMessages = 20;
     
     private Callback<LobbyChatUpdate_t> _lobbyChatUpdate;
+    private Callback<GameLobbyJoinRequested_t> _lobbyJoinRequested;
     
     private Callback<SteamNetworkingMessagesSessionRequest_t> _sessionRequestCallback;
     private Callback<SteamNetworkingMessagesSessionFailed_t> _sessionFailed;
+    
+    private CallResult<LobbyEnter_t> _lobbyEnterResult;
 
     private readonly PlayerNetworkData.Shared _latestLocalData = new PlayerNetworkData.Shared();
     private readonly List<SteamNetworkingIdentity> _peers = new();
@@ -44,49 +48,9 @@ public class Network : MonoBehaviour
         _sessionRequestCallback = Callback<SteamNetworkingMessagesSessionRequest_t>.Create(OnSessionRequest);
         _sessionFailed = Callback<SteamNetworkingMessagesSessionFailed_t>.Create(OnSessionFailed);
         _lobbyChatUpdate = Callback<LobbyChatUpdate_t>.Create(OnLobbyChatUpdate);
+        _lobbyJoinRequested = Callback<GameLobbyJoinRequested_t>.Create(OnGameLobbyJoinRequested);
+        _lobbyEnterResult = CallResult<LobbyEnter_t>.Create(OnLobbyEntered);
         SceneManager.sceneLoaded += OnSceneChanged;
-    }
-
-    private void OnSessionRequest(SteamNetworkingMessagesSessionRequest_t request)
-    {
-        if (_peers.Count < MaxPlayers ||
-            request.m_identityRemote.m_eType != ESteamNetworkingIdentityType.k_ESteamNetworkingIdentityType_SteamID)
-        {
-            return;
-        }
-
-        if (!Server)
-        {
-            return;
-        }
-
-        SteamNetworkingMessages.AcceptSessionWithUser(ref request.m_identityRemote);
-    }
-
-    private void OnLobbyChatUpdate(LobbyChatUpdate_t update)
-    {
-        if (!Server || !Online)
-        {
-            return;
-        }
-        
-        if ((update.m_rgfChatMemberStateChange & (uint)EChatMemberStateChange.k_EChatMemberStateChangeEntered) == 0)
-        {
-            var identity = new SteamNetworkingIdentity();
-            identity.SetSteamID64(update.m_ulSteamIDUserChanged);
-            if (_owner == identity.GetSteamID())
-            {
-                // TODO: Need to migrate server to new owner.
-            }
-            
-            if (_players.ContainsKey(identity))
-            {
-                Destroy(_players[identity].Object);
-                _players.Remove(identity);
-            }
-
-            _peers.Remove(identity);
-        }
     }
 
     public bool Authenticate(string password)
@@ -96,7 +60,6 @@ public class Network : MonoBehaviour
     
     public void AddPlayer(SteamNetworkingIdentity id)
     {
-        _peers.Add(id);
         var player = Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.GenerateID());
         _players[id] = player;
         var packet = new PeerSyncPacket();
@@ -117,6 +80,19 @@ public class Network : MonoBehaviour
             packet.LocalPlayer = pair.Value.Id;
             SendSingle(packet, pair.Key);
         }
+    }
+
+    public void KickPeer(SteamNetworkingIdentity id)
+    {
+        if (_players.ContainsKey(id))
+        {
+            Plugin.Log.LogInfo($"Player {id.GetSteamID().m_SteamID} kicked");
+            Plugin.Instance.PlayerManager.Remove(_players[id].Id);
+            _players.Remove(id);
+        }
+        
+        _peers.Remove(id);
+        SteamNetworkingMessages.CloseSessionWithUser(ref id);
     }
     
     private void OnSessionFailed(SteamNetworkingMessagesSessionFailed_t failed)
@@ -152,7 +128,7 @@ public class Network : MonoBehaviour
                     var buffer = new Buffer(message.m_cbSize);
                     Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
                     HandlePacket(ref message.m_identityPeer, buffer);
-                    message.Release();
+                    SteamNetworkingMessage_t.Release(_messages[i]);
                 }
             }
         }
@@ -172,6 +148,23 @@ public class Network : MonoBehaviour
         _latestLocalData.Set(shared);
     }
 
+    private void CloseLobby()
+    {
+        if (_lobby.IsValid())
+        {
+            Plugin.Log.LogInfo($"Leaving lobby {_lobby.m_SteamID}");
+            SteamMatchmaking.LeaveLobby(_lobby);
+            foreach (var peer in _peers)
+            {
+                var peerMutable = peer;
+                SteamNetworkingMessages.CloseSessionWithUser(ref peerMutable);
+            }
+            
+            _peers.Clear();
+            _lobby.Clear();
+        }
+    }
+    
     public void Local()
     {
         Plugin.Log.LogInfo("Switched to Local");
@@ -179,16 +172,7 @@ public class Network : MonoBehaviour
         Server = true;
         Online = false;
         
-        if (_lobby.IsValid())
-        {
-            SteamMatchmaking.LeaveLobby(_lobby);
-            foreach (var peer in _peers)
-            {
-                var peerMutable = peer;
-                SteamNetworkingMessages.CloseSessionWithUser(ref peerMutable);
-            }
-            _lobby.Clear();
-        }
+        CloseLobby();
         
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
@@ -197,7 +181,7 @@ public class Network : MonoBehaviour
 
     public void Host(CSteamID lobby, string password)
     {
-        Plugin.Log.LogInfo("Switched to Host");
+        Plugin.Log.LogInfo($"Switched to Host in lobby {lobby.m_SteamID} server {SteamUser.GetSteamID()}");
         _password = password;
         _lobby = lobby;
         _owner = SteamUser.GetSteamID();
@@ -206,11 +190,16 @@ public class Network : MonoBehaviour
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
         Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.LocalId);
-        SteamMatchmaking.SetLobbyGameServer(lobby, 0, 0, _owner);
         SteamMatchmaking.SetLobbyJoinable(lobby, true);
     }
 
-    public bool Connect(CSteamID lobby, string password)
+    public void ConnectLobby(CSteamID lobby)
+    {
+        CloseLobby();
+        _lobbyEnterResult.Set(SteamMatchmaking.JoinLobby(lobby));
+    }
+
+    private void Connect(CSteamID lobby, string password)
     {
         Plugin.Log.LogInfo("Switched to Connect");
         _password = password;
@@ -218,20 +207,17 @@ public class Network : MonoBehaviour
         Server = false;
         Online = true;
         Plugin.Instance.PlayerManager.Clear();
-        if (!SteamMatchmaking.GetLobbyGameServer(lobby, out _, out _, out var id))
-        {
-            return false;
-        }
-
+        _owner = SteamMatchmaking.GetLobbyOwner(lobby);
+        
+        Plugin.Log.LogInfo($"Sending approval packet to server {_owner.m_SteamID}");
         var approvalPacket = new ApprovalPacket()
         {
             Password = password
         };
 
-        var identity = new SteamNetworkingIdentity();
-        identity.SetSteamID(id);
-        SendSingle(approvalPacket, identity);
-        return true;
+        var id = new SteamNetworkingIdentity();
+        id.SetSteamID(_owner);
+        SendSingle(approvalPacket, id);
     }
 
     private void OnSceneChanged(Scene scene, LoadSceneMode mode)
@@ -239,6 +225,7 @@ public class Network : MonoBehaviour
         Plugin.Log.LogInfo($"Scene loaded '{scene.name}'");
         if (scene.name == "_StartMenu")
         {
+            Plugin.Instance.PlayerManager.SetPrefab(null);
             Local();
             return;
         }
@@ -248,6 +235,7 @@ public class Network : MonoBehaviour
             return;
         }
 
+        Plugin.Log.LogInfo($"Can join lobby: {SceneManager.GetSceneByName("_LevelSelect").isLoaded}");
         SteamMatchmaking.SetLobbyJoinable(_lobby, SceneManager.GetSceneByName("_LevelSelect").isLoaded);
     }
 
@@ -265,13 +253,13 @@ public class Network : MonoBehaviour
 
         if (handleLocal)
         {
-            var identity = new SteamNetworkingIdentity();
+            var id = new SteamNetworkingIdentity();
             if (SteamManager.Initialized)
             {
-                identity.SetSteamID(SteamUser.GetSteamID());
+                id.SetSteamID(SteamUser.GetSteamID());
             }
             
-            PacketHandler.HandlePacket(identity, packet);
+            PacketHandler.HandlePacket(id, packet);
         }
     }
 
@@ -470,5 +458,102 @@ public class Network : MonoBehaviour
         }
         
         PacketHandler.HandlePacket(sender, packet);
+    }
+
+    private void OnGameLobbyJoinRequested(GameLobbyJoinRequested_t request)
+    {
+        Plugin.Log.LogInfo($"Got lobby join request {request.m_steamIDLobby} : {request.m_steamIDFriend}");
+        ConnectLobby(request.m_steamIDLobby);
+    }
+
+    private void OnLobbyEntered(LobbyEnter_t entered, bool ioFailure)
+    {
+        if (ioFailure)
+        {
+            // TOOD: Show error
+            Plugin.Log.LogInfo("IO error encountered");
+            return;
+        }
+        
+        if (entered.m_EChatRoomEnterResponse != (uint)EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess)
+        {
+            // TOOD: Show error
+            Plugin.Log.LogInfo($"Failed to join lobby with code {entered.m_EChatRoomEnterResponse}");
+            Local();
+            return;
+        }
+        
+        // TODO: Figure out password with invite.
+        Connect(new CSteamID(entered.m_ulSteamIDLobby), null);
+        // Currently we only allow joining a lobby if we are in level select.
+        SceneTransitionManagerPatch.DisableTransitionHook = true;
+        SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
+        SceneTransitionManagerPatch.DisableTransitionHook = false;
+    }
+
+    private void OnSessionRequest(SteamNetworkingMessagesSessionRequest_t request)
+    {
+        Plugin.Log.LogInfo($"Received session request {request.m_identityRemote.GetSteamID().m_SteamID}");
+        if (_peers.Count < MaxPlayers)
+        {
+            Plugin.Log.LogInfo($"Server Full");
+            return;
+        }
+
+        if (!Server)
+        {
+            Plugin.Log.LogInfo($"Not a Server");
+            return;
+        }
+
+        Plugin.Log.LogInfo($"Accepted {request.m_identityRemote.GetSteamID().m_SteamID}");
+        SteamNetworkingMessages.AcceptSessionWithUser(ref request.m_identityRemote);
+        _peers.Add(request.m_identityRemote);
+    }
+
+    private void OnLobbyChatUpdate(LobbyChatUpdate_t update)
+    {
+        if (!Online)
+        {
+            return;
+        }
+
+        if ((update.m_rgfChatMemberStateChange & (uint)EChatMemberStateChange.k_EChatMemberStateChangeEntered) != 0)
+        {
+            return;
+        }
+        
+        Plugin.Log.LogInfo($"Player {update.m_ulSteamIDUserChanged} left");
+        
+        var id = new SteamNetworkingIdentity();
+        id.SetSteamID64(update.m_ulSteamIDUserChanged);
+        if (_players.ContainsKey(id))
+        {
+            Plugin.Instance.PlayerManager.Remove(_players[id].Id);
+            _players.Remove(id);
+        }
+
+        _peers.Remove(id);
+        
+        if (_owner == id.GetSteamID())
+        {
+            MigrateServer();
+        }
+    }
+
+    private void MigrateServer()
+    {
+        var owner = SteamMatchmaking.GetLobbyOwner(_lobby);
+        Plugin.Log.LogInfo($"Host disconnected migrating server to {owner.m_SteamID}");
+        if (owner == SteamUser.GetSteamID())
+        {
+            // We are now the host.
+            Server = true;
+        }
+        else
+        {
+            // Connect to new host.
+            Connect(owner, _password);
+        }
     }
 }

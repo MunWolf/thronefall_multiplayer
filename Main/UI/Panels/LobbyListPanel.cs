@@ -13,10 +13,10 @@ public partial class LobbyListPanel : BasePanel
     private readonly CallResult<LobbyMatchList_t> _onLobbyMatchListCallResult;
     
     public override string Name => "Lobby List Panel";
-    public LobbyItem CurrentlySelectedLobby { get; private set; }
 
     public ButtonControl Host { get; private set; }
     
+    private LobbyItem _currentlySelectedLobby;
     private Texture2D _lockTexture;
     private GameObject _lobbyList;
     private ToggleControl _friendsOnly;
@@ -53,7 +53,6 @@ public partial class LobbyListPanel : BasePanel
 
     private void RefreshLobbies()
     {
-        ClearLobbyEntries();
         if (!SteamManager.Initialized)
         {
             return;
@@ -63,6 +62,8 @@ public partial class LobbyListPanel : BasePanel
 
         if (_friendsOnly.Toggle.isOn)
         {
+            ClearLobbyEntries();
+            Plugin.Log.LogInfo("Refreshing list with friends games.");
             var count = SteamFriends.GetFriendCount(EFriendFlags.k_EFriendFlagImmediate);
             for (var i = 0; i < count; ++i)
             {
@@ -70,9 +71,11 @@ public partial class LobbyListPanel : BasePanel
                 var friend = SteamFriends.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
                 if (SteamFriends.GetFriendGamePlayed(friend, out friendGameInfo) && friendGameInfo.m_steamIDLobby.IsValid())
                 {
+                    Plugin.Log.LogInfo($"Game {friendGameInfo.m_steamIDLobby.m_SteamID}");
                     SteamMatchmaking.RequestLobbyData(friendGameInfo.m_steamIDLobby);
                 }
-            }            
+            }
+            _scrollRect.verticalNormalizedPosition = 1.0f;
         }
         else
         {
@@ -80,12 +83,14 @@ public partial class LobbyListPanel : BasePanel
             SteamMatchmaking.AddRequestLobbyListDistanceFilter(ELobbyDistanceFilter.k_ELobbyDistanceFilterWorldwide);
             if (!_showFull.Toggle.isOn)
             {
+                Plugin.Log.LogInfo("Adding empty slot filter");
                 SteamMatchmaking.AddRequestLobbyListFilterSlotsAvailable(1);
             }
 
-            if (_showWithPassword)
+            if (!_showWithPassword.Toggle.isOn)
             {
-                SteamMatchmaking.AddRequestLobbyListStringFilter("password", "no", ELobbyComparison.k_ELobbyComparisonEqual);
+                Plugin.Log.LogInfo("Adding no password filter");
+                SteamMatchmaking.AddRequestLobbyListStringFilter("password", "yes", ELobbyComparison.k_ELobbyComparisonNotEqual);
             }
             
             _onLobbyMatchListCallResult.Set(SteamMatchmaking.RequestLobbyList());
@@ -94,14 +99,14 @@ public partial class LobbyListPanel : BasePanel
     
     private void SelectLobby(LobbyItem item)
     {
-        if (CurrentlySelectedLobby != null)
+        if (_currentlySelectedLobby != null)
         {
-            var image = CurrentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
+            var image = _currentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
             image.color = UIManager.TransparentBackgroundColor;
         }
             
-        CurrentlySelectedLobby = item;
-        var image2 = CurrentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
+        _currentlySelectedLobby = item;
+        var image2 = _currentlySelectedLobby.LobbyGameObject.GetComponent<Image>();
         image2.color = UIManager.SelectedTransparentBackgroundColor;
 
         _connect.SetInteractable(true);
@@ -118,7 +123,8 @@ public partial class LobbyListPanel : BasePanel
         
         _lobbies.Clear();
         _idToLobbies.Clear();
-        CurrentlySelectedLobby = null;
+        // TODO: Try and keep this one on refresh.
+        _currentlySelectedLobby = null;
         
         _connect.SetInteractable(false);
         Host.NavLeft = _back.Button;
@@ -169,6 +175,7 @@ public partial class LobbyListPanel : BasePanel
 
     private void OnLobbiesRefreshed(LobbyMatchList_t list, bool ioFailure)
     {
+        ClearLobbyEntries();
         if (!Enabled)
         {
             return;
@@ -181,20 +188,22 @@ public partial class LobbyListPanel : BasePanel
             return;
         }
         
+        Plugin.Log.LogInfo($"Populating Lobby list {list.m_nLobbiesMatching}");
         for (var i = 0; i < list.m_nLobbiesMatching; ++i)
         {
             var lobby = SteamMatchmaking.GetLobbyByIndex(i);
+            Plugin.Log.LogInfo($"Lobby {lobby.m_SteamID} password {SteamMatchmaking.GetLobbyData(lobby, "password")}");
             AddLobbyEntry(new Lobby()
             {
                 Id = lobby,
                 Name = SteamMatchmaking.GetLobbyData(lobby, "name"),
                 PlayerCount = SteamMatchmaking.GetNumLobbyMembers(lobby),
                 MaxPlayerCount = SteamMatchmaking.GetLobbyMemberLimit(lobby),
-                HasPassword = SteamMatchmaking.GetLobbyData(lobby, "hasPassword") == "yes",
+                HasPassword = SteamMatchmaking.GetLobbyData(lobby, "password") == "yes",
             });
         }
         
-        _scrollRect.verticalNormalizedPosition = 1.0f;
+        _scrollRect.verticalNormalizedPosition = 0.0f;
     }
 
     private void OnLobbyDataUpdated(LobbyDataUpdate_t data)
@@ -209,6 +218,11 @@ public partial class LobbyListPanel : BasePanel
             return;
         }
 
+        if (data.m_bSuccess == 0)
+        {
+            return;
+        }
+        
         var id = new CSteamID(data.m_ulSteamIDLobby);
         if (!_idToLobbies.TryGetValue(id, out var lobby))
         {
@@ -218,14 +232,14 @@ public partial class LobbyListPanel : BasePanel
                 Name = SteamMatchmaking.GetLobbyData(id, "name"),
                 PlayerCount = SteamMatchmaking.GetNumLobbyMembers(id),
                 MaxPlayerCount = SteamMatchmaking.GetLobbyMemberLimit(id),
-                HasPassword = SteamMatchmaking.GetLobbyData(id, "hasPassword") == "yes",
+                HasPassword = SteamMatchmaking.GetLobbyData(id, "password") == "yes",
             });
         }
         else if (data.m_bSuccess == 0)
         {
-            if (lobby == CurrentlySelectedLobby)
+            if (lobby == _currentlySelectedLobby)
             {
-                CurrentlySelectedLobby = null;
+                _currentlySelectedLobby = null;
                 _connect.SetInteractable(false);
                 Host.NavLeft = _back.Button;
                 _back.NavRight = Host.Button;
