@@ -192,6 +192,12 @@ public partial class LobbyListPanel : BasePanel
         for (var i = 0; i < list.m_nLobbiesMatching; ++i)
         {
             var lobby = SteamMatchmaking.GetLobbyByIndex(i);
+            if (SteamMatchmaking.GetLobbyData(lobby, "version") != Plugin.VersionString)
+            {
+                // TODO: Maybe display these but don't allow them to be selected.
+                continue;
+            }
+            
             Plugin.Log.LogInfo($"Lobby {lobby.m_SteamID} password {SteamMatchmaking.GetLobbyData(lobby, "password")}");
             AddLobbyEntry(new Lobby()
             {
@@ -226,6 +232,12 @@ public partial class LobbyListPanel : BasePanel
         var id = new CSteamID(data.m_ulSteamIDLobby);
         if (!_idToLobbies.TryGetValue(id, out var lobby))
         {
+            if (SteamMatchmaking.GetLobbyData(id, "version") != Plugin.VersionString)
+            {
+                // TODO: Maybe display these but don't allow them to be selected.
+                return;
+            }
+            
             AddLobbyEntry(new Lobby()
             {
                 Id = id,

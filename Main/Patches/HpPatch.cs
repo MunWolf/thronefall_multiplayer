@@ -144,7 +144,6 @@ public static class HpPatch
         var target = targetId.Get();
         if (target == null)
         {
-            Plugin.Log.LogWarning($"Failed to heal, target {targetId.Type}:{targetId.Id} did not exist");
             return;
         }
         

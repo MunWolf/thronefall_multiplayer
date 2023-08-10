@@ -6,10 +6,9 @@ namespace ThronefallMP.NetworkPackets;
 
 public class ApprovalPacket : IPacket
 {
-    private const string ApprovalString = $"thronefall_mp_{PluginInfo.PLUGIN_VERSION}";
-    
     public const PacketId PacketID = PacketId.ApprovalPacket;
 
+    public bool SameVersion;
     public string Password;
 
     public PacketId TypeID => PacketID;
@@ -18,11 +17,13 @@ public class ApprovalPacket : IPacket
     
     public void Send(Buffer writer)
     {
+        writer.Write(Plugin.VersionString);
         writer.Write(Password);
     }
 
     public void Receive(Buffer reader)
     {
+        SameVersion = reader.ReadString() == Plugin.VersionString;
         Password = reader.ReadString();
     }
 }

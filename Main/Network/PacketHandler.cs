@@ -6,6 +6,7 @@ using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
 using ThronefallMP.NetworkPackets.Game;
 using ThronefallMP.Patches;
+using ThronefallMP.UI;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -14,6 +15,7 @@ namespace ThronefallMP.Network;
 public enum PacketId
 {
     ApprovalPacket,
+    DisconnectPacket,
     PeerSyncPacket,
     
     BalancePacket,
@@ -39,6 +41,7 @@ public static class PacketHandler
     private static readonly Dictionary<PacketId, Action<SteamNetworkingIdentity, IPacket>> Handlers = new()
     {
         { ApprovalPacket.PacketID, HandleApproval },
+        { DisconnectPacket.PacketID, HandleDisconnect },
         { PeerSyncPacket.PacketID, HandlePeerSync },
         
         { BalancePacket.PacketID, HandleBalance },
@@ -79,23 +82,22 @@ public static class PacketHandler
         Plugin.Instance.PlayerManager.LocalId = packet.LocalPlayer;
         foreach (var data in packet.Players)
         {
-            if (Plugin.Instance.PlayerManager.Get(data.Id) == null)
+            var player = Plugin.Instance.PlayerManager.Create(data.Id);
+            if (player.Object != null)
             {
-                Plugin.Log.LogInfo($"Creating player {data.Id} at {data.Position}");
-            }
-            else
-            {
-                Plugin.Log.LogInfo($"Player {data.Id} exists at {data.Position}");
+                player.Controller.enabled = false;
+                player.Object.transform.position = data.Position;
+                player.Controller.enabled = true;
             }
             
-            Plugin.Instance.PlayerManager.Create(data.Id);
+            player.Shared.Position = data.Position;
         }
     }
 
     private static void HandlePlayerSync(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (PlayerSyncPacket)ipacket;
-        var data = Plugin.Instance.PlayerManager.Get(packet.PlayerID).Shared;
+        var data = Plugin.Instance.PlayerManager.Get(packet.PlayerID)?.Shared;
         if (data != null)
         {
             data.Set(packet.Data);
@@ -207,7 +209,13 @@ public static class PacketHandler
     private static void HandleCommandAdd(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (CommandAddPacket)ipacket;
-        var command = Plugin.Instance.PlayerManager.Get(packet.Player).Object.GetComponent<CommandUnits>();
+        var player = Plugin.Instance.PlayerManager.Get(packet.Player);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        var command = player.Object.GetComponent<CommandUnits>();
         foreach (var unit in packet.Units)
         {
             var component = unit.Get()?.GetComponent<PathfindMovementPlayerunit>();
@@ -221,7 +229,13 @@ public static class PacketHandler
     private static void HandleCommandPlace(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (CommandPlacePacket)ipacket;
-        var command = Plugin.Instance.PlayerManager.Get(packet.Player).Object.GetComponent<CommandUnits>();
+        var player = Plugin.Instance.PlayerManager.Get(packet.Player);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        var command = player.Object.GetComponent<CommandUnits>();
         CommandUnitsPatch.EmitWaypoint(command, packet.Units.Count > 0);
         foreach (var unit in packet.Units)
         {
@@ -236,7 +250,13 @@ public static class PacketHandler
     private static void HandleCommandHoldPosition(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (CommandHoldPositionPacket)ipacket;
-        var command = Plugin.Instance.PlayerManager.Get(packet.Player).Object.GetComponent<CommandUnits>();
+        var player = Plugin.Instance.PlayerManager.Get(packet.Player);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        var command = player.Object.GetComponent<CommandUnits>();
         if (packet.Units.Count > 0)
         {
             CommandUnitsPatch.PlayHoldSound(command);
@@ -255,7 +275,7 @@ public static class PacketHandler
     private static void HandleManualAttack(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (ManualAttackPacket)ipacket;
-        var player = Plugin.Instance.PlayerManager.Get(packet.Player).Object;
+        var player = Plugin.Instance.PlayerManager.Get(packet.Player)?.Object;
         if (player == null)
         {
             return;
@@ -288,22 +308,43 @@ public static class PacketHandler
     private static void HandleSpawnCoin(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (SpawnCoinPacket)ipacket;
-        var player = Plugin.Instance.PlayerManager.Get(packet.Player).Object.GetComponent<PlayerInteraction>();
+        var player = Plugin.Instance.PlayerManager.Get(packet.Player);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        var interaction = player.Object.GetComponent<PlayerInteraction>();
         Object.Instantiate(BuildSlotPatch.CoinPrefab, packet.Position, packet.Rotation)
-            .GetComponent<Coin>().SetTarget(player);
+            .GetComponent<Coin>().SetTarget(interaction);
     }
 
     private static void HandleApproval(SteamNetworkingIdentity sender, IPacket ipacket)
     {
         var packet = (ApprovalPacket)ipacket;
         Plugin.Log.LogInfo($"Handling approval of {sender.GetSteamID64()}");
-        if (Plugin.Instance.Network.Authenticate(packet.Password))
+        if (!packet.SameVersion)
         {
-            Plugin.Instance.Network.AddPlayer(sender);
+            Plugin.Log.LogInfo($"{sender.GetSteamID64()} has wrong version");
+            Plugin.Instance.Network.KickPeer(sender.GetSteamID(), DisconnectPacket.Reason.WrongVersion);
+        }
+        else if (Plugin.Instance.Network.Authenticate(packet.Password))
+        {
+            Plugin.Log.LogInfo($"{sender.GetSteamID64()} Authenticated");
+            Plugin.Instance.Network.AddPlayer(sender.GetSteamID());
         }
         else
         {
-            Plugin.Instance.Network.KickPeer(sender);
+            Plugin.Log.LogInfo($"Authentication of {sender.GetSteamID64()} failed");
+            Plugin.Instance.Network.KickPeer(sender.GetSteamID(), DisconnectPacket.Reason.WrongPassword);
         }
+    }
+
+    private static void HandleDisconnect(SteamNetworkingIdentity sender, IPacket ipacket)
+    {
+        var packet = (DisconnectPacket)ipacket;
+        Plugin.Log.LogInfo($"Disconnected with reason {packet.DisconnectReason}");
+        // TODO: Show dialog
+        Plugin.Instance.Network.Local();
     }
 }

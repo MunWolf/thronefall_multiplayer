@@ -9,7 +9,7 @@ public class PlayerSyncPacket : IPacket
     public const PacketId PacketID = PacketId.PlayerSyncPacket;
     
     public int PlayerID = -1;
-    public PlayerNetworkData.Shared Data;
+    public PlayerNetworkData.Shared Data = new();
     
     public PacketId TypeID => PacketID;
     public int DeliveryMask => Constants.k_nSteamNetworkingSend_UnreliableNoNagle;

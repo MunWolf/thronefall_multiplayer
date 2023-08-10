@@ -321,6 +321,7 @@ public class HostPanel : BasePanel
         var hasPassword = string.IsNullOrEmpty(password) ? "no" : "yes";
         SteamMatchmaking.SetLobbyData(id, "name", _currentRequest.Value.Name);
         SteamMatchmaking.SetLobbyData(id, "password", hasPassword);
+        SteamMatchmaking.SetLobbyData(id, "version", Plugin.VersionString);
         Plugin.Log.LogInfo($"Lobby {created.m_ulSteamIDLobby} created with name '{_currentRequest.Value.Name}' password '{hasPassword}'");
         Plugin.CallbackOnLoad("_LevelSelect", () =>
         {

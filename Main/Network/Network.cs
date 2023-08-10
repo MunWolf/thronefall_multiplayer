@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.NetworkPackets;
@@ -13,16 +14,21 @@ namespace ThronefallMP.Network;
 
 public class Network : MonoBehaviour
 {
+    // TODO: Use this instead of int.
     public enum Channel
     {
         General,
         NetworkManagement
     }
+
+    public delegate void ChatMessage(string user, string message);
+    public event ChatMessage OnReceivedChatMessage;
     
     private const int MaxMessages = 20;
     
     private Callback<LobbyChatUpdate_t> _lobbyChatUpdate;
     private Callback<GameLobbyJoinRequested_t> _lobbyJoinRequested;
+    private Callback<LobbyChatMsg_t> _lobbyChatMessage;
     
     private Callback<SteamNetworkingMessagesSessionRequest_t> _sessionRequestCallback;
     private Callback<SteamNetworkingMessagesSessionFailed_t> _sessionFailed;
@@ -30,8 +36,8 @@ public class Network : MonoBehaviour
     private CallResult<LobbyEnter_t> _lobbyEnterResult;
 
     private readonly PlayerNetworkData.Shared _latestLocalData = new PlayerNetworkData.Shared();
-    private readonly List<SteamNetworkingIdentity> _peers = new();
-    private readonly Dictionary<SteamNetworkingIdentity, PlayerManager.Player> _players = new();
+    private readonly List<CSteamID> _peers = new();
+    private readonly Dictionary<CSteamID, PlayerManager.Player> _players = new();
     private readonly IntPtr[] _messages = new IntPtr[MaxMessages];
 
     public int MaxPlayers { get; set; }
@@ -42,6 +48,7 @@ public class Network : MonoBehaviour
     private CSteamID _lobby;
     private CSteamID _owner;
     private string _password;
+    private byte[] _chatBuffer = new byte[4096];
     
     public void Awake()
     {
@@ -50,20 +57,54 @@ public class Network : MonoBehaviour
         _lobbyChatUpdate = Callback<LobbyChatUpdate_t>.Create(OnLobbyChatUpdate);
         _lobbyJoinRequested = Callback<GameLobbyJoinRequested_t>.Create(OnGameLobbyJoinRequested);
         _lobbyEnterResult = CallResult<LobbyEnter_t>.Create(OnLobbyEntered);
+        _lobbyChatMessage = Callback<LobbyChatMsg_t>.Create(OnChatMessageReceived);
         SceneManager.sceneLoaded += OnSceneChanged;
     }
 
-    public bool Authenticate(string password)
+    private void OnChatMessageReceived(LobbyChatMsg_t chat)
     {
-        return _password == null || _password == password;
+        var type = (EChatEntryType)chat.m_eChatEntryType;
+        if (type != EChatEntryType.k_EChatEntryTypeChatMsg)
+        {
+            return;
+        }
+
+        var length = SteamMatchmaking.GetLobbyChatEntry(
+            new CSteamID(chat.m_ulSteamIDLobby),
+            (int)chat.m_iChatID,
+            out var user,
+            _chatBuffer,
+            _chatBuffer.Length,
+            out type
+        );
+
+        var username = SteamFriends.GetFriendPersonaName(user);
+        var message = Encoding.ASCII.GetString(_chatBuffer, 0, length);
+        OnReceivedChatMessage?.Invoke(username, message);
     }
     
-    public void AddPlayer(SteamNetworkingIdentity id)
+    public void SendChatMessage(string message)
+    {
+        if (!_lobby.IsValid())
+        {
+            return;
+        }
+
+        var output = Encoding.ASCII.GetBytes(message);
+        SteamMatchmaking.SendLobbyChatMsg(_lobby, output, output.Length);
+    }
+    
+    public bool Authenticate(string password)
+    {
+        return string.IsNullOrEmpty(_password) || _password == password;
+    }
+    
+    public void AddPlayer(CSteamID id)
     {
         var player = Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.GenerateID());
         _players[id] = player;
         var packet = new PeerSyncPacket();
-        Plugin.Log.LogInfo($"Sending player list");
+        Plugin.Log.LogInfo($"Building peer sync");
         
         foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
         {
@@ -77,27 +118,37 @@ public class Network : MonoBehaviour
         
         foreach (var pair in _players)
         {
+            Plugin.Log.LogInfo($"Sending peer sync to {pair.Key.m_SteamID}");
             packet.LocalPlayer = pair.Value.Id;
-            SendSingle(packet, pair.Key);
+            var sid = new SteamNetworkingIdentity();
+            sid.SetSteamID(pair.Key);
+            SendSingle(packet, sid);
         }
     }
 
-    public void KickPeer(SteamNetworkingIdentity id)
+    public void KickPeer(CSteamID id, DisconnectPacket.Reason reason)
     {
         if (_players.ContainsKey(id))
         {
-            Plugin.Log.LogInfo($"Player {id.GetSteamID().m_SteamID} kicked");
+            Plugin.Log.LogInfo($"Player {id.m_SteamID} kicked with reason {reason}");
             Plugin.Instance.PlayerManager.Remove(_players[id].Id);
             _players.Remove(id);
         }
         
         _peers.Remove(id);
-        SteamNetworkingMessages.CloseSessionWithUser(ref id);
+        var sid = new SteamNetworkingIdentity();
+        sid.SetSteamID(id);
+        var packet = new DisconnectPacket()
+        {
+            DisconnectReason = reason
+        };
+        SendSingle(packet, sid);
+        SteamNetworkingMessages.CloseSessionWithUser(ref sid);
     }
     
     private void OnSessionFailed(SteamNetworkingMessagesSessionFailed_t failed)
     {
-        _peers.Remove(failed.m_info.m_identityRemote);
+        _peers.Remove(failed.m_info.m_identityRemote.GetSteamID());
         if (!Server)
         {
             // TODO: Show an error
@@ -156,8 +207,9 @@ public class Network : MonoBehaviour
             SteamMatchmaking.LeaveLobby(_lobby);
             foreach (var peer in _peers)
             {
-                var peerMutable = peer;
-                SteamNetworkingMessages.CloseSessionWithUser(ref peerMutable);
+                var sid = new SteamNetworkingIdentity();
+                sid.SetSteamID(peer);
+                SteamNetworkingMessages.CloseSessionWithUser(ref sid);
             }
             
             _peers.Clear();
@@ -181,6 +233,8 @@ public class Network : MonoBehaviour
 
     public void Host(CSteamID lobby, string password)
     {
+        CloseLobby();
+        
         Plugin.Log.LogInfo($"Switched to Host in lobby {lobby.m_SteamID} server {SteamUser.GetSteamID()}");
         _password = password;
         _lobby = lobby;
@@ -215,6 +269,7 @@ public class Network : MonoBehaviour
             Password = password
         };
 
+        _peers.Add(_owner);
         var id = new SteamNetworkingIdentity();
         id.SetSteamID(_owner);
         SendSingle(approvalPacket, id);
@@ -244,10 +299,13 @@ public class Network : MonoBehaviour
         if (Online)
         {
             var buffer = new Buffer();
+            buffer.Write((int)packet.TypeID);
             packet.Send(buffer);
+            var sid = new SteamNetworkingIdentity();
             foreach (var peer in _peers)
             {
-                Send(buffer, peer, packet.DeliveryMask, packet.Channel);
+                sid.SetSteamID(peer);
+                Send(buffer, sid, packet.DeliveryMask, packet.Channel);
             }
         }
 
@@ -266,12 +324,20 @@ public class Network : MonoBehaviour
     public void SendSingle(IPacket packet, SteamNetworkingIdentity target)
     {
         var buffer = new Buffer();
+        buffer.Write((int)packet.TypeID);
         packet.Send(buffer);
         Send(buffer, target, packet.DeliveryMask, packet.Channel);
     }
 
     private static void Send(Buffer buffer, SteamNetworkingIdentity target, int flags, int channel)
     {
+        if (target.IsInvalid())
+        {
+            Plugin.Log.LogInfo($"Trying to send with an invalid id '{target.GetSteamID().m_SteamID}'");
+            Plugin.Log.LogInfo(Environment.StackTrace);
+            return;
+        }
+
         var handle = GCHandle.Alloc(buffer.Data, GCHandleType.Pinned);
         var pointer = handle.AddrOfPinnedObject();
         
@@ -441,6 +507,11 @@ public class Network : MonoBehaviour
                 packet = new ApprovalPacket();
                 break;
             }
+            case PacketId.DisconnectPacket:
+            {
+                packet = new DisconnectPacket();
+                break;
+            }
             default:
                 Plugin.Log.LogWarning($"Received unknown packet {type} from {sender} containing {buffer.Data.Length} bytes.");
                 break;
@@ -506,9 +577,26 @@ public class Network : MonoBehaviour
             return;
         }
 
+        var found = false;
+        for (int i = 0, count = SteamMatchmaking.GetNumLobbyMembers(_lobby); i < count; ++i)
+        {
+            var member = SteamMatchmaking.GetLobbyMemberByIndex(_lobby, i);
+            if (request.m_identityRemote.GetSteamID() == member)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            Plugin.Log.LogInfo($"Not in lobby");
+            return;
+        }
+
         Plugin.Log.LogInfo($"Accepted {request.m_identityRemote.GetSteamID().m_SteamID}");
         SteamNetworkingMessages.AcceptSessionWithUser(ref request.m_identityRemote);
-        _peers.Add(request.m_identityRemote);
+        _peers.Add(request.m_identityRemote.GetSteamID());
     }
 
     private void OnLobbyChatUpdate(LobbyChatUpdate_t update)
@@ -524,9 +612,8 @@ public class Network : MonoBehaviour
         }
         
         Plugin.Log.LogInfo($"Player {update.m_ulSteamIDUserChanged} left");
-        
-        var id = new SteamNetworkingIdentity();
-        id.SetSteamID64(update.m_ulSteamIDUserChanged);
+
+        var id = new CSteamID(update.m_ulSteamIDUserChanged);
         if (_players.ContainsKey(id))
         {
             Plugin.Instance.PlayerManager.Remove(_players[id].Id);
@@ -534,8 +621,7 @@ public class Network : MonoBehaviour
         }
 
         _peers.Remove(id);
-        
-        if (_owner == id.GetSteamID())
+        if (_owner == id)
         {
             MigrateServer();
         }

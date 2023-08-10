@@ -59,13 +59,17 @@ public class PlayerManager
     {
         if (!_players.TryGetValue(id, out var player))
         {
-            Plugin.Log.LogInfo($"Creating player {id} (local {LocalId})");
+            Plugin.Log.LogInfo($"Creating player {id}");
             player = new Player
             {
                 Id = id
             };
         
             _players[id] = player;
+        }
+        else
+        {
+            Plugin.Log.LogInfo($"Updating Player {id}");
         }
 
         if (_playerPrefab != null && player.Object == null)
@@ -78,6 +82,8 @@ public class PlayerManager
 
     public void Remove(int player)
     {
+        // TODO: Add a smoke poof effect when a player is destroyed.
+        Plugin.Log.LogInfo($"Destroying player {player}");
         var data = _players[player];
         Object.Destroy(data.Object);
         _players.Remove(player);
@@ -103,7 +109,7 @@ public class PlayerManager
 
     public Player Get(int id)
     {
-        return _players[id];
+        return _players.TryGetValue(id, out var player) ? player : null;
     }
 
     public IEnumerable<PlayerNetworkData> GetAllPlayerData()

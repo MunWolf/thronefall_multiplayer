@@ -16,6 +16,7 @@ namespace ThronefallMP
     [BepInProcess("Thronefall.exe")]
     public class Plugin : BaseUnityPlugin
     {
+        public const string VersionString = $"thronefall_mp_{PluginInfo.PLUGIN_VERSION}";
         public static readonly System.Random Random = new();
         public static Plugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
