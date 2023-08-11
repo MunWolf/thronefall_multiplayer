@@ -14,9 +14,3 @@ After that open the solution file and run the build.
 Download BepInEx 6 and copy it into your Thronefall directory.
 When you run the build it copies the ThronefallMultiplayer dlls to the correct plugin folder.
 Run your executable either directly or through Steam.
-
-## TODO
-
-* Make UI for hosting/connecting to servers
-* Make UI to leave a server
-* Change networking so playerid != peerid
