@@ -69,7 +69,8 @@ public static class SceneTransitionManagerPatch
     {
         if (InLevelSelect)
         {
-            InitializeLevelSelectObjects();
+            // Repurpose this into something else.
+            //InitializeLevelSelectObjects();
         }
         else if (_networkRoot != null)
         {
