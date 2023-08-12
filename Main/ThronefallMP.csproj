@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>com.badwolf.thronefall_mp</AssemblyName>
     <Description>Multiplayer mod for Thronefall</Description>
-    <Version>0.1.1</Version>
+    <Version>0.2.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <PackageId>Thronefall Multiplayer</PackageId>
@@ -73,15 +73,6 @@
     <None Remove="Assets\lock-icon.png" />
     <EmbeddedResource Include="Assets\lock-icon.png" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="NetworkPackets\Game\" />
-  </ItemGroup>
-  
-  
-  
-  
-  
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="powershell.exe -NonInteractive -executionpolicy Unrestricted -file $(SolutionDir)\install.ps1 $(SolutionDir) $(OutDir)" />

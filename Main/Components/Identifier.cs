@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using HarmonyLib;
 using UnityEngine;
@@ -59,6 +60,11 @@ public class Identifier : MonoBehaviour
         }
     }
 
+    public void OnDestroy()
+    {
+        Repository[Type].Remove(Id);
+    }
+
     public void SetIdentity(IdentifierType type, int id)
     {
         Type = type;
@@ -84,7 +90,10 @@ public class Identifier : MonoBehaviour
     {
         foreach (var pair in Repository[type])
         {
-            yield return pair.Value;
+            if (pair.Value != null)
+            {
+                yield return pair.Value;
+            }
         }
     }
 }
