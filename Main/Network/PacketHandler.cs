@@ -191,6 +191,15 @@ public static class PacketHandler
         }
         else
         {
+            if (TagManager.instance != null && EnemySpawner.instance != null)
+            {
+                EnemySpawner.instance.StopSpawnAfterWaveAndReset();
+                foreach (var enemy in Identifier.GetGameObjects(IdentifierType.Enemy))
+                {
+                    enemy.GetComponent<Hp>().TakeDamage(9999, null, true);
+                }
+            }
+            
             Traverse.Create(DayNightCycle.Instance).Field<float>("currentNightLength").Value = packet.NightLength;
             var switchToDayCoroutine = Traverse.Create(DayNightCycle.Instance).Method("SwitchToDayCoroutine");
             DayNightCycle.Instance.StartCoroutine(switchToDayCoroutine.GetValue<IEnumerator>());

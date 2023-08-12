@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using HarmonyLib;
-using Mono.CompilerServices.SymbolWriter;
 using UnityEngine;
 
 namespace ThronefallMP.Components;
@@ -80,5 +78,13 @@ public class Identifier : MonoBehaviour
     public static GameObject GetGameObject(IdentifierType type, int id)
     {
         return type == IdentifierType.Invalid ? null : Repository[type].GetValueSafe(id);
+    }
+    
+    public static IEnumerable<GameObject> GetGameObjects(IdentifierType type)
+    {
+        foreach (var pair in Repository[type])
+        {
+            yield return pair.Value;
+        }
     }
 }
