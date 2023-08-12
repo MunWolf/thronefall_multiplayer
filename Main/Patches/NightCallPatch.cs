@@ -13,6 +13,7 @@ public static class NightCallPatch
         On.NightCall.UpdateFill += UpdateFill;
     }
 
+    private static bool _sentNightPacket = false;
     private static void UpdateFill(On.NightCall.orig_UpdateFill original, NightCall self)
     {
         HandleNightCallAudio(self);
@@ -29,8 +30,6 @@ public static class NightCallPatch
         if (active.Value)
         {
             var player = data.GetComponent<PlayerInteraction>();
-            var nightCallTargetVolume = Traverse.Create(self).Field<float>("nightCallTargetVolume");
-            
             if (SettingsManager.Instance.UseLargeInGameUI)
             {
                 self.scaleParent.localScale = Vector3.one * 1.5f;
@@ -48,15 +47,22 @@ public static class NightCallPatch
             {
                 currentFill.Value -= Time.deltaTime * 2f * (1f / self.nightCallTime);
             }
-            if (currentFill.Value >= 1f)
+
+            if (currentFill.Value < 1f)
             {
+                _sentNightPacket = false;
+            }
+            else if (!_sentNightPacket)
+            {
+                _sentNightPacket = true;
                 var packet = new DayNightPacket
                 {
-                    Night = true
+                    Timestate = DayNightCycle.Timestate.Night
                 };
 
-                Plugin.Instance.Network.Send(packet, true);
+                Plugin.Instance.Network.Send(packet, Plugin.Instance.Network.Server);
             }
+            
             if (currentFill.Value > 0f)
             {
                 self.nightCallCueText.gameObject.SetActive(true);
@@ -74,11 +80,15 @@ public static class NightCallPatch
             self.background.color = color;
             currentFill.Value = Mathf.Clamp01(currentFill.Value);
             self.targetGraphic.fillAmount = currentFill.Value;
-            return;
         }
-        
-        if (currentFill.Value > 0f)
+        else
         {
+            _sentNightPacket = false;
+            if (!(currentFill.Value > 0f))
+            {
+                return;
+            }
+            
             currentFill.Value -= Time.deltaTime * 2f;
             var color = defaultBackgroundColor.Value;
             color.a = Mathf.InverseLerp(0f, 0.4f, currentFill.Value);

@@ -6,7 +6,7 @@ namespace ThronefallMP;
 public struct InternalGlobalData
 {
     public int Balance;
-    public int Networth;
+    public int NetWorth;
 }
 
 public static class GlobalData
@@ -27,12 +27,6 @@ public static class GlobalData
             if (Plugin.Instance.Network.Server)
             {
                 Internal.Balance = value;
-                var packet = new BalancePacket
-                {
-                    Balance = value,
-                    Networth = Internal.Networth
-                };
-                Plugin.Instance.Network.Send(packet, true);
             }
             else
             {
@@ -41,5 +35,5 @@ public static class GlobalData
         }
     }
     
-    public static int Networth => Internal.Networth;
+    public static int NetWorth => Internal.NetWorth;
 }

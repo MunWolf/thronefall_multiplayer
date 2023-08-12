@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UniverseLib;
 
 namespace ThronefallMP.Components;
@@ -12,15 +11,14 @@ public class PlayerNetworkData : MonoBehaviour
 {
     public class Shared
     {
-        public Vector3 Position { get; set; }
-        public float MoveHorizontal { get; set; }
-        public float MoveVertical { get; set; }
-        public bool SprintToggleButton { get; set; }
-        public bool SprintButton { get; set; }
-        public bool InteractButton { get; set; }
-        public bool CallNightButton { get; set; }
-        public float CallNightFill { get; set; }
-        public bool CommandUnitsButton { get; set; }
+        public float MoveHorizontal;
+        public float MoveVertical;
+        public bool SprintToggleButton;
+        public bool SprintButton;
+        public bool InteractButton;
+        public bool CallNightButton;
+        public float CallNightFill;
+        public bool CommandUnitsButton;
         
         public static bool operator ==(Shared a, Shared b)
         {
@@ -50,7 +48,6 @@ public class PlayerNetworkData : MonoBehaviour
 
         public void Set(Shared a)
         {
-            Position = a.Position;
             MoveHorizontal = a.MoveHorizontal;
             MoveVertical = a.MoveVertical;
             SprintToggleButton = a.SprintToggleButton;
@@ -69,8 +66,7 @@ public class PlayerNetworkData : MonoBehaviour
                 return false;
             }
             
-            return Position == b.Position
-                && Math.Abs(MoveHorizontal - b.MoveHorizontal) < 0.01f
+            return Math.Abs(MoveHorizontal - b.MoveHorizontal) < 0.01f
                 && Math.Abs(MoveVertical - b.MoveVertical) < 0.01f
                 && SprintToggleButton == b.SprintToggleButton
                 && SprintButton == b.SprintButton
@@ -83,17 +79,16 @@ public class PlayerNetworkData : MonoBehaviour
         [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
-            var hashCode = 648391;
-            hashCode *= 37139213 ^ Position.GetHashCode();
-            hashCode *= 174440041 ^ MoveHorizontal.GetHashCode();
-            hashCode *= 17624813 ^ MoveVertical.GetHashCode();
-            hashCode *= 9737333 ^ SprintToggleButton.GetHashCode();
-            hashCode *= 7474967 ^ SprintButton.GetHashCode();
-            hashCode *= 77557187 ^ InteractButton.GetHashCode();
-            hashCode *= 1146581 ^ CallNightButton.GetHashCode();
-            hashCode *= 840943 ^ CallNightFill.GetHashCode();
-            hashCode *= 37027103 ^ CommandUnitsButton.GetHashCode();
-            return hashCode;
+            return (
+                MoveHorizontal,
+                MoveVertical,
+                SprintToggleButton,
+                SprintButton,
+                InteractButton,
+                CallNightButton,
+                CallNightFill,
+                CommandUnitsButton
+            ).GetHashCode();
         }
     }
     
@@ -110,7 +105,6 @@ public class PlayerNetworkData : MonoBehaviour
     public bool PlayerScepterInteractLast { get; set; }
     public bool CallNightLast { get; set; }
     public bool CommandUnitsButtonLast { get; set; }
-    public bool TeleportNext { get; set; }
 
     private void Update()
     {

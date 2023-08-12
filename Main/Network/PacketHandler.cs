@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using HarmonyLib;
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Network.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.UI;
 
@@ -17,9 +19,13 @@ public enum PacketId
     Disconnect,
     PeerSync,
     
-    Balance,
+    SyncCheck,
+    SyncGeneral,
+    SyncPlayer,
+    
     BuildOrUpgrade,
     CancelBuild,
+    ClientSync,
     CommandAdd,
     CommandHoldPosition,
     CommandPlace,
@@ -29,7 +35,6 @@ public enum PacketId
     EnemySpawn,
     Heal,
     ManualAttack,
-    PlayerSync,
     Position,
     Respawn,
     ScaleHp,
@@ -44,11 +49,11 @@ public static class PacketHandler
     {
         { ApprovalPacket.PacketID, HandleApproval },
         { DisconnectPacket.PacketID, HandleDisconnect },
-        { PeerSyncPacket.PacketID, HandlePeerSync },
+        { PeerListPacket.PacketID, HandlePeerList },
         
-        { BalancePacket.PacketID, HandleBalance },
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CancelBuildPacket.PacketID, HandleCancelBuild },
+        { ClientSyncPacket.PacketID, HandlePlayerSync },
         { CommandAddPacket.PacketID, HandleCommandAdd },
         { CommandPlacePacket.PacketID, HandleCommandPlace },
         { CommandHoldPositionPacket.PacketID, HandleCommandHoldPosition },
@@ -58,30 +63,35 @@ public static class PacketHandler
         { EnemySpawnPacket.PacketID, HandleEnemySpawn },
         { HealPacket.PacketID, HandleHeal },
         { ManualAttackPacket.PacketID, HandleManualAttack },
-        { PlayerSyncPacket.PacketID, HandlePlayerSync },
         { PositionPacket.PacketID, HandlePosition },
         { RespawnPacket.PacketID, HandleRespawn },
         { ScaleHpPacket.PacketID, HandleScaleHp },
         { TransitionToScenePacket.PacketID, HandleTransitionToScene },
     };
 
-    public static void HandlePacket(SteamNetworkingIdentity sender, BasePacket basePacket)
+    public static void HandlePacket(SteamNetworkingIdentity sender, BasePacket packet)
     {
-        var found = Handlers.TryGetValue(basePacket.TypeID, out var handler);
+        if (BaseSync.HandlePacket(sender, packet))
+        {
+            Plugin.Log.LogDebugFiltered("PacketHandler", $"Packet {packet.TypeID} handled by sync");
+            return;
+        }
+        
+        var found = Handlers.TryGetValue(packet.TypeID, out var handler);
         if (found)
         {
-            Plugin.Log.LogDebugFiltered("PacketHandler", $"Handling {basePacket.TypeID} packet");
-            handler(sender, basePacket);
+            Plugin.Log.LogDebugFiltered("PacketHandler", $"Handling {packet.TypeID} packet");
+            handler(sender, packet);
         }
         else
         {
-            Plugin.Log.LogWarningFiltered("PacketHandler", $"No handler for packet {basePacket.TypeID}.");
+            Plugin.Log.LogWarningFiltered("PacketHandler", $"No handler for packet {packet.TypeID}.");
         }
     }
 
-    private static void HandlePeerSync(SteamNetworkingIdentity sender, BasePacket ipacket)
+    private static void HandlePeerList(SteamNetworkingIdentity sender, BasePacket ipacket)
     {
-        var packet = (PeerSyncPacket)ipacket;
+        var packet = (PeerListPacket)ipacket;
 
         if (AwaitingConnectionApproval)
         {
@@ -103,9 +113,9 @@ public static class PacketHandler
                 Plugin.Instance.PlayerManager.LocalId = data.Id;
             }
             
-            var player = Plugin.Instance.PlayerManager.Create(data.SteamId, data.Id);
-            player.Shared.Position = data.Position;
-            if (player.Object == null)
+            var player = Plugin.Instance.PlayerManager.CreateOrGet(data.SteamId, data.Id);
+            player.SpawnID = data.SpawnId;
+            if (player.Object == null && !Plugin.Instance.PlayerManager.InstantiatePlayer(player, data.Position))
             {
                 continue;
             }
@@ -118,12 +128,29 @@ public static class PacketHandler
 
     private static void HandlePlayerSync(SteamNetworkingIdentity sender, BasePacket ipacket)
     {
-        var packet = (PlayerSyncPacket)ipacket;
-        var data = Plugin.Instance.PlayerManager.Get(packet.PlayerID)?.Shared;
-        if (data != null)
+        var packet = (ClientSyncPacket)ipacket;
+        var player = Plugin.Instance.PlayerManager.Get(packet.PlayerID);
+        if (player == null)
         {
-            data.Set(packet.Data);
+            return;
         }
+        
+        player.Shared.Set(packet.Data);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        var deltaPosition = packet.Position - player.Object.transform.position;
+        if (deltaPosition.sqrMagnitude < PlayerMovementPatch.MaximumDevianceSquared)
+        {
+            return;
+        }
+        
+        Plugin.Log.LogInfo($"MaximumDeviance reached, moving player to {packet.Position}");
+        player.Controller.enabled = false;
+        player.Object.transform.position = packet.Position;
+        player.Controller.enabled = true;
     }
 
     private static void HandleTransitionToScene(SteamNetworkingIdentity sender, BasePacket ipacket)
@@ -148,9 +175,25 @@ public static class PacketHandler
     private static void HandleDayNight(SteamNetworkingIdentity sender, BasePacket ipacket)
     {
         var packet = (DayNightPacket)ipacket;
-        if (packet.Night)
+        if (packet.Timestate == DayNightCycle.Instance.CurrentTimestate)
+        {
+            return;
+        }
+        
+        if (Plugin.Instance.Network.Server && sender.GetSteamID() != Network.SteamId)
+        {
+            Plugin.Instance.Network.Send(packet);
+        }
+        
+        if (packet.Timestate == DayNightCycle.Timestate.Night)
         {
             NightCallPatch.TriggerNightFall();
+        }
+        else
+        {
+            Traverse.Create(DayNightCycle.Instance).Field<float>("currentNightLength").Value = packet.NightLength;
+            var switchToDayCoroutine = Traverse.Create(DayNightCycle.Instance).Method("SwitchToDayCoroutine");
+            DayNightCycle.Instance.StartCoroutine(switchToDayCoroutine.GetValue<IEnumerator>());
         }
     }
 
@@ -301,19 +344,6 @@ public static class PacketHandler
         attack.TryToAttack();
     }
 
-    private static void HandleBalance(SteamNetworkingIdentity sender, BasePacket ipacket)
-    {
-        var packet = (BalancePacket)ipacket;
-        var delta = GlobalData.Internal.Balance - packet.Balance;
-        if (delta == 0)
-        {
-            return;
-        }
-        
-        GlobalData.Internal.Balance = packet.Balance;
-        GlobalData.Internal.Networth = packet.Networth;
-    }
-
     private static void HandleApproval(SteamNetworkingIdentity sender, BasePacket ipacket)
     {
         var packet = (ApprovalPacket)ipacket;
@@ -397,7 +427,7 @@ public static class PacketHandler
         {
             Plugin.Log.LogInfoFiltered("PacketHandler", $"Local build of {packet.BuildingId}:{packet.Level}:{packet.Choice} confirmed");
             GlobalData.Internal.Balance += GlobalData.LocalBalanceDelta;
-            GlobalData.Internal.Networth += GlobalData.LocalBalanceDelta;
+            GlobalData.Internal.NetWorth += GlobalData.LocalBalanceDelta;
             GlobalData.LocalBalanceDelta = 0;
         }
         else

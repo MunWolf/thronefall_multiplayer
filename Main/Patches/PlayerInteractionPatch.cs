@@ -100,7 +100,7 @@ public static class PlayerInteractionPatch
             return;
         }
         
-        GlobalData.Internal.Networth += amount;
+        GlobalData.Internal.NetWorth += amount;
         GlobalData.Balance += amount;
     }
 

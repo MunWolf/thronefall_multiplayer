@@ -68,7 +68,7 @@ public class PlayerManager
         return id;
     }
     
-    public Player Create(CSteamID steamId, int id)
+    public Player CreateOrGet(CSteamID steamId, int id)
     {
         if (!_players.TryGetValue(id, out var player))
         {
@@ -87,11 +87,6 @@ public class PlayerManager
             Plugin.Log.LogInfo($"Updating Player {steamId}:{id}");
         }
 
-        if (_playerPrefab != null && player.Object == null)
-        {
-            InstantiatePlayer(player);
-        }
-
         return player;
     }
 
@@ -107,8 +102,18 @@ public class PlayerManager
         // TODO: Update spawn ids.
     }
 
-    private void InstantiatePlayer(Player player)
+    public bool InstantiatePlayer(Player player, Vector3 position)
     {
+        if (_playerPrefab == null)
+        {
+            return false;
+        }
+
+        if (player.Object != null)
+        {
+            Object.Destroy(player.Object);
+        }
+        
         Plugin.Log.LogInfo($"Instantiating player {player.SteamID}:{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}");
         player.Object = Object.Instantiate(_playerPrefab, _playerContainer.transform);
         player.Controller = player.Object.GetComponent<CharacterController>();
@@ -116,13 +121,12 @@ public class PlayerManager
         player.Data.Player = player;
         player.Data.SharedData = player.Shared;
         player.Data.id = player.Id;
-        player.SpawnID = !_players.Any() ? 0 : _players.Max(p => p.Value.SpawnID) + 1;
         
         var identifier = player.Object.GetComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Player, player.Id);
-        player.Object.transform.position = player.Shared.Position;
-        player.Data.TeleportNext = true;
+        player.Object.transform.position = position;
         player.Object.SetActive(true);
+        return true;
     }
 
     public Player Get(int id)
@@ -169,8 +173,7 @@ public class PlayerManager
         SpawnLocation = prefab.transform.position;
         foreach (var player in _players)
         {
-            player.Value.Shared.Position = player.Value.SpawnLocation;
-            InstantiatePlayer(player.Value);
+            InstantiatePlayer(player.Value, player.Value.SpawnLocation);
         }
     }
 

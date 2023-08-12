@@ -143,50 +143,20 @@ static class PlayerMovementPatch
 			
 		velocity.Value += Vector3.up * yVelocity.Value;
 
-		if (!playerNetworkData.IsLocal)
+		var yFallThroughMapDetection = Traverse.Create(self).Field<float>("yFallThroughMapDetection");
+		controller.Value.Move(velocity.Value * Time.deltaTime);
+		if (!(self.transform.position.y < yFallThroughMapDetection.Value))
 		{
-			var deltaPosition = playerNetworkData.SharedData.Position - self.transform.position;
-			if (playerNetworkData.TeleportNext || deltaPosition.sqrMagnitude > MaximumDevianceSquared)
-			{
-				if (!playerNetworkData.TeleportNext)
-				{
-					Plugin.Log.LogInfo("MaximumDeviance reached");
-				}
-					
-				Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
-				self.TeleportTo(playerNetworkData.SharedData.Position);
-				playerNetworkData.TeleportNext = false;
-			}
-			else
-			{
-				var yFallThroughMapDetection = Traverse.Create(self).Field<float>("yFallThroughMapDetection");
-				velocity.Value = Vector3.Lerp(deltaPosition, velocity.Value, 0.5f);
-				controller.Value.Move(Vector3.Lerp(deltaPosition, velocity.Value * Time.deltaTime, 0.5f));
-				if (!(self.transform.position.y < yFallThroughMapDetection.Value))
-				{
-					return;
-				}
-					
-				velocity.Value = Vector3.zero;
-				yVelocity.Value = 0f;
-				self.TeleportTo(
-					Utils.GetSpawnLocation(
-						Plugin.Instance.PlayerManager.SpawnLocation,
-						playerNetworkData.Player.SpawnID
-					)
-				);
-			}
+			return;
 		}
-		else if (playerNetworkData.TeleportNext)
-		{
-			Plugin.Log.LogInfo($"Teleporting {playerNetworkData.id} from {self.transform.position} to {playerNetworkData.SharedData.Position}");
-			self.TeleportTo(playerNetworkData.SharedData.Position);
-			playerNetworkData.TeleportNext = false;
-		}
-		else
-		{
-			controller.Value.Move(velocity.Value * Time.deltaTime);
-			playerNetworkData.SharedData.Position = self.transform.position;
-		}
+				
+		velocity.Value = Vector3.zero;
+		yVelocity.Value = 0f;
+		self.TeleportTo(
+			Utils.GetSpawnLocation(
+				Plugin.Instance.PlayerManager.SpawnLocation,
+				playerNetworkData.Player.SpawnID
+			)
+		);
     }
 }

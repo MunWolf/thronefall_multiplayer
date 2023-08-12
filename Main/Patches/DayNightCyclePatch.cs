@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -9,11 +10,39 @@ public static class DayNightCyclePatch
 {
     public static void Apply()
     {
+        On.DayNightCycle.Update += Update;
         On.DayNightCycle.DawnCallAfterSunrise += DawnCallAfterSunrise;
         On.DayNightCycle.DawnCallBeforeSunrise += DawnCallBeforeSunrise;
         On.DayNightCycle.DuskCall += DuskCall;
     }
-    
+
+    private static void Update(On.DayNightCycle.orig_Update original, DayNightCycle self)
+    {
+        if (!Plugin.Instance.Network.Server ||
+            LocalGamestate.Instance.CurrentState != LocalGamestate.State.InMatch ||
+            self.CurrentTimestate != DayNightCycle.Timestate.Night)
+        {
+            return;
+        }
+
+        var currentNightLength = Traverse.Create(self).Field<float>("currentNightLength");
+        currentNightLength.Value += Time.deltaTime;
+        var shouldSwitchToDay = 
+            TagManager.instance && EnemySpawner.instance &&
+            !EnemySpawner.instance.SpawningInProgress &&
+            TagManager.instance.CountAllTaggedObjectsWithTag(TagManager.ETag.EnemyOwned) < 1 &&
+            self.gameObject.activeInHierarchy;
+
+        if (shouldSwitchToDay)
+        {
+            Plugin.Instance.Network.Send(new DayNightPacket()
+            {
+                    Timestate = DayNightCycle.Timestate.Day,
+                    NightLength = currentNightLength.Value
+            }, true);
+        }
+    }
+
     private static void DawnCallAfterSunrise(On.DayNightCycle.orig_DawnCallAfterSunrise original, DayNightCycle self)
     {
         var afterSunrise = Traverse.Create(self).Field<bool>("afterSunrise");
@@ -34,7 +63,7 @@ public static class DayNightCyclePatch
         }
         ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.BuildingRepair);
         var levelDataForActiveScene = LevelProgressManager.instance.GetLevelDataForActiveScene();
-        var num = GlobalData.Networth;
+        var num = GlobalData.NetWorth;
         num += TagManager.instance.freeCoins.Count;
         num += self.CoinCountToBeHarvested;
         levelDataForActiveScene.dayToDayNetworth.Add(num);

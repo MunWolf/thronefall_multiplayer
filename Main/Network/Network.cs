@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using MonoMod.InlineRT;
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Network.Packets.Sync;
+using ThronefallMP.Network.Sync;
 using ThronefallMP.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,6 +19,7 @@ public enum Channel
 {
     NetworkManagement,
     Player,
+    SyncPlayer,
     Resources,
     Game,
 }
@@ -25,6 +28,8 @@ public class Network : MonoBehaviour
 {
     public delegate void ChatMessage(string user, string message);
     public event ChatMessage OnReceivedChatMessage;
+
+    public IEnumerable<CSteamID> Peers => _peers;
     
     private const int MaxMessages = 20;
     
@@ -47,6 +52,7 @@ public class Network : MonoBehaviour
     public bool Authority => Server || !Online;
     public bool Server { get; private set; }
     public bool Online { get; private set; }
+    public static CSteamID SteamId => SteamUser.GetSteamID();
 
     private CSteamID _lobby;
     private CSteamID _owner;
@@ -108,19 +114,21 @@ public class Network : MonoBehaviour
     {
         _pendingPeers.Remove(id);
         _peers.Add(id);
-        var player = Plugin.Instance.PlayerManager.Create(id, Plugin.Instance.PlayerManager.GenerateID());
-        player.Shared.Position = player.SpawnLocation;
+        var player = Plugin.Instance.PlayerManager.CreateOrGet(id, Plugin.Instance.PlayerManager.GenerateID());
+        player.SpawnID = Plugin.Instance.PlayerManager.GetAllPlayers().Max(p => p.SpawnID) + 1;
+        Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
         
-        var packet = new PeerSyncPacket();
+        var packet = new PeerListPacket();
         Plugin.Log.LogInfoFiltered("Network", $"Building peer sync");
         foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayers())
         {
-            Plugin.Log.LogInfoFiltered("Network", $" {data.SteamID}:{data.Id} -> {data.Shared.Position}");
-            packet.Players.Add(new PeerSyncPacket.PlayerData
+            Plugin.Log.LogInfoFiltered("Network", $" {data.SteamID}:{data.Id} -> {data.Object.transform.position}");
+            packet.Players.Add(new PeerListPacket.PlayerData
             {
                 Id = data.Id,
                 SteamId = data.SteamID,
-                Position = data.Shared.Position
+                SpawnId = data.SpawnID,
+                Position = data.Object.transform.position
             });
         }
         
@@ -195,24 +203,31 @@ public class Network : MonoBehaviour
                 }
             }
         }
+
+        if (Online)
+        {
+            BaseSync.UpdateSyncs();
+        }
         
-        var shared = Plugin.Instance.PlayerManager.LocalPlayer?.Shared;
-        if (shared == null || shared == _latestLocalData)
+        var player = Plugin.Instance.PlayerManager.LocalPlayer;
+        if (Server || player == null || player.Shared == _latestLocalData)
         {
             return;
         }
         
-        var packet = new PlayerSyncPacket
+        var packet = new ClientSyncPacket
         {
             PlayerID = Plugin.Instance.PlayerManager.LocalId,
-            Data = shared
+            Position = player.Object.transform.position,
+            Data = player.Shared
         };
         Send(packet);
-        _latestLocalData.Set(shared);
+        _latestLocalData.Set(player.Shared);
     }
 
     private void CloseLobby()
     {
+        BaseSync.ResetSyncs();
         PacketHandler.AwaitingConnectionApproval = false;
         if (_lobby.IsValid())
         {
@@ -243,8 +258,9 @@ public class Network : MonoBehaviour
         
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
-        var player = Plugin.Instance.PlayerManager.Create(CSteamID.Nil, Plugin.Instance.PlayerManager.LocalId);
-        player.Shared.Position = player.SpawnLocation;
+        var player = Plugin.Instance.PlayerManager.CreateOrGet(CSteamID.Nil, Plugin.Instance.PlayerManager.LocalId);
+        player.SpawnID = 0;
+        Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
     }
 
     public void Host(CSteamID lobby, string password)
@@ -259,8 +275,9 @@ public class Network : MonoBehaviour
         Online = true;
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
-        var player = Plugin.Instance.PlayerManager.Create(_owner, Plugin.Instance.PlayerManager.LocalId);
-        player.Shared.Position = player.SpawnLocation;
+        var player = Plugin.Instance.PlayerManager.CreateOrGet(_owner, Plugin.Instance.PlayerManager.LocalId);
+        player.SpawnID = 0;
+        Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
         SteamMatchmaking.SetLobbyJoinable(lobby, true);
     }
 
@@ -366,7 +383,7 @@ public class Network : MonoBehaviour
         var handle = GCHandle.Alloc(buffer.Data, GCHandleType.Pinned);
         var pointer = handle.AddrOfPinnedObject();
         
-        SteamNetworkingMessages.SendMessageToUser(
+        var result = SteamNetworkingMessages.SendMessageToUser(
             ref target,
             pointer,
             (uint)buffer.WriteHead,
@@ -374,6 +391,11 @@ public class Network : MonoBehaviour
             (int)channel
         );
         handle.Free();
+
+        if (result != EResult.k_EResultOK)
+        {
+            Plugin.Log.LogWarningFiltered("Network", $"SendMessage returned error '{result}'");
+        }
     }
 
     private static readonly Dictionary<PacketId, Type> PendingPeerPacketTypes = new()
@@ -384,10 +406,15 @@ public class Network : MonoBehaviour
     private static readonly Dictionary<PacketId, Type> PacketTypes = new()
     {
         { DisconnectPacket.PacketID, typeof(DisconnectPacket) },
-        { PeerSyncPacket.PacketID, typeof(PeerSyncPacket) },
-        { BalancePacket.PacketID, typeof(BalancePacket) },
+        { PeerListPacket.PacketID, typeof(PeerListPacket) },
+        
+        { SyncCheckPacket.PacketID, typeof(SyncCheckPacket) },
+        { SyncGeneralPacket.PacketID, typeof(SyncGeneralPacket) },
+        { SyncPlayerPacket.PacketID, typeof(SyncPlayerPacket) },
+        
         { BuildOrUpgradePacket.PacketID, typeof(BuildOrUpgradePacket) },
         { CancelBuildPacket.PacketID, typeof(CancelBuildPacket) },
+        { ClientSyncPacket.PacketID, typeof(ClientSyncPacket) },
         { CommandAddPacket.PacketID, typeof(CommandAddPacket) },
         { CommandPlacePacket.PacketID, typeof(CommandPlacePacket) },
         { CommandHoldPositionPacket.PacketID, typeof(CommandHoldPositionPacket) },
@@ -397,7 +424,6 @@ public class Network : MonoBehaviour
         { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
         { HealPacket.PacketID, typeof(HealPacket) },
         { ManualAttackPacket.PacketID, typeof(ManualAttackPacket) },
-        { PlayerSyncPacket.PacketID, typeof(PlayerSyncPacket) },
         { PositionPacket.PacketID, typeof(PositionPacket) },
         { RespawnPacket.PacketID, typeof(RespawnPacket) },
         { ScaleHpPacket.PacketID, typeof(ScaleHpPacket) },

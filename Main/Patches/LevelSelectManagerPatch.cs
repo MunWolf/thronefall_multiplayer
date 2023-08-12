@@ -31,7 +31,6 @@ public static class LevelSelectManagerPatch
                     var playerMovement = data.GetComponent<PlayerMovement>();
                     var spawnLocation = level.transform.position + self.spawnOnLevelOffsetPositon;
                     spawnLocation = Utils.GetSpawnLocation(spawnLocation, data.id);
-                    data.SharedData.Position = spawnLocation;
                     playerMovement.TeleportTo(spawnLocation);
                 }
                 return;

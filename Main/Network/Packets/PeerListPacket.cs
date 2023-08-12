@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace ThronefallMP.Network.Packets;
 
-public class PeerSyncPacket : BasePacket
+public class PeerListPacket : BasePacket
 {
     public struct PlayerData
     {
         public int Id;
         public CSteamID SteamId;
+        public int SpawnId;
         public Vector3 Position;
     }
     
@@ -31,6 +32,7 @@ public class PeerSyncPacket : BasePacket
         {
             writer.Write(data.Id);
             writer.Write(data.SteamId);
+            writer.Write(data.SpawnId);
             writer.Write(data.Position);
         }
     }
@@ -45,6 +47,7 @@ public class PeerSyncPacket : BasePacket
             {
                 Id = reader.ReadInt32(),
                 SteamId = reader.ReadSteamID(),
+                SpawnId = reader.ReadInt32(),
                 Position = reader.ReadVector3()
             });
         }

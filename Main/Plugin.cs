@@ -7,6 +7,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using Steamworks;
+using ThronefallMP.Network.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.UI;
 using UnityEngine;
@@ -25,6 +26,12 @@ namespace ThronefallMP
         
         public Network.Network Network { get; private set; }
         public Network.PlayerManager PlayerManager { get; private set; }
+        
+        // Network syncs
+        private BaseSync[] _syncs = {
+            new General(),
+            new Player()
+        };
         
         private void Awake()
         {
@@ -153,65 +160,65 @@ namespace ThronefallMP
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketLoss_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketLossSendPercentage", 0.3f)
+                Config.Bind("Network", "PacketLossSendPercentage", 0.3f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketLoss_Recv,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketLossReceivePercentage", 0.3f)
+                Config.Bind("Network", "PacketLossReceivePercentage", 0.3f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketLag_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
-                Config.Bind("Network", "PacketLagReceiveMs", 80)
+                Config.Bind("Network", "PacketLagReceiveMs", 80).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketLag_Recv,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
-                Config.Bind("Network", "PacketLagReceiveMs", 80)
+                Config.Bind("Network", "PacketLagReceiveMs", 80).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketReorder_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketReorderPercentageSend", 0.1f)
+                Config.Bind("Network", "PacketReorderPercentageSend", 0.1f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketReorder_Recv,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketReorderPercentageReceive", 0.1f)
+                Config.Bind("Network", "PacketReorderPercentageReceive", 0.1f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketReorder_Time,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
-                Config.Bind("Network", "PacketReorderTime", 20)
+                Config.Bind("Network", "PacketReorderTime", 20).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketDup_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketDuplicatePercentSend", 0.1f)
+                Config.Bind("Network", "PacketDuplicatePercentSend", 0.1f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketDup_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Float,
-                Config.Bind("Network", "PacketDuplicatePercentReceive", 0.1f)
+                Config.Bind("Network", "PacketDuplicatePercentReceive", 0.1f).Value
             );
             
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketDup_TimeMax,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
-                Config.Bind("Network", "PacketDuplicateTimeMax", 60)
+                Config.Bind("Network", "PacketDuplicateTimeMax", 60).Value
             );
         }
 
-        private static void SetSteamNetworkValue<T>(ESteamNetworkingConfigValue name, ESteamNetworkingConfigDataType type, T value)
+        private static void SetSteamNetworkValue<T>(ESteamNetworkingConfigValue name, ESteamNetworkingConfigDataType type, T value) where T : unmanaged
         {
             var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
             SteamNetworkingUtils.SetConfigValue(
