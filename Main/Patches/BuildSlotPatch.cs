@@ -175,6 +175,7 @@ public static class BuildSlotPatch
         {
             Plugin.Log.LogInfo("Cancel choice");
             // We are waiting on choice when the building has already been built, cancel it.
+            UIFrameManager.instance.CloseActiveFrame();
             ChoiceManager.instance.CancelChoice();
         }
         else if (focussed.Value && playerId != Plugin.Instance.PlayerManager.LocalId)

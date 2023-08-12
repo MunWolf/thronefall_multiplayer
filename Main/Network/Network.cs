@@ -218,7 +218,7 @@ public class Network : MonoBehaviour
         var packet = new ClientSyncPacket
         {
             PlayerID = Plugin.Instance.PlayerManager.LocalId,
-            Position = player.Object.transform.position,
+            Position = player.Object != null ? player.Object.transform.position : player.SpawnLocation,
             Data = player.Shared
         };
         Send(packet);

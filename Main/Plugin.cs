@@ -85,15 +85,27 @@ namespace ThronefallMP
             Application.runInBackground = true;
             SceneManager.sceneLoaded += OnSceneChanged;
         }
+
+        private void OnUIInitialized()
+        {
+            UIManager.Initialize();
+            var enableNetworkSimulation = Config.Bind(
+                "Network", "EnableSimulation", false, "Enable simulation of a bad network for debugging");
+            
+            if (enableNetworkSimulation.Value)
+            {
+                UIManager.CreateMessageDialog("Network Debug Simulation", "Simulation of a bad network is enabled");
+            }
+        }
         
         public delegate void LoadCallback();
 
         private static Dictionary<string, List<(bool waitForTransition, LoadCallback callback)>> _loadCallbacks = new(); 
-        private static void OnSceneChanged(Scene scene, LoadSceneMode mode)
+        private void OnSceneChanged(Scene scene, LoadSceneMode mode)
         {
             if (scene.name == "_UI")
             {
-                UIManager.Initialize();
+                OnUIInitialized();
             }
 
             if (_loadCallbacks.TryGetValue(scene.name, out var callbacks))

@@ -69,6 +69,7 @@ public class MessageDialog : BaseUI
                 5,
                 TextAnchor.MiddleLeft
             );
+            // TODO: Change this to fit content automatically.
             var rectTransform = panelBorders.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.35f, 0.3f);
             rectTransform.anchorMax = new Vector2(0.65f, 0.7f);

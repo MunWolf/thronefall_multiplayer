@@ -17,6 +17,7 @@ public static class BuildingInteractorPatch
     {
         if (self.IsWaitingForChoice && GlobalData.Balance < 0)
         {
+            UIFrameManager.instance.CloseActiveFrame();
             ChoiceManager.instance.CancelChoice();
         }
         
