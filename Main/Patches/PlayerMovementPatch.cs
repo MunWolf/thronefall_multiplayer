@@ -1,8 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using Pathfinding.RVO;
+using Steamworks;
 using ThronefallMP.Components;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace ThronefallMP.Patches;
 
@@ -11,8 +16,18 @@ static class PlayerMovementPatch
 	private static readonly int Moving = Animator.StringToHash("Moving");
 	private static readonly int Sprinting = Animator.StringToHash("Sprinting");
 
-	public const float MaximumDeviance = 3.0f;
-	public const float MaximumDevianceSquared = MaximumDeviance * MaximumDeviance;
+	private const float MaximumDevianceMin = 0.5f;
+	private const float MaximumDevianceMax = 4.0f;
+	private const int MinPing = 100;
+	private const int MaxPing = 500;
+	private const int DifferencePing = MaxPing - MinPing;
+	public static float MaximumDevianceSquared(CSteamID id)
+	{
+		var ping = Plugin.Instance.Network.Ping(id);
+		ping = Mathf.Clamp(ping - MinPing, 0, DifferencePing);
+		var deviance = Mathf.Lerp(MaximumDevianceMin, MaximumDevianceMax, (float)ping / DifferencePing);
+		return deviance * deviance;
+	}
 	
 	public static void Apply()
 	{
@@ -61,7 +76,6 @@ static class PlayerMovementPatch
 		    return;
 	    }
 	    
-        var input = Traverse.Create(self).Field<Rewired.Player>("input").Value;
         var hp = Traverse.Create(self).Field<Hp>("hp").Value;
         var rvoController = Traverse.Create(self).Field<RVOController>("rvoController").Value;
         var heavyArmorEquipped = Traverse.Create(self).Field<bool>("heavyArmorEquipped").Value;
@@ -142,9 +156,9 @@ static class PlayerMovementPatch
 		}
 			
 		velocity.Value += Vector3.up * yVelocity.Value;
+		controller.Value.Move(velocity.Value * Time.deltaTime);
 
 		var yFallThroughMapDetection = Traverse.Create(self).Field<float>("yFallThroughMapDetection");
-		controller.Value.Move(velocity.Value * Time.deltaTime);
 		if (!(self.transform.position.y < yFallThroughMapDetection.Value))
 		{
 			return;

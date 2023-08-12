@@ -101,7 +101,7 @@ public class Player : BaseSync
             }
             
             var deltaPosition = player.Position - data.Object.transform.position;
-            if (deltaPosition.sqrMagnitude < PlayerMovementPatch.MaximumDevianceSquared)
+            if (deltaPosition.sqrMagnitude < PlayerMovementPatch.MaximumDevianceSquared(data.SteamID))
             {
                 continue;
             }

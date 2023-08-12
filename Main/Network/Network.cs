@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Steamworks;
-using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Game;
 using ThronefallMP.Network.Packets.Sync;
@@ -42,7 +41,6 @@ public class Network : MonoBehaviour
     
     private CallResult<LobbyEnter_t> _lobbyEnterResult;
 
-    private readonly PlayerNetworkData.Shared _latestLocalData = new PlayerNetworkData.Shared();
     private readonly HashSet<CSteamID> _pendingPeers = new();
     private readonly HashSet<CSteamID> _peers = new();
     private readonly Dictionary<(int player, Channel channel), int> _lastOrderedPackages = new();
@@ -210,7 +208,7 @@ public class Network : MonoBehaviour
         }
         
         var player = Plugin.Instance.PlayerManager.LocalPlayer;
-        if (Server || player == null || player.Shared == _latestLocalData)
+        if (Server || player == null)
         {
             return;
         }
@@ -222,7 +220,6 @@ public class Network : MonoBehaviour
             Data = player.Shared
         };
         Send(packet);
-        _latestLocalData.Set(player.Shared);
     }
 
     private void CloseLobby()
@@ -610,5 +607,18 @@ public class Network : MonoBehaviour
     public bool IsServer(CSteamID id)
     {
         return SteamMatchmaking.GetLobbyOwner(_lobby) == id;
+    }
+
+    public int Ping(CSteamID id)
+    {
+        if (!SteamManager.Initialized)
+        {
+            return 0;
+        }
+        
+        var identity = new SteamNetworkingIdentity();
+        identity.SetSteamID(id);
+        SteamNetworkingMessages.GetSessionConnectionInfo(ref identity, out _, out var status);
+        return status.m_nPing;
     }
 }

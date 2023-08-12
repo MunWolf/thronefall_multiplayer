@@ -140,14 +140,19 @@ public static class PacketHandler
         {
             return;
         }
-        
-        var deltaPosition = packet.Position - player.Object.transform.position;
-        if (deltaPosition.sqrMagnitude < PlayerMovementPatch.MaximumDevianceSquared)
+
+        // If we aren't moving then we should always stay where we are.
+        if (player.Shared.MoveHorizontal > 0.01f || player.Shared.MoveVertical > 0.01f)
         {
-            return;
+            var deltaPosition = packet.Position - player.Object.transform.position;
+            if (deltaPosition.sqrMagnitude < PlayerMovementPatch.MaximumDevianceSquared(player.SteamID))
+            {
+                return;
+            }
+            
+            Plugin.Log.LogInfo($"MaximumDeviance reached, moving player to {packet.Position}");
         }
         
-        Plugin.Log.LogInfo($"MaximumDeviance reached, moving player to {packet.Position}");
         player.Controller.enabled = false;
         player.Object.transform.position = packet.Position;
         player.Controller.enabled = true;
@@ -399,7 +404,7 @@ public static class PacketHandler
         
         var packet = (BuildOrUpgradePacket)ipacket;
         var info = BuildSlotPatch.GetUpgradeInfo(packet.BuildingId, packet.Level, packet.Choice);
-        if (GlobalData.Balance < info.Cost || info.CurrentLevel >= packet.Level)
+        if (GlobalData.Balance < info.Cost || info.CurrentLevel > packet.Level)
         {
             Plugin.Log.LogInfoFiltered("PacketHandler", $"Cancel building {packet.BuildingId}:{packet.Level}:{packet.Choice} for {info.Cost}");
             Plugin.Instance.Network.SendSingle(new CancelBuildPacket()

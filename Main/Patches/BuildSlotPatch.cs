@@ -94,23 +94,29 @@ public static class BuildSlotPatch
         BuildSlot self,
         Choice choice)
     {
+        var upgradeSelected = Traverse.Create(self).Field<BuildSlot.Upgrade>("upgradeSelected").Value;
+        if (upgradeSelected == null)
+        {
+            // We happened to get here because we finished our choice after handling a ConfirmBuildPacket
+            return;
+        }
+        
         if (!_disableNetworkHook && choice != null)
         {
             var buildingId = self.GetComponent<Identifier>().Id;
-            var upgradeSelected = Traverse.Create(self).Field<BuildSlot.Upgrade>("upgradeSelected");
             var upgradeIndex = 0;
             for (; upgradeIndex < self.upgrades.Count; ++upgradeIndex)
             {
-                if (self.upgrades[upgradeIndex] == upgradeSelected.Value)
+                if (self.upgrades[upgradeIndex] == upgradeSelected)
                 {
                     break;
                 }
             }
 
             var choiceIndex = 0;
-            for (; choiceIndex < upgradeSelected.Value.upgradeBranches.Count; ++choiceIndex)
+            for (; choiceIndex < upgradeSelected.upgradeBranches.Count; ++choiceIndex)
             {
-                if (upgradeSelected.Value.upgradeBranches[choiceIndex].choiceDetails == choice)
+                if (upgradeSelected.upgradeBranches[choiceIndex].choiceDetails == choice)
                 {
                     break;
                 }
@@ -168,8 +174,7 @@ public static class BuildSlotPatch
         var upgrade = building.upgrades[level];
         var branch = upgrade.upgradeBranches[choice];
         var upgradeSelected = Traverse.Create(building).Field<BuildSlot.Upgrade>("upgradeSelected");
-        var previousValue = upgradeSelected.Value;
-        
+        upgradeSelected.Value = upgrade;
         _disableNetworkHook = true;
         building.buildingInteractor.MarkAsHarvested();
         building.OnUpgradeChoiceComplete(branch.choiceDetails);

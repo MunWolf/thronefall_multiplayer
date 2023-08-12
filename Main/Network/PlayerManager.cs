@@ -168,6 +168,8 @@ public class PlayerManager
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;
         _playerPrefab.AddComponent<Identifier>();
+        
+        
         Plugin.Log.LogInfo("Initialized player prefab");
 
         SpawnLocation = prefab.transform.position;
