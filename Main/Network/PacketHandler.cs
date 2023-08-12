@@ -149,8 +149,6 @@ public static class PacketHandler
             {
                 return;
             }
-            
-            Plugin.Log.LogInfo($"MaximumDeviance reached, moving player to {packet.Position}");
         }
         
         player.Controller.enabled = false;

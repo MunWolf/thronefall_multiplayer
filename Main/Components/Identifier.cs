@@ -67,13 +67,14 @@ public class Identifier : MonoBehaviour
 
     public void SetIdentity(IdentifierType type, int id)
     {
+        if (Repository[type].ContainsKey(id))
+        {
+            Plugin.Log.LogError($"Identifier {type}:{id} already registered");
+        }
+        
         Type = type;
         Id = id;
         Repository[Type][Id] = gameObject;
-        if (type != IdentifierType.Building && type != IdentifierType.Ally)
-        {
-            Plugin.Log.LogInfo($"Added {type}:{id} to identifier repository.");
-        }
     }
 
     public static void Clear(IdentifierType type)

@@ -106,7 +106,6 @@ public class Player : BaseSync
                 continue;
             }
             
-            Plugin.Log.LogInfo($"MaximumDeviance reached, moving player to {player.Position}");
             data.Controller.enabled = false;
             data.Object.transform.position = player.Position;
             data.Controller.enabled = true;

@@ -16,7 +16,7 @@ static class PlayerMovementPatch
 	private static readonly int Moving = Animator.StringToHash("Moving");
 	private static readonly int Sprinting = Animator.StringToHash("Sprinting");
 
-	private const float MaximumDevianceMin = 0.5f;
+	private const float MaximumDevianceMin = 1.5f;
 	private const float MaximumDevianceMax = 4.0f;
 	private const int MinPing = 100;
 	private const int MaxPing = 500;

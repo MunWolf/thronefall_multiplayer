@@ -43,17 +43,15 @@ public static class BuildSlotPatch
         Plugin.Log.LogInfo("Processing buildings");
         Plugin.Log.LogInfo("  Added 1 for processing");
         var slots = new List<BuildSlot> { root };
-        var buildingId = 0;
-        var unitId = 0;
         while (slots.Count > 0)
         {
             var current = slots[0];
             slots.Remove(current);
             slots.AddRange(current.IsRootOf);
-            AssignId(current, buildingId++);
+            AssignId(current, Utils.GetPath(current.transform).GetHashCode());
             foreach (var respawn in current.GetComponentsInChildren<UnitRespawnerForBuildings>(true))
             {
-                ProcessUnits(respawn, ref unitId);
+                ProcessUnits(respawn);
             }
             
             if (current.IsRootOf.Count != 0)
@@ -61,9 +59,6 @@ public static class BuildSlotPatch
                 Plugin.Log.LogInfo($"  Added {current.IsRootOf.Count} for processing");
             }
         }
-        
-        Plugin.Log.LogInfo($"{buildingId} total buildings processed.");
-        Plugin.Log.LogInfo($"{unitId} total units processed.");
 
         CoinPrefab = root.buildingInteractor.coinSpawner.coinPrefab;
     }
@@ -75,15 +70,16 @@ public static class BuildSlotPatch
         Plugin.Log.LogInfo("    Building " + self.buildingName + " assigned id " + id);
     }
 
-    private static void ProcessUnits(UnitRespawnerForBuildings respawn, ref int unitId)
+    private static void ProcessUnits(UnitRespawnerForBuildings respawn)
     {
         Plugin.Log.LogInfo("    Found respawner, processing units.");
         for (var i = 0; i < respawn.transform.childCount; ++i)
         {
             var unit = respawn.transform.GetChild(i);
             var identifier = unit.gameObject.AddComponent<Identifier>();
-            Plugin.Log.LogInfo($"      Unit {unit.name} assigned id {unitId}");
-            identifier.SetIdentity(IdentifierType.Ally, unitId++);
+            var id = Utils.GetPath(unit).GetHashCode();
+            Plugin.Log.LogInfo($"      Unit {unit.name} assigned id {id}");
+            identifier.SetIdentity(IdentifierType.Ally, id);
         }
         
         Plugin.Log.LogInfo($"    {respawn.transform.childCount} units processed.");
@@ -169,6 +165,12 @@ public static class BuildSlotPatch
         if (building == null)
         {
             Plugin.Log.LogInfo($"Unable to build {id}:{level}:{choice} for {playerId}");
+        }
+
+        if (building.buildingInteractor == null)
+        {
+            Plugin.Log.LogInfo($"Building interactor for {id}:{level}:{choice} inactive");
+            building.buildingInteractor = building.GetComponentInChildren<BuildingInteractor>(true);
         }
         
         var upgrade = building.upgrades[level];
