@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UniverseLib;
 
 namespace ThronefallMP.Components;
@@ -106,7 +107,7 @@ public class PlayerNetworkData : MonoBehaviour
     
     // Local variables
     public bool PlayerMovementSprintLast { get; set; }
-    public bool PlayerSceptInteractLast { get; set; }
+    public bool PlayerScepterInteractLast { get; set; }
     public bool CallNightLast { get; set; }
     public bool CommandUnitsButtonLast { get; set; }
     public bool TeleportNext { get; set; }

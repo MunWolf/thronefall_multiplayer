@@ -1,5 +1,4 @@
-﻿using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+﻿using ThronefallMP.Network.Packets.Game;
 using UnityEngine.PlayerLoop;
 
 namespace ThronefallMP;
@@ -18,15 +17,27 @@ public static class GlobalData
     //       TutorialManager.Update
     //       DebugCoinDisplay.Update
     //       LocalGamestate.WaitThenTriggerEndOfMatchScreen
-    
+
+    public static int LocalBalanceDelta;
     public static int Balance
     {
-        get => Internal.Balance;
+        get => Plugin.Instance.Network.Server ? Internal.Balance : Internal.Balance + LocalBalanceDelta;
         set
         {
-            var delta = value - Internal.Balance;
-            var packet = new BalancePacket { Delta = delta };
-            Plugin.Instance.Network.Send(packet, true);
+            if (Plugin.Instance.Network.Server)
+            {
+                Internal.Balance = value;
+                var packet = new BalancePacket
+                {
+                    Balance = value,
+                    Networth = Internal.Networth
+                };
+                Plugin.Instance.Network.Send(packet, true);
+            }
+            else
+            {
+                LocalBalanceDelta = value - Internal.Balance;
+            }
         }
     }
     

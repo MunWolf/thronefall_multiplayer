@@ -35,11 +35,5 @@ Desktop.ini
 
 install.cfg
 
-lib/Assembly-CSharp.dll
-lib/AstarPathfindingProject.dll
-lib/MoreMountains.Feedbacks.dll
-lib/Rewired_Core.dll
-lib/MPUIKit.dll
-lib/ShapesRuntime.dll
-lib/Unity.TextMeshPro.dll
-lib/UnityEngine.UI.dll
+lib/*
+!lib/MMHOOK_Assembly-CSharp.dll

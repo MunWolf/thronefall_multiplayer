@@ -10,6 +10,17 @@ public static class BuildingInteractorPatch
     {
         On.BuildingInteractor.OnDawn_AfterSunrise += OnDawn_AfterSunrise;
         On.BuildingInteractor.InteractionHold += InteractionHold;
+        On.BuildingInteractor.Update += Update;
+    }
+
+    private static void Update(On.BuildingInteractor.orig_Update orig, BuildingInteractor self)
+    {
+        if (self.IsWaitingForChoice && GlobalData.Balance < 0)
+        {
+            ChoiceManager.instance.CancelChoice();
+        }
+        
+        orig(self);
     }
 
     private static void OnDawn_AfterSunrise(On.BuildingInteractor.orig_OnDawn_AfterSunrise original, BuildingInteractor self)

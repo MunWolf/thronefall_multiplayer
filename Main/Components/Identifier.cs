@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using HarmonyLib;
+using Mono.CompilerServices.SymbolWriter;
 using UnityEngine;
 
 namespace ThronefallMP.Components;
@@ -51,12 +53,23 @@ public class Identifier : MonoBehaviour
 
     public int Id { get; private set; }
 
+    public void OnDisable()
+    {
+        if (Type == IdentifierType.Player && PlayerManager.Instance != null)
+        {
+            PlayerManager.UnregisterPlayer(GetComponent<PlayerMovement>());
+        }
+    }
+
     public void SetIdentity(IdentifierType type, int id)
     {
         Type = type;
         Id = id;
         Repository[Type][Id] = gameObject;
-        Plugin.Log.LogInfo($"Added {type}:{id} to identifier repository.");
+        if (type != IdentifierType.Building && type != IdentifierType.Ally)
+        {
+            Plugin.Log.LogInfo($"Added {type}:{id} to identifier repository.");
+        }
     }
 
     public static void Clear(IdentifierType type)

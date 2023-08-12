@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -11,8 +10,22 @@ public class EnemySpawnerPatch
 	private static int _nextEnemyId;
     public static void Apply()
     {
+	    On.EnemySpawner.Start += Start;
 	    On.EnemySpawner.Update += Update;
 	    On.EnemySpawner.OnStartOfTheDay += OnStartOfTheDay;
+    }
+
+    private static void Start(On.EnemySpawner.orig_Start original, EnemySpawner self)
+    {
+	    var balance = self.goldBalanceAtStart;
+	    self.goldBalanceAtStart = 0;
+	    original(self);
+	    self.goldBalanceAtStart = balance;
+	    if (Plugin.Instance.Network.Server)
+	    {
+		    Plugin.Log.LogInfo($"Give starting balance {balance}");
+			GlobalData.Balance = balance;
+	    }
     }
 
     private static void OnStartOfTheDay(On.EnemySpawner.orig_OnStartOfTheDay original, EnemySpawner self)
@@ -160,10 +173,9 @@ public class EnemySpawnerPatch
 		var tauntTheTurtle = Traverse.Create(self).Field<bool>("tauntTheTurtle");
 		if (tauntTheTurtle.Value)
 		{
-			var hpTemp = Traverse.Create(self).Field<Hp>("tauntTheTurtle");
-			hpTemp.Value = gameObject.GetComponentInChildren<Hp>();
-			hpTemp.Value.maxHp *= PerkManager.instance.tauntTheTurtle_hpMultiplyer;
-			hpTemp.Value.Heal(float.MaxValue);
+			var hpTemp = gameObject.GetComponentInChildren<Hp>();
+			hpTemp.maxHp *= PerkManager.instance.tauntTheTurtle_hpMultiplyer;
+			hpTemp.Heal(float.MaxValue);
 		}
 		
 		var tauntTheTiger = Traverse.Create(self).Field<bool>("tauntTheTiger");

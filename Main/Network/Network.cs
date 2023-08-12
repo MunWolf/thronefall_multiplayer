@@ -1,28 +1,28 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using MonoMod.InlineRT;
 using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
-using ThronefallMP.Patches;
+using ThronefallMP.Network.Packets;
+using ThronefallMP.Network.Packets.Game;
 using ThronefallMP.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace ThronefallMP.Network;
 
+public enum Channel
+{
+    NetworkManagement,
+    Player,
+    Resources,
+    Game,
+}
+
 public class Network : MonoBehaviour
 {
-    // TODO: Use this instead of int.
-    public enum Channel
-    {
-        General,
-        NetworkManagement
-    }
-
     public delegate void ChatMessage(string user, string message);
     public event ChatMessage OnReceivedChatMessage;
     
@@ -38,8 +38,9 @@ public class Network : MonoBehaviour
     private CallResult<LobbyEnter_t> _lobbyEnterResult;
 
     private readonly PlayerNetworkData.Shared _latestLocalData = new PlayerNetworkData.Shared();
+    private readonly HashSet<CSteamID> _pendingPeers = new();
     private readonly HashSet<CSteamID> _peers = new();
-    private readonly Dictionary<CSteamID, PlayerManager.Player> _players = new();
+    private readonly Dictionary<(int player, Channel channel), int> _lastOrderedPackages = new();
     private readonly IntPtr[] _messages = new IntPtr[MaxMessages];
 
     public int MaxPlayers { get; set; }
@@ -98,48 +99,46 @@ public class Network : MonoBehaviour
     
     public bool Authenticate(string password)
     {
-        Plugin.Log.LogInfo($"Comparing {password} with {_password}");
+        Plugin.Log.LogInfoFiltered("Network", $"Comparing {password} with {_password}");
         
         return string.IsNullOrEmpty(_password) || _password == password;
     }
-    
+
     public void AddPlayer(CSteamID id)
     {
-        var player = Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.GenerateID());
-        _players[id] = player;
-        var packet = new PeerSyncPacket();
-        Plugin.Log.LogInfo($"Building peer sync");
+        _pendingPeers.Remove(id);
+        _peers.Add(id);
+        var player = Plugin.Instance.PlayerManager.Create(id, Plugin.Instance.PlayerManager.GenerateID());
+        player.Shared.Position = player.SpawnLocation;
         
-        foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
+        var packet = new PeerSyncPacket();
+        Plugin.Log.LogInfoFiltered("Network", $"Building peer sync");
+        foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayers())
         {
-            Plugin.Log.LogInfo($" {data.id} -> {data.SharedData.Position}");
+            Plugin.Log.LogInfoFiltered("Network", $" {data.SteamID}:{data.Id} -> {data.Shared.Position}");
             packet.Players.Add(new PeerSyncPacket.PlayerData
             {
-                Id = data.id,
-                Position = data.SharedData.Position
+                Id = data.Id,
+                SteamId = data.SteamID,
+                Position = data.Shared.Position
             });
         }
         
-        foreach (var pair in _players)
-        {
-            Plugin.Log.LogInfo($"Sending peer sync to {pair.Key.m_SteamID}");
-            packet.LocalPlayer = pair.Value.Id;
-            var sid = new SteamNetworkingIdentity();
-            sid.SetSteamID(pair.Key);
-            SendSingle(packet, sid);
-        }
+        Plugin.Log.LogInfoFiltered("Network", $"Sending peer sync");
+        Send(packet);
     }
 
     public void KickPeer(CSteamID id, DisconnectPacket.Reason reason)
     {
-        if (_players.ContainsKey(id))
+        var player = Plugin.Instance.PlayerManager.Get(id);
+        if (player != null)
         {
-            Plugin.Log.LogInfo($"Player {id.m_SteamID} kicked with reason {reason}");
-            Plugin.Instance.PlayerManager.Remove(_players[id].Id);
-            _players.Remove(id);
+            Plugin.Log.LogInfoFiltered("Network", $"Player {id.m_SteamID} kicked with reason {reason}");
+            Plugin.Instance.PlayerManager.Remove(player.Id);
         }
         
         _peers.Remove(id);
+        _pendingPeers.Remove(id);
         var sid = new SteamNetworkingIdentity();
         sid.SetSteamID(id);
         var packet = new DisconnectPacket()
@@ -166,7 +165,7 @@ public class Network : MonoBehaviour
 
     private void Update()
     {
-        if (_peers.Count > 0)
+        if (_peers.Count > 0 || _pendingPeers.Count > 0)
         {
             foreach (var channel in Enum.GetValues(typeof(Channel)))
             {
@@ -183,7 +182,13 @@ public class Network : MonoBehaviour
                     {
                         var buffer = new Buffer(message.m_cbSize);
                         Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
-                        HandlePacket(ref message.m_identityPeer, buffer);
+                        HandlePacket(ref message.m_identityPeer, buffer, PacketTypes);
+                    }
+                    else if (_pendingPeers.Contains(message.m_identityPeer.GetSteamID()))
+                    {
+                        var buffer = new Buffer(message.m_cbSize);
+                        Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
+                        HandlePacket(ref message.m_identityPeer, buffer, PendingPeerPacketTypes);
                     }
                     
                     SteamNetworkingMessage_t.Release(_messages[i]);
@@ -211,7 +216,7 @@ public class Network : MonoBehaviour
         PacketHandler.AwaitingConnectionApproval = false;
         if (_lobby.IsValid())
         {
-            Plugin.Log.LogInfo($"Leaving lobby {_lobby.m_SteamID}");
+            Plugin.Log.LogInfoFiltered("Network", $"Leaving lobby {_lobby.m_SteamID}");
             SteamMatchmaking.LeaveLobby(_lobby);
             foreach (var peer in _peers)
             {
@@ -225,26 +230,28 @@ public class Network : MonoBehaviour
         }
 
         _password = null;
+        _lastOrderedPackages.Clear();
     }
     
     public void Local()
     {
         CloseLobby();
         
-        Plugin.Log.LogInfo("Switched to Local");
+        Plugin.Log.LogInfoFiltered("Network", "Switched to Local");
         Server = true;
         Online = false;
         
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
-        Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.LocalId);
+        var player = Plugin.Instance.PlayerManager.Create(CSteamID.Nil, Plugin.Instance.PlayerManager.LocalId);
+        player.Shared.Position = player.SpawnLocation;
     }
 
     public void Host(CSteamID lobby, string password)
     {
         CloseLobby();
         
-        Plugin.Log.LogInfo($"Switched to Host in lobby {lobby.m_SteamID} server {SteamUser.GetSteamID()}");
+        Plugin.Log.LogInfoFiltered("Network", $"Switched to Host in lobby {lobby.m_SteamID} server {SteamUser.GetSteamID()}");
         _password = password;
         _lobby = lobby;
         _owner = SteamUser.GetSteamID();
@@ -252,7 +259,8 @@ public class Network : MonoBehaviour
         Online = true;
         Plugin.Instance.PlayerManager.Clear();
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
-        Plugin.Instance.PlayerManager.Create(Plugin.Instance.PlayerManager.LocalId);
+        var player = Plugin.Instance.PlayerManager.Create(_owner, Plugin.Instance.PlayerManager.LocalId);
+        player.Shared.Position = player.SpawnLocation;
         SteamMatchmaking.SetLobbyJoinable(lobby, true);
     }
 
@@ -265,7 +273,7 @@ public class Network : MonoBehaviour
 
     private void Connect(CSteamID lobby, string password)
     {
-        Plugin.Log.LogInfo("Switched to Connect");
+        Plugin.Log.LogInfoFiltered("Network", "Switched to Connect");
         _password = password;
         _lobby = lobby;
         Server = false;
@@ -273,7 +281,7 @@ public class Network : MonoBehaviour
         Plugin.Instance.PlayerManager.Clear();
         _owner = SteamMatchmaking.GetLobbyOwner(lobby);
         
-        Plugin.Log.LogInfo($"Sending approval packet to server {_owner.m_SteamID}");
+        Plugin.Log.LogInfoFiltered("Network", $"Sending approval packet to server {_owner.m_SteamID}");
         PacketHandler.AwaitingConnectionApproval = true;
         var approvalPacket = new ApprovalPacket()
         {
@@ -288,7 +296,7 @@ public class Network : MonoBehaviour
 
     private void OnSceneChanged(Scene scene, LoadSceneMode mode)
     {
-        Plugin.Log.LogInfo($"Scene loaded '{scene.name}'");
+        Plugin.Log.LogInfoFiltered("Network", $"Scene loaded '{scene.name}'");
         if (scene.name == "_StartMenu")
         {
             Plugin.Instance.PlayerManager.SetPrefab(null);
@@ -301,22 +309,28 @@ public class Network : MonoBehaviour
             return;
         }
 
-        Plugin.Log.LogInfo($"Can join lobby: {SceneManager.GetSceneByName("_LevelSelect").isLoaded}");
+        Plugin.Log.LogInfoFiltered("Network", $"Can join lobby: {SceneManager.GetSceneByName("_LevelSelect").isLoaded}");
         SteamMatchmaking.SetLobbyJoinable(_lobby, SceneManager.GetSceneByName("_LevelSelect").isLoaded);
     }
 
-    public void Send(IPacket packet, bool handleLocal = false, SteamNetworkingIdentity except = new())
+    public void Send(BasePacket basePacket, bool handleLocal = false, SteamNetworkingIdentity except = new())
     {
         if (Online)
         {
             var buffer = new Buffer();
-            buffer.Write((int)packet.TypeID);
-            packet.Send(buffer);
+            Plugin.Log.LogDebugFiltered("Network", $"Writing packet '{basePacket.TypeID}'");
+            buffer.Write((int)basePacket.TypeID);
+            basePacket.Send(buffer);
+            if (Ext.LogDebugFiltered("Network"))
+            {
+                Plugin.Log.LogDebug($"{buffer.Data.Length}:{BitConverter.ToString(buffer.Data).Replace('-', ' ')}");
+            }
+            
             var sid = new SteamNetworkingIdentity();
             foreach (var peer in _peers)
             {
                 sid.SetSteamID(peer);
-                Send(buffer, sid, packet.DeliveryMask, packet.Channel);
+                Send(buffer, sid, basePacket.DeliveryMask, basePacket.Channel);
             }
         }
 
@@ -328,24 +342,24 @@ public class Network : MonoBehaviour
                 id.SetSteamID(SteamUser.GetSteamID());
             }
             
-            PacketHandler.HandlePacket(id, packet);
+            PacketHandler.HandlePacket(id, basePacket);
         }
     }
 
-    public void SendSingle(IPacket packet, SteamNetworkingIdentity target)
+    public void SendSingle(BasePacket basePacket, SteamNetworkingIdentity target)
     {
         var buffer = new Buffer();
-        buffer.Write((int)packet.TypeID);
-        packet.Send(buffer);
-        Send(buffer, target, packet.DeliveryMask, packet.Channel);
+        buffer.Write((int)basePacket.TypeID);
+        basePacket.Send(buffer);
+        Send(buffer, target, basePacket.DeliveryMask, basePacket.Channel);
     }
 
-    private static void Send(Buffer buffer, SteamNetworkingIdentity target, int flags, int channel)
+    private static void Send(Buffer buffer, SteamNetworkingIdentity target, int flags, Channel channel)
     {
         if (target.IsInvalid())
         {
-            Plugin.Log.LogInfo($"Trying to send with an invalid id '{target.GetSteamID().m_SteamID}'");
-            Plugin.Log.LogInfo(Environment.StackTrace);
+            Plugin.Log.LogInfoFiltered("Network", $"Trying to send with an invalid id '{target.GetSteamID().m_SteamID}'");
+            Plugin.Log.LogInfoFiltered("Network", Environment.StackTrace);
             return;
         }
 
@@ -355,196 +369,98 @@ public class Network : MonoBehaviour
         SteamNetworkingMessages.SendMessageToUser(
             ref target,
             pointer,
-            (uint)buffer.WriteHead + 1,
+            (uint)buffer.WriteHead,
             flags,
-            channel
+            (int)channel
         );
         handle.Free();
     }
+
+    private static readonly Dictionary<PacketId, Type> PendingPeerPacketTypes = new()
+    {
+        { ApprovalPacket.PacketID, typeof(ApprovalPacket) },
+    };
+
+    private static readonly Dictionary<PacketId, Type> PacketTypes = new()
+    {
+        { DisconnectPacket.PacketID, typeof(DisconnectPacket) },
+        { PeerSyncPacket.PacketID, typeof(PeerSyncPacket) },
+        { BalancePacket.PacketID, typeof(BalancePacket) },
+        { BuildOrUpgradePacket.PacketID, typeof(BuildOrUpgradePacket) },
+        { CancelBuildPacket.PacketID, typeof(CancelBuildPacket) },
+        { CommandAddPacket.PacketID, typeof(CommandAddPacket) },
+        { CommandPlacePacket.PacketID, typeof(CommandPlacePacket) },
+        { CommandHoldPositionPacket.PacketID, typeof(CommandHoldPositionPacket) },
+        { ConfirmBuildPacket.PacketID, typeof(ConfirmBuildPacket) },
+        { DamagePacket.PacketID, typeof(DamagePacket) },
+        { DayNightPacket.PacketID, typeof(DayNightPacket) },
+        { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
+        { HealPacket.PacketID, typeof(HealPacket) },
+        { ManualAttackPacket.PacketID, typeof(ManualAttackPacket) },
+        { PlayerSyncPacket.PacketID, typeof(PlayerSyncPacket) },
+        { PositionPacket.PacketID, typeof(PositionPacket) },
+        { RespawnPacket.PacketID, typeof(RespawnPacket) },
+        { ScaleHpPacket.PacketID, typeof(ScaleHpPacket) },
+        { TransitionToScenePacket.PacketID, typeof(TransitionToScenePacket) },
+    };
+
+    private int GetLastOrderedPackage(int player, Channel channel)
+    {
+        return _lastOrderedPackages.TryGetValue((player, channel), out var value) ? value : -1;
+    }
+
+    private void SetLastOrderedPackage(int player, Channel channel, int value)
+    {
+        _lastOrderedPackages[(player, channel)] = value;
+    }
     
-    private void HandlePacket(ref SteamNetworkingIdentity sender, Buffer buffer)
+    private void HandlePacket(ref SteamNetworkingIdentity sender, Buffer buffer, Dictionary<PacketId, Type> types)
     {
         var type = (PacketId)buffer.ReadInt32();
-        var shouldPropagate = false;
-        IPacket packet = null;
-        switch (type)
+        types.TryGetValue(type, out var objectType);
+        if (objectType?.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>()) is not BasePacket basePacket)
         {
-            case PlayerSyncPacket.PacketID:
-            {
-                packet = new PlayerSyncPacket();
-                shouldPropagate = Server;
-                break;
-            }
-            case TransitionToScenePacket.PacketID:
-            {
-                packet = new TransitionToScenePacket();
-                shouldPropagate = Server;
-                break;
-            }
-            case BuildOrUpgradePacket.PacketID:
-            {
-                packet = new BuildOrUpgradePacket();
-                shouldPropagate = Server;
-                break;
-            }
-            case DayNightPacket.PacketID:
-            {
-                packet = new DayNightPacket();
-                shouldPropagate = Server;
-                break;
-            }
-            case EnemySpawnPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized spawn packet from {sender}.");
-                    return;
-                }
-                
-                packet = new EnemySpawnPacket();
-                break;
-            }
-            case DamagePacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {sender}.");
-                    return;
-                }
-                
-                packet = new DamagePacket();
-                break;
-            }
-            case HealPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {sender}.");
-                    return;
-                }
-                
-                packet = new HealPacket();
-                break;
-            }
-            case ScaleHpPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized damage packet from {sender}.");
-                    return;
-                }
-                
-                packet = new ScaleHpPacket();
-                break;
-            }
-            case PositionPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized position packet from {sender}.");
-                    return;
-                }
-                
-                packet = new PositionPacket();
-                break;
-            }
-            case RespawnPacket.PacketID:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized respawn packet from {sender}.");
-                    return;
-                }
-                
-                packet = new RespawnPacket();
-                break;
-            }
-            case PacketId.CommandAddPacket:
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized command add packet from {sender}.");
-                    return;
-                }
-
-                packet = new CommandAddPacket();
-                break;
-            case PacketId.CommandPlacePacket:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized command place packet from {sender}.");
-                    return;
-                }
-
-                packet = new CommandPlacePacket();
-                break;
-            }
-            case PacketId.CommandHoldPositionPacket:
-            {
-                if (Server)
-                {
-                    Plugin.Log.LogWarning($"Received unauthorized command hold position packet from {sender}.");
-                    return;
-                }
-
-                packet = new CommandHoldPositionPacket();
-                break;
-            }
-            case PacketId.ManualAttack:
-            {
-                packet = new ManualAttackPacket();
-                shouldPropagate = true;
-                break;
-            }
-            case PacketId.BalancePacket:
-            {
-                packet = new BalancePacket();
-                shouldPropagate = true;
-                break;
-            }
-            case PacketId.SpawnCoinPacket:
-            {
-                packet = new SpawnCoinPacket();
-                shouldPropagate = true;
-                break;
-            }
-            case PacketId.PeerSyncPacket:
-            {
-                packet = new PeerSyncPacket();
-                break;
-            }
-            case PacketId.ApprovalPacket:
-            {
-                packet = new ApprovalPacket();
-                break;
-            }
-            case PacketId.DisconnectPacket:
-            {
-                packet = new DisconnectPacket();
-                break;
-            }
-            default:
-                Plugin.Log.LogWarning($"Received unknown packet {type} from {sender} containing {buffer.Data.Length} bytes.");
-                break;
-        }
-
-        if (packet == null)
-        {
+            Plugin.Log.LogInfoFiltered("Network", $"Received unknown packet (type: '{type}', size: {buffer.Data.Length})");
             return;
         }
         
-        packet.Receive(buffer);
-        if (shouldPropagate && Server)
+        Plugin.Log.LogDebugFiltered("Network", $"Reading packet '{type}'");
+        basePacket.Receive(buffer);
+        if (Ext.LogDebugFiltered("Network"))
         {
-            Send(packet);
+            Plugin.Log.LogDebug($"{buffer.Data.Length}:{BitConverter.ToString(buffer.Data).Replace('-', ' ')}");
+        }
+        if (basePacket is BaseOrderedPacket orderedPacket)
+        {
+            var order = orderedPacket.GetOrder();
+            var lastCount = GetLastOrderedPackage(order.player, orderedPacket.Channel);
+            if (lastCount >= order.count)
+            {
+                // Packet arrived late, discard it.
+                return;
+            }
+
+            SetLastOrderedPackage(order.player, orderedPacket.Channel, order.count);
         }
         
-        PacketHandler.HandlePacket(sender, packet);
+        if (basePacket.CanHandle(sender.GetSteamID()))
+        {
+            PacketHandler.HandlePacket(sender, basePacket);
+        }
+        else
+        {
+            Plugin.Log.LogInfoFiltered("Network", $"Received unauthorized packet from '{sender.GetSteamID().m_SteamID}' (type: '{type}', size: {buffer.Data.Length})");
+        }
+
+        if (Server && basePacket.ShouldPropagate)
+        {
+            Send(basePacket, false, sender);
+        }
     }
 
     private void OnGameLobbyJoinRequested(GameLobbyJoinRequested_t request)
     {
-        Plugin.Log.LogInfo($"Got lobby join request {request.m_steamIDLobby} : {request.m_steamIDFriend}");
+        Plugin.Log.LogInfoFiltered("Network", $"Got lobby join request {request.m_steamIDLobby} : {request.m_steamIDFriend}");
         ConnectLobby(request.m_steamIDLobby, null);
     }
 
@@ -553,14 +469,14 @@ public class Network : MonoBehaviour
         if (ioFailure)
         {
             // TOOD: Show error
-            Plugin.Log.LogInfo("IO error encountered");
+            Plugin.Log.LogInfoFiltered("Network", "IO error encountered");
             return;
         }
         
         if (entered.m_EChatRoomEnterResponse != (uint)EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess)
         {
             // TOOD: Show error
-            Plugin.Log.LogInfo($"Failed to join lobby with code {entered.m_EChatRoomEnterResponse}");
+            Plugin.Log.LogInfoFiltered("Network", $"Failed to join lobby with code {entered.m_EChatRoomEnterResponse}");
             Local();
             return;
         }
@@ -585,16 +501,16 @@ public class Network : MonoBehaviour
     
     private void OnSessionRequest(SteamNetworkingMessagesSessionRequest_t request)
     {
-        Plugin.Log.LogInfo($"Received session request {request.m_identityRemote.GetSteamID().m_SteamID}");
+        Plugin.Log.LogInfoFiltered("Network", $"Received session request {request.m_identityRemote.GetSteamID().m_SteamID}");
         if (_peers.Count < MaxPlayers)
         {
-            Plugin.Log.LogInfo($"Server Full");
+            Plugin.Log.LogInfoFiltered("Network", $"Server Full");
             return;
         }
 
         if (!Server)
         {
-            Plugin.Log.LogInfo($"Not a Server");
+            Plugin.Log.LogInfoFiltered("Network", $"Not a Server");
             return;
         }
 
@@ -611,13 +527,13 @@ public class Network : MonoBehaviour
 
         if (!found)
         {
-            Plugin.Log.LogInfo($"Not in lobby");
+            Plugin.Log.LogInfoFiltered("Network", $"Not in lobby");
             return;
         }
 
-        Plugin.Log.LogInfo($"Accepted {request.m_identityRemote.GetSteamID().m_SteamID}");
+        Plugin.Log.LogInfoFiltered("Network", $"Accepted {request.m_identityRemote.GetSteamID().m_SteamID}");
+        _pendingPeers.Add(request.m_identityRemote.GetSteamID());
         SteamNetworkingMessages.AcceptSessionWithUser(ref request.m_identityRemote);
-        _peers.Add(request.m_identityRemote.GetSteamID());
     }
 
     private void OnLobbyChatUpdate(LobbyChatUpdate_t update)
@@ -632,13 +548,14 @@ public class Network : MonoBehaviour
             return;
         }
         
-        Plugin.Log.LogInfo($"Player {update.m_ulSteamIDUserChanged} left");
+        Plugin.Log.LogInfoFiltered("Network", $"Player {update.m_ulSteamIDUserChanged} left");
 
         var id = new CSteamID(update.m_ulSteamIDUserChanged);
-        if (_players.ContainsKey(id))
+        var player = Plugin.Instance.PlayerManager.Get(id);
+        if (player != null)
         {
-            Plugin.Instance.PlayerManager.Remove(_players[id].Id);
-            _players.Remove(id);
+            Plugin.Log.LogInfoFiltered("Network", $"Destroying player {player.Id}");
+            Plugin.Instance.PlayerManager.Remove(player.Id);
         }
 
         _peers.Remove(id);
@@ -651,7 +568,7 @@ public class Network : MonoBehaviour
     private void MigrateServer()
     {
         var owner = SteamMatchmaking.GetLobbyOwner(_lobby);
-        Plugin.Log.LogInfo($"Host disconnected migrating server to {owner.m_SteamID}");
+        Plugin.Log.LogInfoFiltered("Network", $"Host disconnected migrating server to {owner.m_SteamID}");
         if (owner == SteamUser.GetSteamID())
         {
             // We are now the host.
@@ -662,5 +579,10 @@ public class Network : MonoBehaviour
             // Connect to new host.
             Connect(owner, _password);
         }
+    }
+
+    public bool IsServer(CSteamID id)
+    {
+        return SteamMatchmaking.GetLobbyOwner(_lobby) == id;
     }
 }

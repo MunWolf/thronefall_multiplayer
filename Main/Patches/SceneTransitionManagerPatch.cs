@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+using ThronefallMP.Network.Packets.Game;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -51,11 +50,6 @@ public static class SceneTransitionManagerPatch
             if (data == null)
             {
                 continue;
-            }
-            
-            if (PlayerManager.Instance != null)
-            {
-                PlayerManager.UnregisterPlayer(data.GetComponent<PlayerMovement>());
             }
                 
             Object.Destroy(data.gameObject);

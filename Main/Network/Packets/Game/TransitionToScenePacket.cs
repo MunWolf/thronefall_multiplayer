@@ -1,22 +1,21 @@
 ﻿using System.Collections.Generic;
 using Steamworks;
-using ThronefallMP.Network;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class TransitionToScenePacket : IPacket
+public class TransitionToScenePacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.TransitionToScenePacket;
+    public const PacketId PacketID = PacketId.TransitionToScene;
 
     public string ComingFromGameplayScene;
     public string Level;
     public List<string> Perks = new();
 
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Player;
+    public override bool ShouldPropagate => true;
 
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(ComingFromGameplayScene);
         writer.Write(Level);
@@ -27,7 +26,7 @@ public class TransitionToScenePacket : IPacket
         }
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         ComingFromGameplayScene = reader.ReadString();
         Level = reader.ReadString();

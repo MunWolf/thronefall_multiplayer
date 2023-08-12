@@ -14,7 +14,13 @@ try {
         $null = Copy-Item (Join-Path $input_path $dll) (Join-Path $config.InstallPath $dll) -Force
     }
 
-    CopyDll -dll com.badwolf.thronefall_mp.dll
-    CopyDll -dll MMHOOK_Assembly-CSharp.dll
-    CopyDll -dll UniverseLib.Mono.dll
+    $dlls = (
+        'com.badwolf.thronefall_mp.dll',
+        'MMHOOK_Assembly-CSharp.dll',
+        'UniverseLib.Mono.dll'
+    )
+
+    $dlls | ForEach-Object {
+        CopyDll -dll $_
+    }
 } catch { throw 1; }

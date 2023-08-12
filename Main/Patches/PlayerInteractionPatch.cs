@@ -1,8 +1,7 @@
 ﻿using HarmonyLib;
 using Rewired;
 using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -45,10 +44,13 @@ public static class PlayerInteractionPatch
     private static void FetchInteractors(On.PlayerInteraction.orig_FetchInteractors original, PlayerInteraction self)
     {
         var data = self.GetComponent<PlayerNetworkData>();
-        if (data == null || data.IsLocal)
+        if (data != null && !data.IsLocal)
         {
-            original(self);
+            return;
         }
+        
+        original(self);
+        TreasuryUIPatch.OverrideFocus = self.FocussedInteractor is BuildingInteractor;
     }
 
     private static void RunInteraction(On.PlayerInteraction.orig_RunInteraction original, PlayerInteraction self)
@@ -98,13 +100,12 @@ public static class PlayerInteractionPatch
             return;
         }
         
+        GlobalData.Internal.Networth += amount;
         GlobalData.Balance += amount;
-        self.onBalanceGain.Invoke(amount);
     }
 
     private static void SpendCoins(On.PlayerInteraction.orig_SpendCoins orig, PlayerInteraction self, int amount)
     {
         GlobalData.Balance -= amount;
-        self.onBalanceSpend.Invoke(amount);
     }
 }

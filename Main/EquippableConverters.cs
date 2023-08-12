@@ -34,7 +34,7 @@ public static class EquippableConverters
         Plugin.Log.LogInfo("Currently Unlocked");
         foreach (var unlocked in PerkManager.instance.UnlockedEquippables)
         {
-            Plugin.Log.LogWarning($"- {unlocked.name}");
+            Plugin.Log.LogInfo($"- {unlocked.name}");
             NameToEquippable[unlocked.name] = unlocked;
         }
         Plugin.Log.LogInfo("Metalevels");

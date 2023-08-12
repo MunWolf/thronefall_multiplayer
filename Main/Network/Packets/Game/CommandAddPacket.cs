@@ -1,22 +1,24 @@
 ﻿using System.Collections.Generic;
 using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.Network;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class CommandAddPacket : IPacket
+public class CommandAddPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.CommandAddPacket;
+    public const PacketId PacketID = PacketId.CommandAdd;
 
     public int Player;
     public List<IdentifierData> Units = new();
 
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Player;
+    public override bool CanHandle(CSteamID sender)
+    {
+        return Plugin.Instance.Network.IsServer(sender);
+    }
 
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(Player);
         writer.Write(Units.Count);
@@ -26,7 +28,7 @@ public class CommandAddPacket : IPacket
         }
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         Player = reader.ReadInt32();
         var count = reader.ReadInt32();

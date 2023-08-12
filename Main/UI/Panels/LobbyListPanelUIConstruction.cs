@@ -192,10 +192,17 @@ public partial class LobbyListUI
         _connect = UIHelper.CreateButton(buttons, "connect", "Connect");
         _connect.OnClick += () =>
         {
-            UIManager.CreatePasswordDialog(
-                ConnectToLobby,
-                () => {}
-            );
+            if (_currentlySelectedLobby.LobbyInfo.HasPassword)
+            {
+                UIManager.CreatePasswordDialog(
+                    ConnectToLobby,
+                    () => {}
+                );
+            }
+            else
+            {
+                ConnectToLobby(null);
+            }
         };
         _connect.OnExit += () => { _muteSound = false; };
         _connect.OnSelected += PlaySelectSound;

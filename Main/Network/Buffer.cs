@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using Steamworks;
 using ThronefallMP.Components;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ public class Buffer
     
     private void EnsureSize(int extra)
     {
-        if (WriteHead + extra < Data.Length)
+        if (WriteHead + extra <= Data.Length)
         {
             return;
         }
@@ -32,7 +33,7 @@ public class Buffer
 
     public bool CanRead(int size)
     {
-        return ReadHead + size < Data.Length;
+        return ReadHead + size <= Data.Length;
     }
     
     public void Write(bool value)
@@ -68,7 +69,33 @@ public class Buffer
         WriteHead += output.Length;
     }
     
+    public void Write(uint value)
+    {
+        var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
+    }
+    
     public void Write(long value)
+    {
+        var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
+    }
+    
+    public void Write(ulong value)
     {
         var output = BitConverter.GetBytes(value);
         EnsureSize(output.Length);
@@ -129,12 +156,25 @@ public class Buffer
         Write((int)value.Type);
         Write(value.Id);
     }
+    
+    public void Write(CSteamID value)
+    {
+        var output = BitConverter.GetBytes(value.m_SteamID);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
+    }
 
     public bool ReadBoolean()
     {
         if (!CanRead(sizeof(bool)))
         {
-            Plugin.Log.LogInfo("Failed to read bool");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read bool");
             return false;
         }
 
@@ -157,7 +197,7 @@ public class Buffer
     {
         if (!CanRead(sizeof(int)))
         {
-            Plugin.Log.LogInfo("Failed to read int");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
             return 0;
         }
 
@@ -176,11 +216,34 @@ public class Buffer
         return output;
     }
 
+    public uint ReadUInt32()
+    {
+        if (!CanRead(sizeof(int)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
+            return 0;
+        }
+
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(int));
+        }
+        
+        var output = BitConverter.ToUInt32(Data, ReadHead);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(int));
+        }
+        
+        ReadHead += sizeof(uint);
+        return output;
+    }
+
     public long ReadInt64()
     {
         if (!CanRead(sizeof(long)))
         {
-            Plugin.Log.LogInfo("Failed to read long");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read long");
             return 0;
         }
 
@@ -199,11 +262,34 @@ public class Buffer
         return output;
     }
 
+    public ulong ReadUInt64()
+    {
+        if (!CanRead(sizeof(ulong)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read long");
+            return 0;
+        }
+
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(ulong));
+        }
+        
+        var output = BitConverter.ToUInt64(Data, ReadHead);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(ulong));
+        }
+        
+        ReadHead += sizeof(ulong);
+        return output;
+    }
+
     public float ReadFloat()
     {
         if (!CanRead(sizeof(float)))
         {
-            Plugin.Log.LogInfo("Failed to read float");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read float");
             return 0;
         }
         
@@ -228,7 +314,7 @@ public class Buffer
         var size = ReadInt32();
         if (!CanRead(size))
         {
-            Plugin.Log.LogInfo($"Failed to read string of length {size} ({old}:{Data.Length})");
+            Plugin.Log.LogInfoFiltered("Buffer", $"Failed to read string of length {size} ({old}:{Data.Length})");
             ReadHead = old;
             return "";
         }
@@ -243,7 +329,7 @@ public class Buffer
         var output = new Vector3();
         if (!CanRead(3 * sizeof(float)))
         {
-            Plugin.Log.LogInfo("Failed to read vector3");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read vector3");
             return output;
         }
 
@@ -258,7 +344,7 @@ public class Buffer
         var output = new Quaternion();
         if (!CanRead(4 * sizeof(float)))
         {
-            Plugin.Log.LogInfo("Failed to read quaternion");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read quaternion");
             return output;
         }
 
@@ -273,7 +359,7 @@ public class Buffer
     {
         if (!CanRead(2 * sizeof(int)))
         {
-            Plugin.Log.LogInfo("Failed to read identifier");
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read identifier");
             return IdentifierData.Invalid;
         }
 
@@ -281,5 +367,16 @@ public class Buffer
         data.Type = (IdentifierType)ReadInt32();
         data.Id = ReadInt32();
         return data;
+    }
+    
+    public CSteamID ReadSteamID()
+    {
+        if (!CanRead(sizeof(ulong)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read identifier");
+            return CSteamID.Nil;
+        }
+
+        return new CSteamID(ReadUInt64());
     }
 }

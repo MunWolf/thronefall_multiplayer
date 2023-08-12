@@ -1,13 +1,11 @@
-﻿
-using Steamworks;
-using ThronefallMP.Network;
+﻿using Steamworks;
 using UnityEngine;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class EnemySpawnPacket : IPacket
+public class EnemySpawnPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.EnemySpawnPacket;
+    public const PacketId PacketID = PacketId.EnemySpawn;
     
     public int Wave;
     public int Spawn;
@@ -15,11 +13,14 @@ public class EnemySpawnPacket : IPacket
     public Vector3 Position;
     public int Coins;
 
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Game;
+    public override bool CanHandle(CSteamID sender)
+    {
+        return Plugin.Instance.Network.IsServer(sender);
+    }
 
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(Wave);
         writer.Write(Spawn);
@@ -28,7 +29,7 @@ public class EnemySpawnPacket : IPacket
         writer.Write(Coins);
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         Wave = reader.ReadInt32();
         Spawn = reader.ReadInt32();

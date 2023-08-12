@@ -1,6 +1,6 @@
-﻿using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+﻿using System;
+using ThronefallMP.Components;
+using ThronefallMP.Network.Packets.Game;
 
 namespace ThronefallMP.Patches;
 
@@ -119,6 +119,11 @@ public static class HpPatch
         if (identifier == null || identifier.Type == IdentifierType.Invalid)
         {
             original(self, amount);
+            return;
+        }
+
+        if (Math.Abs(self.HpValue - self.maxHp) < 0.01f)
+        {
             return;
         }
         

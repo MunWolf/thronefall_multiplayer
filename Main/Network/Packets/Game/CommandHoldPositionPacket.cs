@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.Network;
 using UnityEngine;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class CommandPlacePacket : IPacket
+public class CommandHoldPositionPacket : BasePacket
 {
     public struct UnitData
     {
@@ -14,16 +13,19 @@ public class CommandPlacePacket : IPacket
         public Vector3 Home;
     }
     
-    public const PacketId PacketID = PacketId.CommandPlacePacket;
+    public const PacketId PacketID = PacketId.CommandHoldPosition;
 
     public int Player;
     public List<UnitData> Units = new();
 
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Player;
+    public override bool CanHandle(CSteamID sender)
+    {
+        return Plugin.Instance.Network.IsServer(sender);
+    }
 
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(Player);
         writer.Write(Units.Count);
@@ -34,7 +36,7 @@ public class CommandPlacePacket : IPacket
         }
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         Player = reader.ReadInt32();
         var count = reader.ReadInt32();

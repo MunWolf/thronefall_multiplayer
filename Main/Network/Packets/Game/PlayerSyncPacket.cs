@@ -1,21 +1,21 @@
 ﻿using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.Network;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class PlayerSyncPacket : IPacket
+public class PlayerSyncPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.PlayerSyncPacket;
+    public const PacketId PacketID = PacketId.PlayerSync;
     
     public int PlayerID = -1;
     public PlayerNetworkData.Shared Data = new();
     
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_UnreliableNoNagle;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Player;
+    public override int DeliveryMask => Constants.k_nSteamNetworkingSend_UnreliableNoNagle;
+    public override bool ShouldPropagate => true;
     
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(PlayerID);
         writer.Write(Data.Position);
@@ -29,7 +29,7 @@ public class PlayerSyncPacket : IPacket
         writer.Write(Data.CommandUnitsButton);
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         PlayerID = reader.ReadInt32();
         Data.Position = reader.ReadVector3();

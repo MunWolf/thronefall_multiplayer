@@ -1,12 +1,11 @@
 ﻿using Steamworks;
 using ThronefallMP.Components;
-using ThronefallMP.Network;
 
-namespace ThronefallMP.NetworkPackets.Game;
+namespace ThronefallMP.Network.Packets.Game;
 
-public class DamagePacket : IPacket
+public class DamagePacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.DamagePacket;
+    public const PacketId PacketID = PacketId.Damage;
 
     public IdentifierData Target;
     public IdentifierData Source;
@@ -14,11 +13,14 @@ public class DamagePacket : IPacket
     public bool CausedByPlayer;
     public bool InvokeFeedbackEvents;
 
-    public PacketId TypeID => PacketID;
-    public int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
-    public int Channel => 0;
+    public override PacketId TypeID => PacketID;
+    public override Channel Channel => Channel.Player;
+    public override bool CanHandle(CSteamID sender)
+    {
+        return Plugin.Instance.Network.IsServer(sender);
+    }
 
-    public void Send(Buffer writer)
+    public override void Send(Buffer writer)
     {
         writer.Write(Target);
         writer.Write(Source);
@@ -27,7 +29,7 @@ public class DamagePacket : IPacket
         writer.Write(InvokeFeedbackEvents);
     }
 
-    public void Receive(Buffer reader)
+    public override void Receive(Buffer reader)
     {
         Target = reader.ReadIdentifierData();
         Source = reader.ReadIdentifierData();

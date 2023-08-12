@@ -3,8 +3,7 @@ using System.Data.Common;
 using HarmonyLib;
 using Pathfinding;
 using ThronefallMP.Components;
-using ThronefallMP.NetworkPackets;
-using ThronefallMP.NetworkPackets.Game;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;

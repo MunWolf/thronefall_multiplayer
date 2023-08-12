@@ -1,20 +1,41 @@
-$path = Read-Host -Prompt 'Input the path to your Thronefall installation'
+$path = Read-Host -Prompt 'Input the path to your Thronefall installation (default: C:\Program Files (x86)\Steam\steamapps\common\Thronefall)'
+$mod_name = ThronefallMP
 
+if ($path -eq "") {
+    $path = "C:\Program Files (x86)\Steam\steamapps\common\Thronefall"
+}
 
+$dlls = (
+    "Assembly-CSharp",
+    "AstarPathfindingProject",
+    "MoreMountains.Feedbacks",
+    "MPUIKit",
+    "Rewired_Core",
+    "ShapesRuntime",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "UnityEngine.CoreModule",
+    "UnityEngine",
+    "com.rlabrecque.steamworks.net"
+)
+
+Write-Host "Setting up lib directory"
 if (Test-Path (Join-Path $path Thronefall.exe) -PathType Leaf) {
     $library_path = Join-Path $path Thronefall_Data\Managed
-    Copy-Item (Join-Path $library_path Assembly-CSharp.dll) .\lib\Assembly-CSharp.dll
-    Copy-Item (Join-Path $library_path AstarPathfindingProject.dll) .\lib\AstarPathfindingProject.dll
-    Copy-Item (Join-Path $library_path MoreMountains.Feedbacks.dll) .\lib\MoreMountains.Feedbacks.dll
-    Copy-Item (Join-Path $library_path MPUIKit.dll) .\lib\MPUIKit.dll
-    Copy-Item (Join-Path $library_path Rewired_Core.dll) .\lib\Rewired_Core.dll
-    Copy-Item (Join-Path $library_path ShapesRuntime.dll) .\lib\ShapesRuntime.dll
-    Copy-Item (Join-Path $library_path Unity.TextMeshPro.dll) .\lib\Unity.TextMeshPro.dll
-    Copy-Item (Join-Path $library_path UnityEngine.UI.dll) .\lib\UnityEngine.UI.dll
-    Copy-Item (Join-Path $library_path com.rlabrecque.steamworks.net.dll) .\lib\com.rlabrecque.steamworks.net.dll
-    $cfg = "InstallPath = $([RegEx]::Escape($(Join-Path $path BepInEx\plugins\ThronefallMultiplayer)))"
+    if (!(Test-Path -Path .\lib)) {
+        New-Item -ItemType Directory -Path .\ -Name lib
+    }
+
+    $dlls | ForEach-Object {
+        Copy-Item (Join-Path $library_path "$_.dll") ".\lib\$_.dll"
+    }
+
+    $cfg = "InstallPath = $([RegEx]::Escape($(Join-Path $path BepInEx\plugins\$mod_name)))"
     Out-File -InputObject $cfg -FilePath .\install.cfg
 }
 else {
     Write-Host "Thronefall.exe not found, terminating."
 }
+
+Write-Host "Adding references"
+$project = Get-Content $mod_name/$mod_name.csproj

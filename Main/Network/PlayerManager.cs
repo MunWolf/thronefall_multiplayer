@@ -17,12 +17,25 @@ public class PlayerManager
         public PlayerNetworkData Data;
         public readonly PlayerNetworkData.Shared Shared = new();
         public CharacterController Controller;
+        
+        public Vector3 SpawnLocation => Utils.GetSpawnLocation(Plugin.Instance.PlayerManager.SpawnLocation, SpawnID);
     }
 
-    public int LocalId { get; set; }
+    private int _localId;
+    public int LocalId
+    {
+        get => _localId;
+        set
+        {
+            _localId = value;
+            Plugin.Log.LogInfoFiltered("Network", $"Local player set to {value}");
+        }
+    }
+
     public Player LocalPlayer => _players.TryGetValue(LocalId, out var value) ? value : null;
     
     private Dictionary<int, Player> _players = new();
+    private Dictionary<CSteamID, Player> _steamToPlayer = new();
     private GameObject _playerContainer;
     private GameObject _playerPrefab;
 
@@ -55,21 +68,23 @@ public class PlayerManager
         return id;
     }
     
-    public Player Create(int id)
+    public Player Create(CSteamID steamId, int id)
     {
         if (!_players.TryGetValue(id, out var player))
         {
-            Plugin.Log.LogInfo($"Creating player {id}");
+            Plugin.Log.LogInfo($"Creating player {steamId}:{id}");
             player = new Player
             {
-                Id = id
+                Id = id,
+                SteamID = steamId
             };
         
             _players[id] = player;
+            _steamToPlayer[steamId] = player;
         }
         else
         {
-            Plugin.Log.LogInfo($"Updating Player {id}");
+            Plugin.Log.LogInfo($"Updating Player {steamId}:{id}");
         }
 
         if (_playerPrefab != null && player.Object == null)
@@ -83,15 +98,18 @@ public class PlayerManager
     public void Remove(int player)
     {
         // TODO: Add a smoke poof effect when a player is destroyed.
-        Plugin.Log.LogInfo($"Destroying player {player}");
         var data = _players[player];
+        Plugin.Log.LogInfo($"Destroying player {data.SteamID}:{player}");
         Object.Destroy(data.Object);
+        _steamToPlayer.Remove(data.SteamID);
         _players.Remove(player);
+        
+        // TODO: Update spawn ids.
     }
 
     private void InstantiatePlayer(Player player)
     {
-        Plugin.Log.LogInfo($"Instantiating player '{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}'");
+        Plugin.Log.LogInfo($"Instantiating player {player.SteamID}:{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}");
         player.Object = Object.Instantiate(_playerPrefab, _playerContainer.transform);
         player.Controller = player.Object.GetComponent<CharacterController>();
         player.Data = player.Object.GetComponent<PlayerNetworkData>();
@@ -102,14 +120,24 @@ public class PlayerManager
         
         var identifier = player.Object.GetComponent<Identifier>();
         identifier.SetIdentity(IdentifierType.Player, player.Id);
-        player.Object.transform.position = Utils.GetSpawnLocation(_spawn, player.SpawnID);
-        player.Data.SharedData.Position = player.Object.transform.position;
+        player.Object.transform.position = player.Shared.Position;
+        player.Data.TeleportNext = true;
         player.Object.SetActive(true);
     }
 
     public Player Get(int id)
     {
         return _players.TryGetValue(id, out var player) ? player : null;
+    }
+
+    public Player Get(CSteamID id)
+    {
+        return _steamToPlayer.TryGetValue(id, out var player) ? player : null;
+    }
+
+    public IEnumerable<Player> GetAllPlayers()
+    {
+        return _players.Select(p => p.Value);
     }
 
     public IEnumerable<PlayerNetworkData> GetAllPlayerData()
@@ -141,6 +169,7 @@ public class PlayerManager
         SpawnLocation = prefab.transform.position;
         foreach (var player in _players)
         {
+            player.Value.Shared.Position = player.Value.SpawnLocation;
             InstantiatePlayer(player.Value);
         }
     }
@@ -153,5 +182,6 @@ public class PlayerManager
         }
         
         _players.Clear();
+        _steamToPlayer.Clear();
     }
 }
