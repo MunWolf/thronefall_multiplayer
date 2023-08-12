@@ -9,15 +9,18 @@ try {
             $dll
         )
 
-        Write-Output "Installing $(Join-Path $config.InstallPath $dll)"
-        $null = New-Item -ItemType File -Path (Join-Path $config.InstallPath $dll) -Force
-        $null = Copy-Item (Join-Path $input_path $dll) (Join-Path $config.InstallPath $dll) -Force
+        Write-Output "Installing $(Join-Path $config.InstallPath "$($dll).dll")"
+        $null = New-Item -ItemType File -Path (Join-Path $config.InstallPath "$($dll).dll") -Force
+        $null = Copy-Item (Join-Path $input_path "$($dll).dll") (Join-Path $config.InstallPath "$($dll).dll") -Force
+        if (Test-Path -Path (Join-Path $input_path "$($dll).pdb") -PathType Leaf) {
+            $null = Copy-Item (Join-Path $input_path "$($dll).pdb") (Join-Path $config.InstallPath "$($dll).pdb") -Force
+        }
     }
 
     $dlls = (
-        'com.badwolf.thronefall_mp.dll',
-        'MMHOOK_Assembly-CSharp.dll',
-        'UniverseLib.Mono.dll'
+        'com.badwolf.thronefall_mp',
+        'MMHOOK_Assembly-CSharp',
+        'UniverseLib.Mono'
     )
 
     $dlls | ForEach-Object {

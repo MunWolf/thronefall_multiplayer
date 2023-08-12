@@ -20,6 +20,7 @@
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>..\bin\Main\Release\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>

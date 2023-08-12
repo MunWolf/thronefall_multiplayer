@@ -12,6 +12,7 @@ public static class BuildSlotPatch
     public struct UpgradeInfo
     {
         public int Cost;
+        public int CurrentLevel;
     }
     
     public static GameObject CoinPrefab;
@@ -151,24 +152,29 @@ public static class BuildSlotPatch
         var upgrade = building.upgrades[level];
         return new UpgradeInfo()
         {
-            Cost = upgrade.cost
+            Cost = upgrade.cost,
+            CurrentLevel = building.Level
         };
     }
 
     public static void HandleUpgrade(int playerId, int id, int level, int choice)
     {
         var building = Identifier.GetGameObject(IdentifierType.Building, id).GetComponent<BuildSlot>();
+        if (building == null)
+        {
+            Plugin.Log.LogInfo($"Unable to build {id}:{level}:{choice} for {playerId}");
+        }
+        
         var upgrade = building.upgrades[level];
         var branch = upgrade.upgradeBranches[choice];
         var upgradeSelected = Traverse.Create(building).Field<BuildSlot.Upgrade>("upgradeSelected");
         var previousValue = upgradeSelected.Value;
         
-        upgradeSelected.Value = upgrade;
         _disableNetworkHook = true;
         building.buildingInteractor.MarkAsHarvested();
         building.OnUpgradeChoiceComplete(branch.choiceDetails);
         _disableNetworkHook = false;
-        upgradeSelected.Value = previousValue;
+        upgradeSelected.Value = null;
         
         var focussed = Traverse.Create(building.buildingInteractor).Field<bool>("focussed");
         if (building.buildingInteractor.IsWaitingForChoice)

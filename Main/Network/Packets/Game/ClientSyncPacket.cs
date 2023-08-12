@@ -15,7 +15,6 @@ public class ClientSyncPacket : BasePacket
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Player;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_UnreliableNoNagle;
-    public override bool ShouldPropagate => true;
     
     public override void Send(Buffer writer)
     {

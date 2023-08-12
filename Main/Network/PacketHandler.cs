@@ -53,7 +53,7 @@ public static class PacketHandler
         
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CancelBuildPacket.PacketID, HandleCancelBuild },
-        { ClientSyncPacket.PacketID, HandlePlayerSync },
+        { ClientSyncPacket.PacketID, HandleClientSync },
         { CommandAddPacket.PacketID, HandleCommandAdd },
         { CommandPlacePacket.PacketID, HandleCommandPlace },
         { CommandHoldPositionPacket.PacketID, HandleCommandHoldPosition },
@@ -126,11 +126,11 @@ public static class PacketHandler
         }
     }
 
-    private static void HandlePlayerSync(SteamNetworkingIdentity sender, BasePacket ipacket)
+    private static void HandleClientSync(SteamNetworkingIdentity sender, BasePacket ipacket)
     {
         var packet = (ClientSyncPacket)ipacket;
         var player = Plugin.Instance.PlayerManager.Get(packet.PlayerID);
-        if (player == null)
+        if (player == null || player.Id == Plugin.Instance.PlayerManager.LocalId)
         {
             return;
         }
@@ -319,7 +319,7 @@ public static class PacketHandler
     {
         var packet = (CommandHoldPositionPacket)ipacket;
         var player = Plugin.Instance.PlayerManager.Get(packet.Player);
-        if (player.Object == null)
+        if (player?.Object == null)
         {
             return;
         }
@@ -399,7 +399,7 @@ public static class PacketHandler
         
         var packet = (BuildOrUpgradePacket)ipacket;
         var info = BuildSlotPatch.GetUpgradeInfo(packet.BuildingId, packet.Level, packet.Choice);
-        if (GlobalData.Balance < info.Cost)
+        if (GlobalData.Balance < info.Cost || info.CurrentLevel >= packet.Level)
         {
             Plugin.Log.LogInfoFiltered("PacketHandler", $"Cancel building {packet.BuildingId}:{packet.Level}:{packet.Choice} for {info.Cost}");
             Plugin.Instance.Network.SendSingle(new CancelBuildPacket()
