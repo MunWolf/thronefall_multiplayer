@@ -40,10 +40,19 @@ public class TreasuryUIPatch
     private static void Update(On.TreasuryUI.orig_Update original, TreasuryUI self)
     {
 	    var coinQueue = Traverse.Create(self).Field<int>("coinQeue");
+	    var overrideActivation = Traverse.Create(self).Field<bool>("overrideActivation");
+	    var activationCounter = Traverse.Create(self).Field<float>("activationCounter");
+	    var activationLifetime = Traverse.Create(self).Field<float>("activationLifetime");
 	    var displayText = Traverse.Create(self).Field<TextMeshProUGUI>("displayText");
 	    var instantiatedCoins = Traverse.Create(self).Field<List<GameObject>>("instantiatedCoins");
 	    displayText.Value.text = $"<sprite name=\"coin\">{GlobalData.Balance}";
 	    coinQueue.Value = Math.Max(GlobalData.Balance, 0) - instantiatedCoins.Value.Count;
+	    if (!OverrideFocus && overrideActivation.Value)
+	    {
+		    activationCounter.Value = activationLifetime.Value;
+	    }
+
+	    overrideActivation.Value = OverrideFocus;
 	    original(self);
     }
 }
