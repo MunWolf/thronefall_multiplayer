@@ -22,18 +22,27 @@ public class AllyPathfinderSync : BaseTargetSync
     protected override BasePacket CreateSyncPacket(CSteamID peer, IdentifierData id, GameObject target)
     {
         var pathfinder = target.GetComponent<PathfindMovementPlayerunit>();
-        // We should send nextPathPointIndex but not check it in the hash.
-        var targetPosition = Traverse.Create(pathfinder).Field<Vector3>("seekToTargetPos");
-        var walkingHome = Traverse.Create(pathfinder).Field<bool>("currentlyWalkingHome");
-        var followingPlayer = Traverse.Create(pathfinder).Field<bool>("followingPlayer");
         var nextPathPointIndex = Traverse.Create(pathfinder).Field<int>("nextPathPointIndex");
         var path = Traverse.Create(pathfinder).Field<List<Vector3>>("path");
+        var followingPlayer = Traverse.Create(pathfinder).Field<bool>("followingPlayer");
+        var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
+        var seekToTaggedObjId = IdentifierData.Invalid;
+        if (seekToTaggedObj.Value != null)
+        {
+            seekToTaggedObjId = new IdentifierData(seekToTaggedObj.Value.GetComponent<Identifier>());
+        }
+        else if (followingPlayer.Value)
+        {
+            // We don't care which player because it sets it to null anyway.
+            seekToTaggedObjId = new IdentifierData { Type = IdentifierType.Player };
+        }
+        
         return new SyncAllyPathfinderPacket
         {
             Ally = id.Id,
-            Target = targetPosition.Value,
-            WalkingHome = walkingHome.Value,
-            FollowingPlayer = followingPlayer.Value,
+            TargetObject = seekToTaggedObjId,
+            HomePosition = pathfinder.HomePosition,
+            HoldPosition = pathfinder.HoldPosition,
             Slowed = pathfinder.IsSlowed,
             PathIndex = nextPathPointIndex.Value,
             Path = path.Value
@@ -58,9 +67,10 @@ public class AllyPathfinderSync : BaseTargetSync
             }
         }
 
-        return (a.Target - b.Target).sqrMagnitude < Helpers.EpsilonSqr
-               && a.WalkingHome == b.WalkingHome
-               && a.FollowingPlayer == b.FollowingPlayer
+        return a.TargetObject.Type == b.TargetObject.Type
+               && a.TargetObject.Id == b.TargetObject.Id
+               && a.HomePosition == b.HomePosition
+               && a.HoldPosition == b.HoldPosition
                && a.Slowed == b.Slowed;
     }
 
@@ -86,9 +96,15 @@ public class AllyPathfinderSync : BaseTargetSync
         var slowedFor = Traverse.Create(pathfinder).Field<float>("slowedFor");
         var nextPathPointIndex = Traverse.Create(pathfinder).Field<int>("nextPathPointIndex");
         var path = Traverse.Create(pathfinder).Field<List<Vector3>>("path");
-        targetPosition.Value = sync.Target;
-        walkingHome.Value = sync.WalkingHome;
-        followingPlayer.Value = sync.FollowingPlayer;
+        var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
+        var target = sync.TargetObject.Get();
+        var isTargetNull = sync.TargetObject.Type == IdentifierType.Invalid;
+        pathfinder.HomePosition = sync.HomePosition;
+        followingPlayer.Value = sync.TargetObject.Type == IdentifierType.Player;
+        pathfinder.HoldPosition = sync.HoldPosition;
+        targetPosition.Value = followingPlayer.Value ? pathfinder.HomePosition : target.transform.position;
+        seekToTaggedObj.Value = isTargetNull || sync.TargetObject.Type == IdentifierType.Player ? null : target.GetComponent<TaggedObject>();
+        walkingHome.Value = followingPlayer.Value || pathfinder.HoldPosition || sync.TargetObject.Type == IdentifierType.Invalid;
         slowedFor.Value = sync.Slowed ? float.MaxValue : float.MinValue;
         nextPathPointIndex.Value = sync.PathIndex;
         path.Value = sync.Path;

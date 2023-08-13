@@ -14,9 +14,6 @@ public class SyncEnemyPathfinderPacket : BasePacket
 
     public int Enemy;
     public IdentifierData TargetObject;
-    public Vector3 Target;
-    public bool WalkingHome;
-    public bool ChasingPlayer;
     public bool Slowed;
     public int PathIndex;
     public List<Vector3> Path = new();
@@ -25,9 +22,6 @@ public class SyncEnemyPathfinderPacket : BasePacket
     {
         writer.Write(Enemy);
         writer.Write(TargetObject);
-        writer.Write(Target);
-        writer.Write(WalkingHome);
-        writer.Write(ChasingPlayer);
         writer.Write(Slowed);
         writer.Write(PathIndex);
         writer.Write(Path.Count);
@@ -42,9 +36,6 @@ public class SyncEnemyPathfinderPacket : BasePacket
         Path.Clear();
         Enemy = reader.ReadInt32();
         TargetObject = reader.ReadIdentifierData();
-        Target = reader.ReadVector3();
-        WalkingHome = reader.ReadBoolean();
-        ChasingPlayer = reader.ReadBoolean();
         Slowed = reader.ReadBoolean();
         PathIndex = reader.ReadInt32();
         var count = reader.ReadInt32();

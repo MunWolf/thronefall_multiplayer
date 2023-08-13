@@ -22,10 +22,7 @@ public class EnemyPathfinderSync : BaseTargetSync
     {
         var pathfinder = target.GetComponent<PathfindMovementEnemy>();
         // We should send nextPathPointIndex but not check it in the hash.
-        var targetPosition = Traverse.Create(pathfinder).Field<Vector3>("seekToTargetPos");
         var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
-        var walkingHome = Traverse.Create(pathfinder).Field<bool>("currentlyWalkingHome");
-        var chasingPlayer = Traverse.Create(pathfinder).Field<bool>("currentlyChasingPlayer");
         var nextPathPointIndex = Traverse.Create(pathfinder).Field<int>("nextPathPointIndex");
         var path = Traverse.Create(pathfinder).Field<List<Vector3>>("path");
 
@@ -39,9 +36,6 @@ public class EnemyPathfinderSync : BaseTargetSync
         {
             Enemy = id.Id,
             TargetObject = seekToTaggedObjId,
-            Target = targetPosition.Value,
-            WalkingHome = walkingHome.Value,
-            ChasingPlayer = chasingPlayer.Value,
             Slowed = pathfinder.IsSlowed,
             PathIndex = nextPathPointIndex.Value,
             Path = path.Value
@@ -66,11 +60,8 @@ public class EnemyPathfinderSync : BaseTargetSync
             }
         }
 
-        return (a.Target - b.Target).sqrMagnitude < Helpers.EpsilonSqr
-               && a.TargetObject.Type == b.TargetObject.Type
+        return a.TargetObject.Type == b.TargetObject.Type
                && a.TargetObject.Id == b.TargetObject.Id
-               && a.WalkingHome == b.WalkingHome
-               && a.ChasingPlayer == b.ChasingPlayer
                && a.Slowed == b.Slowed;
     }
 
@@ -91,17 +82,19 @@ public class EnemyPathfinderSync : BaseTargetSync
         
         var pathfinder = enemy.GetComponent<PathfindMovementEnemy>();
         var targetPosition = Traverse.Create(pathfinder).Field<Vector3>("seekToTargetPos");
-        var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
         var walkingHome = Traverse.Create(pathfinder).Field<bool>("currentlyWalkingHome");
         var chasingPlayer = Traverse.Create(pathfinder).Field<bool>("currentlyChasingPlayer");
         var slowedFor = Traverse.Create(pathfinder).Field<float>("slowedFor");
         var nextPathPointIndex = Traverse.Create(pathfinder).Field<int>("nextPathPointIndex");
+        var homeOffset = Traverse.Create(pathfinder).Field<Vector3>("homeOffset");
         var path = Traverse.Create(pathfinder).Field<List<Vector3>>("path");
+        var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
         var target = sync.TargetObject.Get();
-        targetPosition.Value = sync.Target;
-        seekToTaggedObj.Value = target != null ? target.GetComponent<TaggedObject>() : null;
-        walkingHome.Value = sync.WalkingHome;
-        chasingPlayer.Value = sync.ChasingPlayer;
+        var isTargetNull = sync.TargetObject.Type == IdentifierType.Invalid;
+        targetPosition.Value = isTargetNull ? pathfinder.HomePosition + homeOffset.Value : target.transform.position;
+        seekToTaggedObj.Value = isTargetNull ? null : target.GetComponent<TaggedObject>();
+        walkingHome.Value = isTargetNull;
+        chasingPlayer.Value = sync.TargetObject.Type == IdentifierType.Player;
         slowedFor.Value = sync.Slowed ? float.MaxValue : float.MinValue;
         nextPathPointIndex.Value = sync.PathIndex;
         path.Value = sync.Path;

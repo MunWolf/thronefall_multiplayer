@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Steamworks;
+using ThronefallMP.Components;
 using UnityEngine;
 
 namespace ThronefallMP.Network.Packets.Sync;
@@ -12,9 +13,9 @@ public class SyncAllyPathfinderPacket : BasePacket
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
 
     public int Ally;
-    public Vector3 Target;
-    public bool WalkingHome;
-    public bool FollowingPlayer;
+    public IdentifierData TargetObject;
+    public Vector3 HomePosition;
+    public bool HoldPosition;
     public bool Slowed;
     public int PathIndex;
     public List<Vector3> Path = new();
@@ -22,9 +23,9 @@ public class SyncAllyPathfinderPacket : BasePacket
     public override void Send(Buffer writer)
     {
         writer.Write(Ally);
-        writer.Write(Target);
-        writer.Write(WalkingHome);
-        writer.Write(FollowingPlayer);
+        writer.Write(TargetObject);
+        writer.Write(HomePosition);
+        writer.Write(HoldPosition);
         writer.Write(Slowed);
         writer.Write(PathIndex);
         writer.Write(Path.Count);
@@ -38,9 +39,9 @@ public class SyncAllyPathfinderPacket : BasePacket
     {
         Path.Clear();
         Ally = reader.ReadInt32();
-        Target = reader.ReadVector3();
-        WalkingHome = reader.ReadBoolean();
-        FollowingPlayer = reader.ReadBoolean();
+        TargetObject = reader.ReadIdentifierData();
+        HomePosition = reader.ReadVector3();
+        HoldPosition = reader.ReadBoolean();
         Slowed = reader.ReadBoolean();
         PathIndex = reader.ReadInt32();
         var count = reader.ReadInt32();
