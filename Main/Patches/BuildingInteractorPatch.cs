@@ -28,7 +28,7 @@ public static class BuildingInteractorPatch
     {
         var incomeModifiers = Traverse.Create(self).Field<List<IncomeModifyer>>("incomeModifiers");
         var players = Plugin.Instance.PlayerManager.GetAllPlayerData().Select(x => x.GetComponent<PlayerInteraction>()).ToArray();
-        var closest = Utils.FindClosest(players, self.transform.position);
+        var closest = Helpers.FindClosest(players, self.transform.position);
         self.Harvest(closest);
         foreach (var modifier in incomeModifiers.Value)
         {

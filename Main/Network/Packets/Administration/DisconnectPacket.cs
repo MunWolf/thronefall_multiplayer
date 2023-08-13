@@ -1,6 +1,6 @@
 ﻿using Steamworks;
 
-namespace ThronefallMP.Network.Packets;
+namespace ThronefallMP.Network.Packets.Administration;
 
 public class DisconnectPacket : BasePacket
 {

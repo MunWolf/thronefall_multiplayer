@@ -1,34 +1,28 @@
 ﻿using Steamworks;
 
-namespace ThronefallMP.Network.Packets.Game;
+namespace ThronefallMP.Network.Packets.PlayerCommand;
 
-public class BuildOrUpgradePacket : BasePacket
+public class CancelBuildPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.BuildOrUpgrade;
-
+    public const PacketId PacketID = PacketId.CancelBuild;
+    
     public int BuildingId;
-    public int Level;
-    public int Choice;
 
     public override PacketId TypeID => PacketID;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
     public override Channel Channel => Channel.Resources;
     public override bool CanHandle(CSteamID sender)
     {
-        return Plugin.Instance.Network.Server;
+        return Plugin.Instance.Network.IsServer(sender);
     }
 
     public override void Send(Buffer writer)
     {
         writer.Write(BuildingId);
-        writer.Write(Level);
-        writer.Write(Choice);
     }
 
     public override void Receive(Buffer reader)
     {
         BuildingId = reader.ReadInt32();
-        Level = reader.ReadInt32();
-        Choice = reader.ReadInt32();
     }
 }

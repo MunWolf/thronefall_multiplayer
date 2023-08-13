@@ -3,7 +3,7 @@ using Steamworks;
 using ThronefallMP.Components;
 using UnityEngine;
 
-namespace ThronefallMP.Network.Packets.Game;
+namespace ThronefallMP.Network.Packets.PlayerCommand;
 
 public class CommandHoldPositionPacket : BasePacket
 {

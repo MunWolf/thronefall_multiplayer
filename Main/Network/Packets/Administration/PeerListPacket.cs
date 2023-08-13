@@ -2,7 +2,7 @@
 using Steamworks;
 using UnityEngine;
 
-namespace ThronefallMP.Network.Packets;
+namespace ThronefallMP.Network.Packets.Administration;
 
 public class PeerListPacket : BasePacket
 {

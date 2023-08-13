@@ -1,22 +1,15 @@
 ﻿using System.Collections.Generic;
 using Steamworks;
 using ThronefallMP.Components;
-using UnityEngine;
 
-namespace ThronefallMP.Network.Packets.Game;
+namespace ThronefallMP.Network.Packets.PlayerCommand;
 
-public class CommandPlacePacket : BasePacket
+public class CommandAddPacket : BasePacket
 {
-    public struct UnitData
-    {
-        public IdentifierData Unit;
-        public Vector3 Home;
-    }
-    
-    public const PacketId PacketID = PacketId.CommandPlace;
+    public const PacketId PacketID = PacketId.CommandAdd;
 
     public int Player;
-    public List<UnitData> Units = new();
+    public List<IdentifierData> Units = new();
 
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Player;
@@ -31,8 +24,7 @@ public class CommandPlacePacket : BasePacket
         writer.Write(Units.Count);
         foreach (var unit in Units)
         {
-            writer.Write(unit.Unit);
-            writer.Write(unit.Home);
+            writer.Write(unit);
         }
     }
 
@@ -43,11 +35,7 @@ public class CommandPlacePacket : BasePacket
         Units.Clear();
         for (var i = 0; i < count; ++i)
         {
-            Units.Add(new UnitData
-            {
-                Unit = reader.ReadIdentifierData(),
-                Home = reader.ReadVector3()
-            });
+            Units.Add(reader.ReadIdentifierData());
         }
     }
 }

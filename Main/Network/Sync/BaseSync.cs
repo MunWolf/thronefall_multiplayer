@@ -1,160 +1,123 @@
 ﻿using System.Collections.Generic;
+using HarmonyLib;
 using Steamworks;
 using ThronefallMP.Network.Packets;
-using ThronefallMP.Network.Packets.Sync;
 using UnityEngine;
 
 namespace ThronefallMP.Network.Sync;
 
 public abstract class BaseSync
 {
-    protected enum Mode
+    private class State
     {
-        Auto,
-        Request
+        public BasePacket LastPacket;
+        public float ForceTimer;
+        public float MinWaitTimer;
     }
     
-    private static readonly Dictionary<int, BaseSync> RegisteredSyncs = new();
-    protected virtual float SyncCheckTimer => 0.5f;
-    protected virtual Mode SyncMode => Mode.Auto;
-
-    private readonly Dictionary<CSteamID, int> _lastSyncCheck = new();
-    private readonly Dictionary<CSteamID, int> _lastHash = new();
-    private readonly int _type;
-    private int _nextOrder;
-    private float _syncTimer;
-
-    protected BaseSync(int type)
+    private readonly Dictionary<CSteamID, State> _states = new();
+    private readonly State _state = new();
+    
+    protected BaseSync()
     {
-        _type = type;
-        RegisteredSyncs[type] = this;
+        SyncManager.RegisterSync(this);
     }
 
-    protected abstract int Hash(CSteamID sender);
-    protected abstract bool CanHandle(BasePacket packet);
-    protected abstract void Handle(CSteamID sender, BasePacket packet);
-    protected abstract BasePacket CreateSyncPacket(CSteamID sender);
-
-    protected virtual IEnumerable<(CSteamID peer, BasePacket packet)> CreateSyncPackets(IEnumerable<CSteamID> ids)
+    protected virtual bool CaresAboutPeer => false;
+    protected virtual float ForceUpdateTimer => float.MaxValue;
+    protected virtual float MinWaitTimer => 0f;
+    protected virtual bool ShouldUpdate => Plugin.Instance.Network.Server;
+    protected abstract BasePacket CreateSyncPacket(CSteamID peer);
+    protected abstract bool Compare(CSteamID peer, BasePacket current, BasePacket last);
+    protected abstract void HandlePacket(CSteamID peer, BasePacket packet);
+    
+    public abstract bool CanHandle(BasePacket packet);
+    public void Handle(CSteamID peer, BasePacket packet)
     {
-        var packet = CreateSyncPacket(CSteamID.Nil);
-        foreach (var id in ids)
+        HandlePacket(peer, packet);
+        // If we received a packet from someone else, assume that update was sent to everyone.
+        foreach (var state in _states)
         {
-            yield return (id, packet);
+            state.Value.LastPacket = packet;
         }
     }
 
-    private void HandleSyncCheck(SteamNetworkingIdentity sender, int order, int hash)
+    private BasePacket PacketToSend(State state, CSteamID peer)
     {
-        var steamId = sender.GetSteamID();
-        if (_lastSyncCheck.TryGetValue(steamId, out var lastOrder))
+        state.ForceTimer += Time.deltaTime;
+        state.MinWaitTimer += Time.deltaTime;
+        if (state.MinWaitTimer < MinWaitTimer)
         {
-            lastOrder = -1;
+            return null;
+        }
+
+        var current = CreateSyncPacket(peer);
+        if (state.ForceTimer < ForceUpdateTimer &&
+            state.LastPacket != null &&
+            Compare(peer, current, state.LastPacket))
+        {
+            state.LastPacket = current;
+            return null;
         }
         
-        if (lastOrder >= order)
+        state.LastPacket = current;
+        state.LastPacket = current;
+        state.ForceTimer = 0;
+        state.MinWaitTimer = 0;
+        return current;
+    }
+    
+    public void Update()
+    {
+        if (!ShouldUpdate)
         {
             return;
         }
 
-        _lastSyncCheck[steamId] = order;
-        if (Hash(steamId) == hash)
+        if (CaresAboutPeer)
         {
-            return;
-        }
-        
-        Plugin.Instance.Network.SendSingle(CreateSyncPacket(steamId), sender);
-    }
-    
-    private void Update()
-    {
-        if (SyncMode == Mode.Auto && Plugin.Instance.Network.Server)
-        {
-            var peersNeedingUpdate = new List<CSteamID>();
+            var id = new SteamNetworkingIdentity();
             foreach (var peer in Plugin.Instance.Network.Peers)
             {
-                var current = Hash(peer);
-                if (_lastHash.TryGetValue(peer, out var last) && current == last)
+                if (!_states.TryGetValue(peer, out var last))
                 {
-                    return;
+                    last = new State();
+                    _states[peer] = last;
                 }
-        
-                peersNeedingUpdate.Add(peer);
-                _lastHash[peer] = current;
-            }
 
-            var id = new SteamNetworkingIdentity();
-            foreach (var data in CreateSyncPackets(peersNeedingUpdate))
-            {
-                id.SetSteamID(data.peer);
-                Plugin.Instance.Network.SendSingle(data.packet, id);
+                var packet = PacketToSend(last, peer);
+                if (packet != null)
+                {
+                    id.SetSteamID(peer);
+                    Plugin.Instance.Network.SendSingle(packet, id);
+                }
             }
         }
-        else if (!Plugin.Instance.Network.Server)
+        else
         {
-            _syncTimer += Time.deltaTime;
-            if (_syncTimer < SyncCheckTimer)
+            var packet = PacketToSend(_state, CSteamID.Nil);
+            if (packet != null)
             {
-                return;
+                Plugin.Instance.Network.Send(packet);
             }
-
-            _syncTimer = 0.0f;
-            var packet = new SyncCheckPacket()
-            {
-                Hash = Hash(Network.SteamId),
-                Order = _nextOrder++,
-                Type = _type
-            };
-            Plugin.Instance.Network.Send(packet);
         }
     }
     
-    private void Reset()
+    public void Reset()
     {
-        _syncTimer = 0.0f;
-        _nextOrder = 0;
-        _lastSyncCheck.Clear();
+        _states.Clear();
     }
 
-    public static bool HandlePacket(SteamNetworkingIdentity sender, BasePacket packet)
+    public void OnConnected(CSteamID id)
     {
-        if (packet is SyncCheckPacket syncCheckPacket)
+        var state = CaresAboutPeer ? _states.GetValueSafe(id) : _state;
+        if (state == null)
         {
-            if (RegisteredSyncs.TryGetValue(syncCheckPacket.Type, out var sync))
-            {
-                sync.HandleSyncCheck(sender, syncCheckPacket.Order, syncCheckPacket.Hash);
-            }
-            
-            return true;
+            return;
         }
         
-        foreach (var sync in RegisteredSyncs)
-        {
-            if (!sync.Value.CanHandle(packet))
-            {
-                continue;
-            }
-            
-            sync.Value.Handle(sender.GetSteamID(), packet);
-            return true;
-        }
-        
-        return false;
-    }
-    
-    public static void UpdateSyncs()
-    {
-        foreach (var sync in RegisteredSyncs)
-        {
-            sync.Value.Update();
-        }
-    }
-
-    public static void ResetSyncs()
-    {
-        foreach (var sync in RegisteredSyncs)
-        {
-            sync.Value.Reset();
-        }
+        state.ForceTimer = 0;
+        state.MinWaitTimer = 0;
+        state.LastPacket = null;
     }
 }

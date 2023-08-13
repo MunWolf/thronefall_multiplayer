@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using JetBrains.Annotations;
 using Steamworks;
 using ThronefallMP.Network.Sync;
 using ThronefallMP.Patches;
@@ -28,10 +29,13 @@ namespace ThronefallMP
         public Network.PlayerManager PlayerManager { get; private set; }
         
         // Network syncs
-        private BaseSync[] _syncs = {
-            new General(),
-            new Player()
-        };
+        [UsedImplicitly] public LevelDataSync LevelDataSync = new();
+        [UsedImplicitly] public ResourceSync ResourceSync = new();
+        [UsedImplicitly] public InputSync InputSync = new();
+        [UsedImplicitly] public PositionSync PositionSync = new();
+        [UsedImplicitly] public HpSync HpSync = new();
+        [UsedImplicitly] public AllyPathfinderSync AllyPathfinderSync = new();
+        [UsedImplicitly] public EnemyPathfinderSync EnemyPathfinderSync = new();
         
         private void Awake()
         {
@@ -70,6 +74,7 @@ namespace ThronefallMP
             NightCallPatch.Apply();
             PathFinderMovementEnemyPatch.Apply();
             PathfindMovementPlayerunitPatch.Apply();
+            PerkHpModifyerPatch.Apply();
             PlayerAttackPatch.Apply();
             PlayerInteractionPatch.Apply();
             PlayerMovementPatch.Apply();

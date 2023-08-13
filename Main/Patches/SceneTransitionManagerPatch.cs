@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using HarmonyLib;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
 using TMPro;
@@ -9,42 +10,71 @@ namespace ThronefallMP.Patches;
 
 public static class SceneTransitionManagerPatch
 {
+    public static string CurrentScene;
     public static bool InLevelSelect;
-    public static bool DisableTransitionHook;
+    
+    private static bool _transitionHookEnabled = true;
     
     public static void Apply()
     {
         On.SceneTransitionManager.TransitionToScene += TransitionToScene;
+        On.SceneTransitionManager.SceneTransitionAnimation += SceneTransitionAnimation;
 
         SceneManager.sceneLoaded += OnSceneChanged;
     }
 
-    private static HashSet<string> DontSendTransitionPacket = new HashSet<string>()
+    private static (string to, string from)? _queuedTransition;
+    public static void Transition(string to, string from)
     {
-        "_StartMenu"
-    };
+        if (SceneTransitionManager.instance.SceneTransitionIsRunning)
+        {
+            _queuedTransition = (to, from);
+        }
+        else
+        {
+            var gameplayScene = Traverse.Create(SceneTransitionManager.instance).Field<string>("comingFromGameplayScene");
+            gameplayScene.Value = from;
+            _transitionHookEnabled = false;
+            SceneTransitionManager.instance.TransitionFromNullToLevel(to);
+            _transitionHookEnabled = true;
+        }
+    }
+
+    private static IEnumerator SceneTransitionAnimation(On.SceneTransitionManager.orig_SceneTransitionAnimation original, SceneTransitionManager self, string scene)
+    {
+        var value = original(self, scene);
+        if (SceneTransitionManager.instance.SceneTransitionIsRunning || !_queuedTransition.HasValue)
+        {
+            return value;
+        }
+        
+        Transition(_queuedTransition.Value.to, _queuedTransition.Value.from);
+        _queuedTransition = null;
+        return value;
+    }
     
     private static void TransitionToScene(On.SceneTransitionManager.orig_TransitionToScene original, SceneTransitionManager self, string scene)
     {
-        InLevelSelect = self.levelSelectScene == scene;
-        Plugin.Log.LogInfo($"Transitioning '{scene}'");
-        if (!DisableTransitionHook && !DontSendTransitionPacket.Contains(scene))
+        if (!Plugin.Instance.Network.Server && _transitionHookEnabled && scene != "_StartMenu")
         {
-            Plugin.Log.LogInfo($"Sending transition packet'");
-            var packet = new TransitionToScenePacket
+            var packet = new RequestLevelPacket
             {
-                ComingFromGameplayScene = self.ComingFromGameplayScene,
-                Level = scene,
+                To = scene,
+                From = CurrentScene
             };
             
             foreach (var item in PerkManager.instance.CurrentlyEquipped)
             {
-                packet.Perks.Add(item.name);
+                packet.Perks.Add(EquipHandler.Convert(item.name));
             }
             
             Plugin.Instance.Network.Send(packet);
+            return;
         }
         
+        CurrentScene = scene;
+        InLevelSelect = self.levelSelectScene == scene;
+        Plugin.Log.LogInfo($"Transitioning '{scene}'");
         foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
         {
             if (data == null)
@@ -58,7 +88,7 @@ public static class SceneTransitionManagerPatch
         original(self, scene);
     }
 
-    private static GameObject _networkRoot = null;
+    private static GameObject _networkRoot;
     private static void OnSceneChanged(Scene scene, LoadSceneMode mode)
     {
         if (InLevelSelect)

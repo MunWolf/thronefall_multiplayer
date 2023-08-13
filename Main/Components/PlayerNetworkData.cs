@@ -20,32 +20,6 @@ public class PlayerNetworkData : MonoBehaviour
         public float CallNightFill;
         public bool CommandUnitsButton;
         
-        public static bool operator ==(Shared a, Shared b)
-        {
-            var isANull = a.ReferenceEqual(null);
-            var isBNull = b.ReferenceEqual(null);
-            if (isANull && isBNull)
-            {
-                return true;
-            }
-            
-            var output = a?.Equals(b);
-            return output.HasValue && output.Value;
-        }
-
-        public static bool operator !=(Shared a, Shared b)
-        {
-            var isANull = a.ReferenceEqual(null);
-            var isBNull = b.ReferenceEqual(null);
-            if (isANull && isBNull)
-            {
-                return false;
-            }
-            
-            var output = a?.Equals(b);
-            return !(output.HasValue && output.Value);
-        }
-
         public void Set(Shared a)
         {
             MoveHorizontal = a.MoveHorizontal;
@@ -58,37 +32,16 @@ public class PlayerNetworkData : MonoBehaviour
             CommandUnitsButton = a.CommandUnitsButton;
         }
 
-        public override bool Equals(object obj)
+        public bool Compare(Shared b)
         {
-            var b = obj as Shared;
-            if (b.ReferenceEqual(null))
-            {
-                return false;
-            }
-            
-            return Math.Abs(MoveHorizontal - b.MoveHorizontal) < 0.01f
-                && Math.Abs(MoveVertical - b.MoveVertical) < 0.01f
+            return Math.Abs(MoveHorizontal - b.MoveHorizontal) < Helpers.Epsilon
+                && Math.Abs(MoveVertical - b.MoveVertical) < Helpers.Epsilon
                 && SprintToggleButton == b.SprintToggleButton
                 && SprintButton == b.SprintButton
                 && InteractButton == b.InteractButton
                 && CallNightButton == b.CallNightButton
-                && Math.Abs(CallNightFill - b.CallNightFill) < 0.01f
+                && Math.Abs(CallNightFill - b.CallNightFill) < Helpers.Epsilon
                 && CommandUnitsButton == b.CommandUnitsButton;
-        }
-
-        [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
-        public override int GetHashCode()
-        {
-            return (
-                MoveHorizontal,
-                MoveVertical,
-                SprintToggleButton,
-                SprintButton,
-                InteractButton,
-                CallNightButton,
-                CallNightFill,
-                CommandUnitsButton
-            ).GetHashCode();
         }
     }
     
@@ -112,15 +65,16 @@ public class PlayerNetworkData : MonoBehaviour
         {
             return;
         }
-        
+
+        var frozen = LocalGamestate.Instance.PlayerFrozen;
         var input = ReInput.players.GetPlayer(0);
-        SharedData.MoveHorizontal = input.GetAxis("Move Horizontal");
-        SharedData.MoveVertical = input.GetAxis("Move Vertical");
-        SharedData.SprintToggleButton = input.GetButton("Sprint Toggle");
-        SharedData.SprintButton = input.GetButton("Sprint");
-        SharedData.InteractButton = input.GetButton("Interact");
-        SharedData.CallNightButton = input.GetButton("Call Night");
-        SharedData.CallNightFill = Traverse.Create(NightCall.instance).Field<float>("currentFill").Value;
-        SharedData.CommandUnitsButton = input.GetButton("Command Units");
+        SharedData.MoveHorizontal = frozen ? 0f : input.GetAxis("Move Horizontal");
+        SharedData.MoveVertical = frozen ? 0f : input.GetAxis("Move Vertical");
+        SharedData.SprintToggleButton = !frozen && input.GetButton("Sprint Toggle");
+        SharedData.SprintButton = !frozen && input.GetButton("Sprint");
+        SharedData.InteractButton = !frozen && input.GetButton("Interact");
+        SharedData.CallNightButton = !frozen && input.GetButton("Call Night");
+        SharedData.CallNightFill = frozen ? 0f : Traverse.Create(NightCall.instance).Field<float>("currentFill").Value;
+        SharedData.CommandUnitsButton = !frozen && input.GetButton("Command Units");
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using ThronefallMP.Components;
-using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Network.Packets.PlayerCommand;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -30,6 +30,7 @@ public static class BuildSlotPatch
         original(self);
         if (self.ActivatorBuilding == null)
         {
+            // TODO: Maybe change this to happen on SceneManager sceneLoaded instead?
             self.StartCoroutine(ProcessBuildings(self));
         }
     }
@@ -37,26 +38,21 @@ public static class BuildSlotPatch
     private static IEnumerator ProcessBuildings(BuildSlot root)
     {
         yield return new WaitForEndOfFrame();
+        Identifier.Clear(IdentifierType.BuildSlot);
         Identifier.Clear(IdentifierType.Building);
         Identifier.Clear(IdentifierType.Ally);
         
         Plugin.Log.LogInfo("Processing buildings");
-        Plugin.Log.LogInfo("  Added 1 for processing");
         var slots = new List<BuildSlot> { root };
         while (slots.Count > 0)
         {
             var current = slots[0];
             slots.Remove(current);
             slots.AddRange(current.IsRootOf);
-            AssignId(current, Utils.GetPath(current.transform).GetHashCode());
+            AssignId(current, Helpers.GetPath(current.transform).GetHashCode());
             foreach (var respawn in current.GetComponentsInChildren<UnitRespawnerForBuildings>(true))
             {
                 ProcessUnits(respawn);
-            }
-            
-            if (current.IsRootOf.Count != 0)
-            {
-                Plugin.Log.LogInfo($"  Added {current.IsRootOf.Count} for processing");
             }
         }
 
@@ -65,24 +61,26 @@ public static class BuildSlotPatch
 
     private static void AssignId(BuildSlot self, int id)
     {
-        var identifier = self.gameObject.AddComponent<Identifier>();
-        identifier.SetIdentity(IdentifierType.Building, id);
-        Plugin.Log.LogInfo("    Building " + self.buildingName + " assigned id " + id);
+        {
+            var identifier = self.gameObject.AddComponent<Identifier>();
+            identifier.SetIdentity(IdentifierType.BuildSlot, id);
+        }
+        {
+            var building = self.GetComponentInChildren<Hp>(true);
+            var identifier = building.gameObject.AddComponent<Identifier>();
+            identifier.SetIdentity(IdentifierType.Building, id);
+        }
     }
 
     private static void ProcessUnits(UnitRespawnerForBuildings respawn)
     {
-        Plugin.Log.LogInfo("    Found respawner, processing units.");
         for (var i = 0; i < respawn.transform.childCount; ++i)
         {
             var unit = respawn.transform.GetChild(i);
             var identifier = unit.gameObject.AddComponent<Identifier>();
-            var id = Utils.GetPath(unit).GetHashCode();
-            Plugin.Log.LogInfo($"      Unit {unit.name} assigned id {id}");
+            var id = Helpers.GetPath(unit).GetHashCode();
             identifier.SetIdentity(IdentifierType.Ally, id);
         }
-        
-        Plugin.Log.LogInfo($"    {respawn.transform.childCount} units processed.");
     }
 
     private static void OnUpgradeChoiceComplete(
@@ -150,7 +148,7 @@ public static class BuildSlotPatch
     
     public static UpgradeInfo GetUpgradeInfo(int id, int level, int choice)
     {
-        var building = Identifier.GetGameObject(IdentifierType.Building, id).GetComponent<BuildSlot>();
+        var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         var upgrade = building.upgrades[level];
         return new UpgradeInfo()
         {
@@ -161,7 +159,7 @@ public static class BuildSlotPatch
 
     public static void HandleUpgrade(int playerId, int id, int level, int choice)
     {
-        var building = Identifier.GetGameObject(IdentifierType.Building, id).GetComponent<BuildSlot>();
+        var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         if (building == null)
         {
             Plugin.Log.LogInfo($"Unable to build {id}:{level}:{choice} for {playerId}");
@@ -198,13 +196,12 @@ public static class BuildSlotPatch
             //building.OnUpgradeChoiceComplete(null);
             var player = Plugin.Instance.PlayerManager.LocalPlayer.Object.GetComponent<PlayerInteraction>();
             building.buildingInteractor.Unfocus(player);
-            building.buildingInteractor.Focus(player);
         }
     }
 
     public static void CancelBuild(int id)
     {
-        var building = Identifier.GetGameObject(IdentifierType.Building, id).GetComponent<BuildSlot>();
+        var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         building.OnUpgradeChoiceComplete(null);
     }
 }

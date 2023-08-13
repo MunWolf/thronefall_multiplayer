@@ -15,19 +15,6 @@ static class PlayerMovementPatch
 {
 	private static readonly int Moving = Animator.StringToHash("Moving");
 	private static readonly int Sprinting = Animator.StringToHash("Sprinting");
-
-	private const float MaximumDevianceMin = 1.5f;
-	private const float MaximumDevianceMax = 4.0f;
-	private const int MinPing = 100;
-	private const int MaxPing = 500;
-	private const int DifferencePing = MaxPing - MinPing;
-	public static float MaximumDevianceSquared(CSteamID id)
-	{
-		var ping = Plugin.Instance.Network.Ping(id);
-		ping = Mathf.Clamp(ping - MinPing, 0, DifferencePing);
-		var deviance = Mathf.Lerp(MaximumDevianceMin, MaximumDevianceMax, (float)ping / DifferencePing);
-		return deviance * deviance;
-	}
 	
 	public static void Apply()
 	{
@@ -167,7 +154,7 @@ static class PlayerMovementPatch
 		velocity.Value = Vector3.zero;
 		yVelocity.Value = 0f;
 		self.TeleportTo(
-			Utils.GetSpawnLocation(
+			Helpers.GetSpawnLocation(
 				Plugin.Instance.PlayerManager.SpawnLocation,
 				playerNetworkData.Player.SpawnID
 			)

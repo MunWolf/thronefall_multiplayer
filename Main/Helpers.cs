@@ -2,8 +2,11 @@
 
 namespace ThronefallMP;
 
-public static class Utils
+public static class Helpers
 {
+    public const float Epsilon = 128 * float.Epsilon;
+    public const float EpsilonSqr = 64 * float.Epsilon;
+    
     private const float SpawnRadiusIncrement = 5.0f;
     private const int SpawnAngleIncrement = 60;
     private const int SpawnAngleEvenOffset = 30;

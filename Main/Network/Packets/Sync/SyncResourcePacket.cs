@@ -2,9 +2,9 @@
 
 namespace ThronefallMP.Network.Packets.Sync;
 
-public class SyncGeneralPacket : BasePacket
+public class SyncResourcePacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.SyncGeneral;
+    public const PacketId PacketID = PacketId.SyncResource;
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.SyncPlayer;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;

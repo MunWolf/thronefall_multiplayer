@@ -4,6 +4,7 @@ using HarmonyLib;
 using Pathfinding;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Network.Packets.PlayerCommand;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;

@@ -1,5 +1,8 @@
-﻿using ThronefallMP.Components;
+﻿using HarmonyLib;
+using Pathfinding;
+using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
+using UnityEngine;
 
 namespace ThronefallMP.Patches;
 
@@ -7,30 +10,37 @@ public static class PathFinderMovementEnemyPatch
 {
     public static void Apply()
     {
-        On.PathfindMovementEnemy.Update += Update;
+        On.PathfindMovementEnemy.OriginalOnPathComplete += OriginalOnPathComplete;
+        On.PathfindMovementEnemy.BackupOnPathComplete += BackupOnPathComplete;
+        On.PathfindMovementEnemy.FindMoveToTarget += FindMoveToTarget;
     }
 
-    private static void Update(On.PathfindMovementEnemy.orig_Update original, PathfindMovementEnemy self)
+    // TODO: FollowPathUpdate uses CalculateMovementDeltaTime which depends on these, maybe look into just noopint the OnComplete instead?
+    private static void OriginalOnPathComplete(On.PathfindMovementEnemy.orig_OriginalOnPathComplete original, PathfindMovementEnemy self, Path p)
     {
-        var identifier = self.GetComponent<Identifier>();
-        if (identifier == null || identifier.Type == IdentifierType.Invalid)
+        // We sync all path requests from the server.
+        if (Plugin.Instance.Network.Server)
         {
-            original(self);
-            return;
+            original(self, p);
         }
-        
-        if (!Plugin.Instance.Network.Server)
+    }
+
+    private static void BackupOnPathComplete(On.PathfindMovementEnemy.orig_BackupOnPathComplete original, PathfindMovementEnemy self, Path p)
+    {
+        // We sync all path requests from the server.
+        if (Plugin.Instance.Network.Server)
         {
-            return;
+            original(self, p);
         }
-        
-        original(self);
-        var packet = new PositionPacket
+    }
+
+    private static Vector3 FindMoveToTarget(On.PathfindMovementEnemy.orig_FindMoveToTarget original, PathfindMovementEnemy self)
+    {
+        if (Plugin.Instance.Network.Server)
         {
-            Target = new IdentifierData(identifier),
-            Position = self.transform.position
-        };
-        
-        Plugin.Instance.Network.Send(packet);
+            return original(self);
+        }
+
+        return Traverse.Create(self).Field<Vector3>("seekToTargetPos").Value;
     }
 }

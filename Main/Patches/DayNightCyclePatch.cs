@@ -33,14 +33,17 @@ public static class DayNightCyclePatch
             TagManager.instance.CountAllTaggedObjectsWithTag(TagManager.ETag.EnemyOwned) < 1 &&
             self.gameObject.activeInHierarchy;
 
-        if (shouldSwitchToDay)
+        if (!shouldSwitchToDay)
         {
-            Plugin.Instance.Network.Send(new DayNightPacket()
-            {
-                    Timestate = DayNightCycle.Timestate.Day,
-                    NightLength = currentNightLength.Value
-            }, true);
+            return;
         }
+        
+        Plugin.Log.LogInfo("Sending DayNightPacket.Day");
+        Plugin.Instance.Network.Send(new DayNightPacket()
+        {
+            Timestate = DayNightCycle.Timestate.Day,
+            NightLength = currentNightLength.Value
+        }, true);
     }
 
     private static void DawnCallAfterSunrise(On.DayNightCycle.orig_DawnCallAfterSunrise original, DayNightCycle self)
@@ -50,9 +53,9 @@ public static class DayNightCyclePatch
 
         afterSunrise.Value = true;
         Hp.ReviveAllKnockedOutPlayerUnitsAndBuildings();
-        for (int i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
+        for (var i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
         {
-            if (Utils.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
+            if (Helpers.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
             {
                 daytimeSensitiveObjects.Value[i].OnDawn_AfterSunrise();
             }
@@ -70,7 +73,7 @@ public static class DayNightCyclePatch
         var players = Plugin.Instance.PlayerManager.GetAllPlayerData().Select(x => x.GetComponent<PlayerInteraction>()).ToArray();
         foreach (var coin in TagManager.instance.freeCoins)
         {
-            var closest = Utils.FindClosest(players, coin.transform.position);
+            var closest = Helpers.FindClosest(players, coin.transform.position);
             if (coin.IsFree)
             {
                 coin.SetTarget(closest);
@@ -86,7 +89,7 @@ public static class DayNightCyclePatch
         afterSunrise.Value = false;
         for (var i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
         {
-            if (Utils.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
+            if (Helpers.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
             {
                 daytimeSensitiveObjects.Value[i].OnDawn_BeforeSunrise();
             }
@@ -108,7 +111,7 @@ public static class DayNightCyclePatch
         currentNightLength.Value = 0f;
         for (int i = daytimeSensitiveObjects.Value.Count - 1; i >= 0; i--)
         {
-            if (Utils.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
+            if (Helpers.UnityNullCheck(daytimeSensitiveObjects.Value[i]))
             {
                 daytimeSensitiveObjects.Value[i].OnDusk();
             }

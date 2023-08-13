@@ -58,7 +58,7 @@ public static class UIManager
         LobbyListUI = BaseUI.Create<LobbyListUI>(_canvas, _container);
         HostUI = BaseUI.Create<HostUI>(_canvas, _container);
         
-        var multiplayer = Utils.InstantiateDisabled(settings.gameObject, settings.transform.parent);
+        var multiplayer = Helpers.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
         multiplayer.transform.SetSiblingIndex(1);
         Object.DestroyImmediate(multiplayer.GetComponent<Localize>());

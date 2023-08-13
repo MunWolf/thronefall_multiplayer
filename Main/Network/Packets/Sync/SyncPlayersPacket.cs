@@ -4,13 +4,15 @@ using UnityEngine;
 
 namespace ThronefallMP.Network.Packets.Sync;
 
-public class SyncPlayerPacket : BasePacket
+public class SyncPlayersPacket : BasePacket
 {
     public struct Player
     {
         public int Id;
         public int SpawnId;
         public Vector3 Position;
+        public float Hp;
+        public bool KnockedOut;
         public PlayerNetworkData.Shared Shared;
     }
     
@@ -19,6 +21,11 @@ public class SyncPlayerPacket : BasePacket
     public override Channel Channel => Channel.SyncPlayer;
 
     public List<Player> PlayerData = new();
+    
+    // Local player
+    public float Hp;
+    public bool KnockedOut;
+    public int SpawnId;
     
     public override void Send(Buffer writer)
     {

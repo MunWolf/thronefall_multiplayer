@@ -2,33 +2,27 @@
 using ThronefallMP.Components;
 using UnityEngine;
 
-namespace ThronefallMP.Network.Packets.Game;
+namespace ThronefallMP.Network.Packets.Sync;
 
-public class RespawnPacket : BasePacket
+public class SyncPositionPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.Respawn;
+    public const PacketId PacketID = PacketId.SyncPosition;
 
     public IdentifierData Target;
     public Vector3 Position;
 
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Player;
-    public override bool CanHandle(CSteamID sender)
-    {
-        return Plugin.Instance.Network.IsServer(sender);
-    }
 
     public override void Send(Buffer writer)
     {
-        writer.Write((int)Target.Type);
-        writer.Write(Target.Id);
+        writer.Write(Target);
         writer.Write(Position);
     }
 
     public override void Receive(Buffer reader)
     {
-        Target.Type = (IdentifierType)reader.ReadInt32();
-        Target.Id = reader.ReadInt32();
+        Target = reader.ReadIdentifierData();
         Position = reader.ReadVector3();
     }
 }

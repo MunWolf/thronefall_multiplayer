@@ -269,8 +269,6 @@ public class HostUI : BaseUI
             _currentRequest = null;
         });
 
-        SceneTransitionManagerPatch.DisableTransitionHook = true;
         SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
-        SceneTransitionManagerPatch.DisableTransitionHook = false;
     }
 }

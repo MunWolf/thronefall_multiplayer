@@ -1,6 +1,4 @@
-﻿using Steamworks;
-
-namespace ThronefallMP.Network.Packets.Game;
+﻿namespace ThronefallMP.Network.Packets.PlayerCommand;
 
 public class ManualAttackPacket : BasePacket
 {

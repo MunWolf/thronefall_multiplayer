@@ -18,7 +18,7 @@ public class PlayerManager
         public readonly PlayerNetworkData.Shared Shared = new();
         public CharacterController Controller;
         
-        public Vector3 SpawnLocation => Utils.GetSpawnLocation(Plugin.Instance.PlayerManager.SpawnLocation, SpawnID);
+        public Vector3 SpawnLocation => Helpers.GetSpawnLocation(Plugin.Instance.PlayerManager.SpawnLocation, SpawnID);
     }
 
     private int _localId;
@@ -51,7 +51,7 @@ public class PlayerManager
             {
                 if (pair.Value.Object != null)
                 {
-                    pair.Value.Object.transform.position = Utils.GetSpawnLocation(
+                    pair.Value.Object.transform.position = Helpers.GetSpawnLocation(
                         _spawn,
                         pair.Value.SpawnID
                     );
@@ -114,7 +114,7 @@ public class PlayerManager
             Object.Destroy(player.Object);
         }
         
-        Plugin.Log.LogInfo($"Instantiating player {player.SteamID}:{player.Id} at {Utils.GetSpawnLocation(_spawn, player.SpawnID)}");
+        Plugin.Log.LogInfo($"Instantiating player {player.SteamID}:{player.Id} at {Helpers.GetSpawnLocation(_spawn, player.SpawnID)}");
         player.Object = Object.Instantiate(_playerPrefab, _playerContainer.transform);
         player.Controller = player.Object.GetComponent<CharacterController>();
         player.Data = player.Object.GetComponent<PlayerNetworkData>();
@@ -163,7 +163,7 @@ public class PlayerManager
         }
         
         _playerContainer = prefab.transform.parent.gameObject;
-        _playerPrefab = Utils.InstantiateDisabled(prefab, Plugin.Instance.transform, worldPositionStays: true);
+        _playerPrefab = Helpers.InstantiateDisabled(prefab, Plugin.Instance.transform, worldPositionStays: true);
         
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
         data.id = -1;

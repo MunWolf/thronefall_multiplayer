@@ -1,5 +1,9 @@
-﻿using ThronefallMP.Components;
+﻿using HarmonyLib;
+using Pathfinding;
+using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Network.Packets.Sync;
+using UnityEngine;
 
 namespace ThronefallMP.Patches;
 
@@ -7,22 +11,31 @@ public static class PathfindMovementPlayerunitPatch
 {
     public static void Apply()
     {
-        On.PathfindMovementPlayerunit.Update += Update;
+        On.PathfindMovementPlayerunit.OriginalOnPathComplete += OriginalOnPathComplete;
+        On.PathfindMovementPlayerunit.BackupOnPathComplete += BackupOnPathComplete;
+        On.PathfindMovementPlayerunit.FindMoveToTarget += FindMoveToTarget;
     }
 
-    private static void Update(On.PathfindMovementPlayerunit.orig_Update original, PathfindMovementPlayerunit self)
+    private static void OriginalOnPathComplete(On.PathfindMovementPlayerunit.orig_OriginalOnPathComplete original, PathfindMovementPlayerunit self, Path p)
     {
-        original(self);
-        var identifier = self.GetComponent<Identifier>();
-        if (identifier != null && identifier.Type != IdentifierType.Invalid && Plugin.Instance.Network.Server)
+        if (Plugin.Instance.Network.Server)
         {
-            var packet = new PositionPacket
-            {
-                Target = new IdentifierData(identifier),
-                Position = self.transform.position
-            };
-        
-            Plugin.Instance.Network.Send(packet);
+            original(self, p);
         }
+    }
+
+    private static void BackupOnPathComplete(On.PathfindMovementPlayerunit.orig_BackupOnPathComplete original, PathfindMovementPlayerunit self, Path p)
+    {
+        if (Plugin.Instance.Network.Server)
+        {
+            original(self, p);
+        }
+    }
+
+    private static Vector3 FindMoveToTarget(On.PathfindMovementPlayerunit.orig_FindMoveToTarget original, PathfindMovementPlayerunit self)
+    {
+        return Plugin.Instance.Network.Server
+            ? original(self)
+            : Traverse.Create(self).Field<Vector3>("seekToTargetPos").Value;
     }
 }

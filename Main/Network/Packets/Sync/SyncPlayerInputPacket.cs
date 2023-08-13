@@ -2,14 +2,13 @@
 using ThronefallMP.Components;
 using UnityEngine;
 
-namespace ThronefallMP.Network.Packets.Game;
+namespace ThronefallMP.Network.Packets.Sync;
 
-public class ClientSyncPacket : BasePacket
+public class SyncPlayerInputPacket : BasePacket
 {
-    public const PacketId PacketID = PacketId.ClientSync;
+    public const PacketId PacketID = PacketId.SyncPlayerInput;
     
     public int PlayerID = -1;
-    public Vector3 Position;
     public PlayerNetworkData.Shared Data = new();
     
     public override PacketId TypeID => PacketID;
@@ -19,7 +18,6 @@ public class ClientSyncPacket : BasePacket
     public override void Send(Buffer writer)
     {
         writer.Write(PlayerID);
-        writer.Write(Position);
         writer.Write(Data.MoveHorizontal);
         writer.Write(Data.MoveVertical);
         writer.Write(Data.SprintToggleButton);
@@ -32,7 +30,6 @@ public class ClientSyncPacket : BasePacket
     public override void Receive(Buffer reader)
     {
         PlayerID = reader.ReadInt32();
-        Position = reader.ReadVector3();
         Data.MoveHorizontal = reader.ReadFloat();
         Data.MoveVertical = reader.ReadFloat();
         Data.SprintToggleButton = reader.ReadBoolean();

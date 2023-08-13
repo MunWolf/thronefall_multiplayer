@@ -11,11 +11,12 @@ public static class LevelSelectManagerPatch
     
     private static void MovePlayerToTheLevelYouCameFrom(On.LevelSelectManager.orig_MovePlayerToTheLevelYouCameFrom original, LevelSelectManager self)
     {
-        SceneTransitionManager sceneTransitionManager = SceneTransitionManager.instance;
+        var sceneTransitionManager = SceneTransitionManager.instance;
         if (!sceneTransitionManager)
         {
             return;
         }
+        
         if (sceneTransitionManager.ComingFromGameplayScene == "")
         {
             return;
@@ -24,17 +25,20 @@ public static class LevelSelectManagerPatch
         var levelInteractors = Traverse.Create(self).Field<LevelInteractor[]>("levelInteractors");
         foreach (var level in levelInteractors.Value)
         {
-            if (level.sceneName == sceneTransitionManager.ComingFromGameplayScene)
+            if (level.sceneName != sceneTransitionManager.ComingFromGameplayScene)
             {
-                foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
-                {
-                    var playerMovement = data.GetComponent<PlayerMovement>();
-                    var spawnLocation = level.transform.position + self.spawnOnLevelOffsetPositon;
-                    spawnLocation = Utils.GetSpawnLocation(spawnLocation, data.id);
-                    playerMovement.TeleportTo(spawnLocation);
-                }
-                return;
+                continue;
             }
+            
+            foreach (var data in Plugin.Instance.PlayerManager.GetAllPlayerData())
+            {
+                var playerMovement = data.GetComponent<PlayerMovement>();
+                var spawnLocation = level.transform.position + self.spawnOnLevelOffsetPositon;
+                spawnLocation = Helpers.GetSpawnLocation(spawnLocation, data.id);
+                playerMovement.TeleportTo(spawnLocation);
+            }
+            
+            break;
         }
     }
 }
