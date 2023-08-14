@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
-public class HostUI : BaseUI
+public class HostPanel : BaseUI
 {
     public override string Name => "Host Panel";
 
@@ -27,7 +27,7 @@ public class HostUI : BaseUI
     private readonly CallResult<LobbyCreated_t> _onLobbyCreatedCallResult;
     private LobbyCreationRequest? _currentRequest;
 
-    public HostUI()
+    public HostPanel()
     {
         if (!SteamManager.Initialized)
         {
@@ -139,7 +139,7 @@ public class HostUI : BaseUI
             if (success)
             {
                 Enabled = false;
-                UIManager.LobbyListUI.Close();
+                UIManager.LobbyListPanel.Close();
                 ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
             }
         };
@@ -149,7 +149,7 @@ public class HostUI : BaseUI
         back.OnClick += () =>
         {
             Enabled = false;
-            UIManager.LobbyListUI.Host.Button.Select();
+            UIManager.LobbyListPanel.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
 

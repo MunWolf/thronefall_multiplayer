@@ -21,6 +21,9 @@ public enum PacketId
     Disconnect,
     PeerSync,
     
+    SyncPing,
+    SyncPong,
+    SyncPingInfo,
     SyncLevelData,
     SyncResource,
     SyncPlayer,
@@ -146,7 +149,9 @@ public static class PacketHandler
                 EnemySpawner.instance.StopSpawnAfterWaveAndReset();
                 foreach (var enemy in Identifier.GetGameObjects(IdentifierType.Enemy))
                 {
+                    HpPatch.AllowHealthChangeOnClient = true;
                     enemy.GetComponent<Hp>().TakeDamage(9999, null, true);
+                    HpPatch.AllowHealthChangeOnClient = false;
                 }
             }
             

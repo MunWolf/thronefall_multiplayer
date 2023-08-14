@@ -189,13 +189,22 @@ public static class BuildSlotPatch
             UIFrameManager.instance.CloseActiveFrame();
             ChoiceManager.instance.CancelChoice();
         }
-        else if (focussed.Value && playerId != Plugin.Instance.PlayerManager.LocalId)
+        else switch (focussed.Value)
         {
-            Plugin.Log.LogInfo("Redo our focus");
-            //Traverse.Create(building.buildingInteractor).Field<bool>("isWaitingForChoice").Value = true;
-            //building.OnUpgradeChoiceComplete(null);
-            var player = Plugin.Instance.PlayerManager.LocalPlayer.Object.GetComponent<PlayerInteraction>();
-            building.buildingInteractor.Unfocus(player);
+            case true when playerId != Plugin.Instance.PlayerManager.LocalId:
+            {
+                Plugin.Log.LogInfo("Redo our focus");
+                //Traverse.Create(building.buildingInteractor).Field<bool>("isWaitingForChoice").Value = true;
+                //building.OnUpgradeChoiceComplete(null);
+                var player = Plugin.Instance.PlayerManager.LocalPlayer.Object.GetComponent<PlayerInteraction>();
+                building.buildingInteractor.Unfocus(player);
+                break;
+            }
+            case true:
+            {
+                Traverse.Create(building.buildingInteractor).Method("BuildComplete").GetValue();
+                break;
+            }
         }
     }
 

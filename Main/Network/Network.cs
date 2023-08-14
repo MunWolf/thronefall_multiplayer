@@ -115,8 +115,8 @@ public class Network : MonoBehaviour
     public void AddPlayer(CSteamID id)
     {
         SyncManager.OnConnected(id);
-        _pendingPeers.Remove(id);
         _peers.Add(id);
+        _pendingPeers.Remove(id);
         var player = Plugin.Instance.PlayerManager.CreateOrGet(id, Plugin.Instance.PlayerManager.GenerateID());
         player.SpawnID = Plugin.Instance.PlayerManager.GetAllPlayers().Max(p => p.SpawnID) + 1;
         Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
@@ -400,6 +400,9 @@ public class Network : MonoBehaviour
         { DisconnectPacket.PacketID, typeof(DisconnectPacket) },
         { PeerListPacket.PacketID, typeof(PeerListPacket) },
         
+        { SyncPingPacket.PacketID, typeof(SyncPingPacket) },
+        { SyncPongPacket.PacketID, typeof(SyncPongPacket) },
+        { SyncPingInfoPacket.PacketID, typeof(SyncPingInfoPacket) },
         { SyncAllyPathfinderPacket.PacketID, typeof(SyncAllyPathfinderPacket) },
         { SyncEnemyPathfinderPacket.PacketID, typeof(SyncEnemyPathfinderPacket) },
         { SyncHpPacket.PacketID, typeof(SyncHpPacket) },
@@ -612,18 +615,5 @@ public class Network : MonoBehaviour
     public bool IsServer(CSteamID id)
     {
         return SteamMatchmaking.GetLobbyOwner(_lobby) == id;
-    }
-
-    public int Ping(CSteamID id)
-    {
-        if (!SteamManager.Initialized || id == SteamId)
-        {
-            return 0;
-        }
-        
-        var identity = new SteamNetworkingIdentity();
-        identity.SetSteamID(id);
-        SteamNetworkingMessages.GetSessionConnectionInfo(ref identity, out _, out var status);
-        return status.m_nPing;
     }
 }

@@ -12,6 +12,7 @@ public class PlayerManager
     {
         public int Id;
         public CSteamID SteamID;
+        public uint Ping;
         public int SpawnID;
         public GameObject Object;
         public PlayerNetworkData Data;

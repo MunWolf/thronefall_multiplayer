@@ -12,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
-public partial class LobbyListUI
+public partial class LobbyListPanel
 {
     public override void ConstructPanelContent()
     {
@@ -212,8 +212,8 @@ public partial class LobbyListUI
         Host = UIHelper.CreateButton(buttons, "host", "Host");
         Host.OnClick += () =>
         {
-            UIManager.HostUI.Enabled = true;
-            UIManager.HostUI.Host.Button.Select();
+            UIManager.HostPanel.Enabled = true;
+            UIManager.HostPanel.Host.Button.Select();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         Host.OnExit += () => { _muteSound = false; };

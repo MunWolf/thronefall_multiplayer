@@ -17,7 +17,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowError{section}", true);
         if (value.Value)
         {
-            source.LogError(handler);
+            source.LogError($"{section}> " + handler);
         }
     }
     
@@ -26,7 +26,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowError{section}", true);
         if (value.Value)
         {
-            source.LogError(obj);
+            source.LogError($"{section}> " + obj);
         }
     }
 
@@ -40,7 +40,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowWarning{section}", true);
         if (value.Value)
         {
-            source.LogWarning(handler);
+            source.LogWarning($"{section}> " + handler);
         }
     }
     
@@ -49,7 +49,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowWarning{section}", true);
         if (value.Value)
         {
-            source.LogWarning(obj);
+            source.LogWarning($"{section}> " + obj);
         }
     }
 
@@ -63,7 +63,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowInfo{section}", true);
         if (value.Value)
         {
-            source.LogInfo(handler);
+            source.LogInfo($"{section}> " + handler);
         }
     }
     
@@ -72,7 +72,7 @@ public static class Ext
         var value = Plugin.Instance.Config.Bind("Debug", $"ShowInfo{section}", true);
         if (value.Value)
         {
-            source.LogInfo(obj);
+            source.LogInfo($"{section}> " + obj);
         }
     }
 

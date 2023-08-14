@@ -12,8 +12,9 @@ namespace ThronefallMP.UI;
 public static class UIManager
 {
     public static GameObject TitleScreen { get; private set; }
-    public static LobbyListUI LobbyListUI { get; private set; }
-    public static HostUI HostUI { get; private set; }
+    public static LobbyListPanel LobbyListPanel { get; private set; }
+    public static HostPanel HostPanel { get; private set; }
+    public static GameStatusPanel GameStatusPanel { get; private set; }
 
     public static bool ExitHandled = false;
     
@@ -40,7 +41,10 @@ public static class UIManager
         }
 
         _canvas = GameObject.Find("UI Canvas");
-        var input = _canvas.AddComponent<StandaloneInputModule>();
+        if (_canvas.GetComponent<StandaloneInputModule>() == null)
+        {
+            _canvas.AddComponent<StandaloneInputModule>();
+        }
         
         _container = new GameObject("Mod UI", typeof(RectTransform));
         var containerTransform = _container.GetComponent<RectTransform>();
@@ -55,8 +59,9 @@ public static class UIManager
         var settings = TitleScreen.transform.Find("Menu Items/Settings").GetComponent<ThronefallUIElement>();
         DefaultFont = settings.GetComponent<TextMeshProUGUI>().font;
 
-        LobbyListUI = BaseUI.Create<LobbyListUI>(_canvas, _container);
-        HostUI = BaseUI.Create<HostUI>(_canvas, _container);
+        LobbyListPanel = BaseUI.Create<LobbyListPanel>(_canvas, _container);
+        HostPanel = BaseUI.Create<HostPanel>(_canvas, _container);
+        //GameStatusPanel = BaseUI.Create<GameStatusPanel>(_canvas, _container);
         
         var multiplayer = Helpers.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
@@ -69,7 +74,7 @@ public static class UIManager
         button.onApply.m_PersistentCalls.m_Calls.Clear();
         button.onApply.AddListener(() =>
         {
-            LobbyListUI.Open();
+            LobbyListPanel.Open();
             TitleScreen.SetActive(false);
         });
  
@@ -87,13 +92,14 @@ public static class UIManager
         }
         
         multiplayer.SetActive(true);
+        //GameStatusPanel.Enabled = true;
         _initialized = true;
 }
 
     public static void CloseAllPanels()
     {
-        LobbyListUI.Enabled = false;
-        HostUI.Enabled = false;
+        LobbyListPanel.Enabled = false;
+        HostPanel.Enabled = false;
     }
 
     public static PasswordDialog CreatePasswordDialog(PasswordDialog.Confirm confirm, PasswordDialog.Cancel cancel)

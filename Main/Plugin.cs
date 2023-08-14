@@ -29,6 +29,7 @@ namespace ThronefallMP
         public Network.PlayerManager PlayerManager { get; private set; }
         
         // Network syncs
+        [UsedImplicitly] public PingPongSync PingPongSync = new();
         [UsedImplicitly] public LevelDataSync LevelDataSync = new();
         [UsedImplicitly] public ResourceSync ResourceSync = new();
         [UsedImplicitly] public InputSync InputSync = new();

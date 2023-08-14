@@ -7,7 +7,7 @@ using Image = UnityEngine.UI.Image;
 
 namespace ThronefallMP.UI.Panels;
 
-public partial class LobbyListUI : BaseUI
+public partial class LobbyListPanel : BaseUI
 {
     private Callback<LobbyDataUpdate_t> _lobbyUpdated;
     private readonly CallResult<LobbyMatchList_t> _onLobbyMatchListCallResult;
@@ -30,7 +30,7 @@ public partial class LobbyListUI : BaseUI
     private List<LobbyItem> _lobbies = new();
     private Dictionary<CSteamID, LobbyItem> _idToLobbies = new();
 
-    public LobbyListUI()
+    public LobbyListPanel()
     {
         if (!SteamManager.Initialized)
         {
@@ -154,7 +154,7 @@ public partial class LobbyListUI : BaseUI
     private float _timer;
     public void Update()
     {
-        if (!UIManager.HostUI.Enabled && !UIManager.ExitHandled && Input.GetKeyDown(KeyCode.Escape))
+        if (!UIManager.HostPanel.Enabled && !UIManager.ExitHandled && Input.GetKeyDown(KeyCode.Escape))
         {
             UIManager.ExitHandled = true;
             Back();

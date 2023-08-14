@@ -13,10 +13,10 @@ public class PositionSync : BaseTargetSync
     {
         public readonly float MaximumDevianceMin;
         public readonly float MaximumDevianceMax;
-        public readonly int MinPing;
-        public readonly int DifferencePing;
+        public readonly uint MinPing;
+        public readonly uint DifferencePing;
 
-        public DevianceConstant(float minDeviance, float maxDeviance, int minPing, int maxPing)
+        public DevianceConstant(float minDeviance, float maxDeviance, uint minPing, uint maxPing)
         {
             MaximumDevianceMin = minDeviance;
             MaximumDevianceMax = maxDeviance;
@@ -36,8 +36,9 @@ public class PositionSync : BaseTargetSync
     private float MaximumDevianceSquared(IdentifierType type, CSteamID id)
     {
         var constant = _devianceConstants[type];
-        var ping = Plugin.Instance.Network.Ping(id);
-        ping = Mathf.Clamp(ping - constant.MinPing, 0, constant.DifferencePing);
+        var ping = Plugin.Instance.PlayerManager.Get(id).Ping;
+        ping = ping < constant.MinPing ? 0 : ping - constant.MinPing;
+        ping = ping > constant.DifferencePing ? constant.DifferencePing : ping;
         var deviance = Mathf.Lerp(
             constant.MaximumDevianceMin,
             constant.MaximumDevianceMax,
