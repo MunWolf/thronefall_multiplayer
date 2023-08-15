@@ -82,14 +82,14 @@ public class AllyPathfinderSync : BaseTargetSync
     public override void Handle(CSteamID peer, BasePacket packet)
     {
         var sync = (SyncAllyPathfinderPacket)packet;
-        var enemy = Identifier.GetGameObject(IdentifierType.Enemy, sync.Ally);
-        if (enemy == null)
+        var ally = Identifier.GetGameObject(IdentifierType.Ally, sync.Ally);
+        if (ally == null)
         {
-            Plugin.Log.LogInfoFiltered("PathfindingEnemySync", $"Ally {sync.Ally} not found, discarding");
+            Plugin.Log.LogInfoFiltered("PathfindingAllySync", $"Ally {sync.Ally} not found, discarding");
             return;
         }
         
-        var pathfinder = enemy.GetComponent<PathfindMovementPlayerunit>();
+        var pathfinder = ally.GetComponent<PathfindMovementPlayerunit>();
         var targetPosition = Traverse.Create(pathfinder).Field<Vector3>("seekToTargetPos");
         var walkingHome = Traverse.Create(pathfinder).Field<bool>("currentlyWalkingHome");
         var followingPlayer = Traverse.Create(pathfinder).Field<bool>("followingPlayer");
@@ -99,12 +99,13 @@ public class AllyPathfinderSync : BaseTargetSync
         var seekToTaggedObj = Traverse.Create(pathfinder).Field<TaggedObject>("seekToTaggedObj");
         var target = sync.TargetObject.Get();
         var isTargetNull = sync.TargetObject.Type == IdentifierType.Invalid;
+        
         pathfinder.HomePosition = sync.HomePosition;
-        followingPlayer.Value = sync.TargetObject.Type == IdentifierType.Player;
         pathfinder.HoldPosition = sync.HoldPosition;
-        targetPosition.Value = followingPlayer.Value ? pathfinder.HomePosition : target.transform.position;
+        followingPlayer.Value = sync.TargetObject.Type == IdentifierType.Player;
+        targetPosition.Value = followingPlayer.Value || walkingHome.Value || target == null ? pathfinder.HomePosition : target.transform.position;
         seekToTaggedObj.Value = isTargetNull || sync.TargetObject.Type == IdentifierType.Player ? null : target.GetComponent<TaggedObject>();
-        walkingHome.Value = followingPlayer.Value || pathfinder.HoldPosition || sync.TargetObject.Type == IdentifierType.Invalid;
+        walkingHome.Value = isTargetNull;
         slowedFor.Value = sync.Slowed ? float.MaxValue : float.MinValue;
         nextPathPointIndex.Value = sync.PathIndex;
         path.Value = sync.Path;

@@ -12,6 +12,7 @@ namespace ThronefallMP.Network.Sync;
 public class HpSync : BaseTargetSync
 {
     protected override bool HandleDisabledTargets => true;
+    protected override float ForceUpdateTimer => 3f;
 
     protected override IEnumerable<(IdentifierData id, GameObject target)> Targets()
     {
@@ -94,6 +95,11 @@ public class HpSync : BaseTargetSync
         }
 
         var hp = target.GetComponent<Hp>();
+        if (hp.TaggedObj == null)
+        {
+            return;
+        }
+        
         Plugin.Log.LogInfoFiltered("HpSync", $"Setting hp to {sync.Hp}/{sync.MaxHp} : Knocked out = {sync.KnockedOut}");
         hp.maxHp = sync.MaxHp;
         var difference = sync.Hp - hp.HpValue;

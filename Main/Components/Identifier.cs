@@ -81,7 +81,14 @@ public class Identifier : MonoBehaviour
     {
         if (Repository[type].ContainsKey(id))
         {
-            Plugin.Log.LogError($"Identifier {type}:{id} already registered");
+            if (Repository[type][id].GetInstanceID() == gameObject.GetInstanceID())
+            {
+                return;
+            }
+            
+            Plugin.Log.LogWarning($"Identifier {type}:{id} already registered");
+            Plugin.Log.LogInfo($"{Helpers.GetPath(Repository[type][id].transform)}");
+            Plugin.Log.LogInfo($"{Helpers.GetPath(transform)}");
         }
 
         if (DestroyedRepository[type].Contains(id))

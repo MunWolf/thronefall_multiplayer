@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using HarmonyLib;
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
@@ -11,53 +12,82 @@ public class PositionSync : BaseTargetSync
 {
     private class DevianceConstant
     {
-        public readonly float MaximumDevianceMin;
-        public readonly float MaximumDevianceMax;
-        public readonly uint MinPing;
-        public readonly uint DifferencePing;
+        public readonly float MinWeight;
+        public readonly float MaxWeight;
+        public readonly float MinDistance;
+        public readonly float MaxDistance;
 
-        public DevianceConstant(float minDeviance, float maxDeviance, uint minPing, uint maxPing)
+        public DevianceConstant(float minWeight, float maxWeight, float minDistance, float maxDistance)
         {
-            MaximumDevianceMin = minDeviance;
-            MaximumDevianceMax = maxDeviance;
-            MinPing = minPing;
-            DifferencePing = maxPing - MinPing;
+            MinWeight = minWeight;
+            MaxWeight = maxWeight;
+            MinDistance = minDistance;
+            MaxDistance = maxDistance;
         }
     }
 
-    // Maybe we need to take into account the speed of the units as well? 
+    private const float TeleportDistance = 120f;
     private readonly Dictionary<IdentifierType, DevianceConstant> _devianceConstants = new()
     {
-        { IdentifierType.Player, new DevianceConstant(1.5f, 4.0f, 100, 500) },
-        { IdentifierType.Ally, new DevianceConstant(1.0f, 2.5f, 100, 500) },
-        { IdentifierType.Enemy, new DevianceConstant(1.0f, 2.5f, 100, 500) }
+        { IdentifierType.Player, new DevianceConstant(0.05f, 0.4f, 15f, 30f) },
+        { IdentifierType.Ally, new DevianceConstant(0.1f, 0.7f, 15f, 30f) },
+        { IdentifierType.Enemy, new DevianceConstant(0.1f, 0.7f, 15f, 30f) }
     };
-    
-    private float MaximumDevianceSquared(IdentifierType type, CSteamID id)
+
+    protected override bool ShouldUpdate => true;
+
+    private Vector3 CalculatePosition(IdentifierType type, float speed, Vector3 a, Vector3 b)
     {
-        var constant = _devianceConstants[type];
-        var ping = Plugin.Instance.PlayerManager.Get(id).Ping;
-        ping = ping < constant.MinPing ? 0 : ping - constant.MinPing;
-        ping = ping > constant.DifferencePing ? constant.DifferencePing : ping;
-        var deviance = Mathf.Lerp(
-            constant.MaximumDevianceMin,
-            constant.MaximumDevianceMax,
-            (float)ping / constant.DifferencePing
-        );
+        var distance = (a - b).magnitude;
+        // We are far enough away that we teleported, return the actual location.
+        if (distance >= TeleportDistance)
+        {
+            return b;
+        }
         
-        return deviance * deviance;
+        //var speedModifier = (speed - 10f) / 20f + 10f;
+        
+        // var ping = Plugin.Instance.PlayerManager.Get(id).Ping;
+        // ping = ping < constant.MinPing ? 0 : ping - constant.MinPing;
+        // var pingModifier = ping >= constant.PingDifference ? 1f : (float)ping / constant.PingDifference;
+        // pingModifier = Mathf.Lerp(1f, constant.PingModifier, pingModifier);
+        
+        var constant = _devianceConstants[type];
+        var maxDistance = constant.MaxDistance;// * speedModifier;
+        var distanceWeight = (distance - constant.MinDistance) / (maxDistance - constant.MinDistance);
+        distanceWeight = Mathf.Clamp(distanceWeight, 0f, 1f);
+
+        var output = Vector3.Lerp(
+            a,
+            b,
+            Mathf.Lerp(constant.MinWeight, constant.MaxWeight, distanceWeight)
+        );
+        return output;
     }
     
-    //protected override float ForceUpdateTimer => 2f;
+    protected override float ForceUpdateTimer => 0.5f;
 
     protected override IEnumerable<(IdentifierData id, GameObject target)> Targets()
     {
-        foreach (var entry in _devianceConstants)
+        if (Plugin.Instance.Network.Server)
         {
-            foreach (var data in Identifier.GetIdentifiers(entry.Key))
+            foreach (var entry in _devianceConstants)
             {
-                yield return (new IdentifierData{ Type = entry.Key, Id = data.id}, data.target);
+                foreach (var data in Identifier.GetIdentifiers(entry.Key))
+                {
+                    yield return (new IdentifierData{ Type = entry.Key, Id = data.id}, data.target);
+                }
             }
+        }
+        else if (Plugin.Instance.PlayerManager.LocalPlayer?.Object != null)
+        {
+            yield return (new IdentifierData
+                {
+                    Type = IdentifierType.Player,
+                    Id = Plugin.Instance.PlayerManager.LocalId
+                },
+                Plugin.Instance.PlayerManager.LocalPlayer.Object
+            );
         }
     }
 
@@ -77,6 +107,11 @@ public class PositionSync : BaseTargetSync
         return (a.Position - b.Position).sqrMagnitude < Helpers.EpsilonSqr;
     }
 
+    protected override bool Filter(CSteamID peer, IdentifierData id, GameObject target)
+    {
+        return id.Type == IdentifierType.Player && Plugin.Instance.PlayerManager.Get(id.Id).SteamID == peer;
+    }
+
     public override bool CanHandle(BasePacket packet)
     {
         return packet.TypeID == SyncPositionPacket.PacketID;
@@ -93,30 +128,41 @@ public class PositionSync : BaseTargetSync
 
         if (sync.Target.Type == IdentifierType.Player)
         {
-            // If we aren't moving then we should always stay where we are.
             var player = target.GetComponent<PlayerNetworkData>();
-            if (player.SharedData.MoveHorizontal > 0.01f || player.SharedData.MoveVertical > 0.01f)
+            var movement = target.GetComponent<PlayerMovement>();
+            var speed = movement.Sprinting ? movement.sprintSpeed : movement.speed;
+            var heavyArmorEquipped = Traverse.Create(movement).Field<bool>("heavyArmorEquipped");
+            var racingHorseEquipped = Traverse.Create(movement).Field<bool>("racingHorseEquipped");
+            if (heavyArmorEquipped.Value)
             {
-                var deltaPosition = sync.Position - target.transform.position;
-                if (deltaPosition.sqrMagnitude < MaximumDevianceSquared(sync.Target.Type, player.Player.SteamID))
-                {
-                    return;
-                }
+                speed *= PerkManager.instance.heavyArmor_SpeedMultiplyer;
+            }
+            if (racingHorseEquipped.Value)
+            {
+                speed *= PerkManager.instance.racingHorse_SpeedMultiplyer;
             }
             
             player.Player.Controller.enabled = false;
-            player.transform.position = sync.Position;
+            target.transform.position = CalculatePosition(
+                IdentifierType.Player,
+                speed,
+                target.transform.position,
+                sync.Position
+            );
             player.Player.Controller.enabled = true;
         }
         else
         {
-            var deltaPosition = sync.Position - target.transform.position;
-            if (deltaPosition.sqrMagnitude < MaximumDevianceSquared(sync.Target.Type, Plugin.Instance.Network.Owner))
-            {
-                return;
-            }
+            var speed = sync.Target.Type == IdentifierType.Enemy
+                ? target.GetComponent<PathfindMovementEnemy>().movementSpeed
+                : target.GetComponent<PathfindMovementPlayerunit>().movementSpeed;
             
-            target.transform.position = sync.Position;
+            target.transform.position = CalculatePosition(
+                sync.Target.Type,
+                speed,
+                target.transform.position,
+                sync.Position
+            );
         }
     }
 }

@@ -190,7 +190,7 @@ namespace ThronefallMP
             SetSteamNetworkValue(
                 ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_FakePacketLag_Send,
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
-                Config.Bind("Network", "PacketLagReceiveMs", 80).Value
+                Config.Bind("Network", "PacketLagSendMs", 80).Value
             );
             
             SetSteamNetworkValue(

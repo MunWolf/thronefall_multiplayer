@@ -1,8 +1,5 @@
 ﻿using HarmonyLib;
 using Pathfinding;
-using ThronefallMP.Components;
-using ThronefallMP.Network.Packets.Game;
-using ThronefallMP.Network.Packets.Sync;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -14,6 +11,7 @@ public static class PathfindMovementPlayerunitPatch
         On.PathfindMovementPlayerunit.OriginalOnPathComplete += OriginalOnPathComplete;
         On.PathfindMovementPlayerunit.BackupOnPathComplete += BackupOnPathComplete;
         On.PathfindMovementPlayerunit.FindMoveToTarget += FindMoveToTarget;
+        On.PathfindMovementPlayerunit.OnDawn_BeforeSunrise += OnDawn_BeforeSunrise;
     }
 
     private static void OriginalOnPathComplete(On.PathfindMovementPlayerunit.orig_OriginalOnPathComplete original, PathfindMovementPlayerunit self, Path p)
@@ -37,5 +35,13 @@ public static class PathfindMovementPlayerunitPatch
         return Plugin.Instance.Network.Server
             ? original(self)
             : Traverse.Create(self).Field<Vector3>("seekToTargetPos").Value;
+    }
+
+    private static void OnDawn_BeforeSunrise(On.PathfindMovementPlayerunit.orig_OnDawn_BeforeSunrise original, PathfindMovementPlayerunit self)
+    {
+        if (Plugin.Instance.Network.Server)
+        {
+            original(self);
+        }
     }
 }

@@ -49,7 +49,7 @@ public static class BuildSlotPatch
             var current = slots[0];
             slots.Remove(current);
             slots.AddRange(current.IsRootOf);
-            AssignId(current, Helpers.GetPath(current.transform).GetHashCode());
+            AssignId(current, current.transform.GetSiblingIndex());
             foreach (var respawn in current.GetComponentsInChildren<UnitRespawnerForBuildings>(true))
             {
                 ProcessUnits(respawn);
@@ -67,8 +67,11 @@ public static class BuildSlotPatch
         }
         {
             var building = self.GetComponentInChildren<Hp>(true);
-            var identifier = building.gameObject.AddComponent<Identifier>();
-            identifier.SetIdentity(IdentifierType.Building, id);
+            if (building != null)
+            {
+                var identifier = building.gameObject.AddComponent<Identifier>();
+                identifier.SetIdentity(IdentifierType.Building, id);
+            }
         }
     }
 
@@ -78,7 +81,7 @@ public static class BuildSlotPatch
         {
             var unit = respawn.transform.GetChild(i);
             var identifier = unit.gameObject.AddComponent<Identifier>();
-            var id = Helpers.GetPath(unit).GetHashCode();
+            var id = (Helpers.GetPath(unit) + unit.GetSiblingIndex()).GetHashCode();
             identifier.SetIdentity(IdentifierType.Ally, id);
         }
     }
