@@ -50,7 +50,6 @@ public class PingPongSync : BaseSync
             {
                 var sync = (SyncPingInfoPacket)packet;
                 Plugin.Instance.PlayerManager.Get(sync.Peer).Ping = sync.Ping;
-                Plugin.Log.LogInfoFiltered("Ping", $"Received {peer.m_SteamID} with ping {sync.Ping}");
                 break;
             }
         }

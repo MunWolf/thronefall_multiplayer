@@ -2,6 +2,7 @@
 using System.Linq;
 using Steamworks;
 using ThronefallMP.Components;
+using TMPro;
 using UnityEngine;
 
 namespace ThronefallMP.Network;
@@ -127,6 +128,13 @@ public class PlayerManager
         identifier.SetIdentity(IdentifierType.Player, player.Id);
         player.Object.transform.position = position;
         player.Object.SetActive(true);
+
+        var label = new GameObject($"player_{player.Id}_label");
+        label.SetActive(false);
+        label.AddComponent<TextMeshPro>();
+        var follower = label.AddComponent<PlayerLabelFollower>();
+        follower.TargetPlayer = player.Id;
+        label.SetActive(true);
         return true;
     }
 
