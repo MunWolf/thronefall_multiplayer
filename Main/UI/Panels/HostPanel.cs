@@ -98,8 +98,10 @@ public class HostPanel : BaseUI
         // TODO: Add validation on the fields, don't allow hosting unless options are valid.
         var placeholder = SteamManager.Initialized ? SteamFriends.GetPersonaName() : "Unavailable";
         var nameField = UIHelper.CreateInputField(panel, "name", "Name", $"{placeholder}'s Game", LabelWidth, 24);
-        var passwordField = UIHelper.CreateInputField(panel, "password", "Password", "", LabelWidth, 24, TMP_InputField.ContentType.Password);
-        var maxPlayersField = UIHelper.CreateInputField(panel, "max_players", "Players", "8", LabelWidth, 2, TMP_InputField.ContentType.DecimalNumber);
+        var passwordField = UIHelper.CreateInputField(panel, "password", "Password", "", LabelWidth, 24);
+        passwordField.contentType = TMP_InputField.ContentType.Password;
+        var maxPlayersField = UIHelper.CreateInputField(panel, "max_players", "Players", "8", LabelWidth, 2);
+        maxPlayersField.contentType = TMP_InputField.ContentType.DecimalNumber;
         var friendsOnlyToggle = CreateToggle(panel, "friends_only", "Friends Only", false);
         
         var buttons = UIFactory.CreateUIObject("buttons", panel);

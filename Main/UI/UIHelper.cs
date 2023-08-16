@@ -24,13 +24,13 @@ public static class UIHelper
         return border;
     }
     
-    public static TextMeshProUGUI CreateText(GameObject root, string name, string text)
+    public static TextMeshProUGUI CreateText(GameObject root, string name, string text, TMP_FontAsset font = null)
     {
         var textObject = UIFactory.CreateUIObject(name, root);
         var textComponent = textObject.AddComponent<TextMeshProUGUI>();
         textComponent.text = text;
         textComponent.color = UIManager.TextColor;
-        textComponent.font = UIManager.DefaultFont;
+        textComponent.font = font ? font : UIManager.DefaultFont;
         textComponent.fontSize = 24;
         textComponent.alignment = TextAlignmentOptions.Center;
         
@@ -156,7 +156,7 @@ public static class UIHelper
     }
     
     public static TMP_InputField CreateInputField(GameObject panel, string name, string label, string value,
-        int? labelWidth = null, int limit = 32, TMP_InputField.ContentType type = TMP_InputField.ContentType.Alphanumeric)
+        int? labelWidth = null, int limit = 32, TMP_FontAsset font = null)
     {
         var group = UIFactory.CreateUIObject($"{name}Group", panel);
         UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
@@ -184,7 +184,7 @@ public static class UIHelper
             );
             UIFactory.SetLayoutElement(bg.gameObject, minWidth: labelWidth, flexibleWidth: 0);
             bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            var labelText = CreateText(bg, $"{name}_label", $"{label}: ");
+            var labelText = CreateText(bg, $"{name}_label", $"{label}: ", font);
             labelText.alignment = TextAlignmentOptions.Left;
         }
 
@@ -204,12 +204,11 @@ public static class UIHelper
             inputField.textViewport.anchorMax = new Vector2(1, 1);
             textArea.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             
-            var text = CreateText(textArea, $"{name}", $"{value}");
+            var text = CreateText(textArea, $"{name}", $"{value}", font);
             text.color = UIManager.TextColor;
             text.fontSize = 20;
             inputField.textComponent = text;
             inputField.text = text.text;
-            inputField.contentType = type;
             inputField.characterLimit = limit;
             var transform = text.GetComponent<RectTransform>();
             transform.localPosition = Vector3.zero;

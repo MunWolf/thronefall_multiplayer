@@ -14,6 +14,7 @@ public static class UIManager
     public static GameObject TitleScreen { get; private set; }
     public static LobbyListPanel LobbyListPanel { get; private set; }
     public static HostPanel HostPanel { get; private set; }
+    public static ChatPanel ChatPanel { get; private set; }
     public static GameStatusPanel GameStatusPanel { get; private set; }
 
     public static bool ExitHandled = false;
@@ -61,6 +62,8 @@ public static class UIManager
 
         LobbyListPanel = BaseUI.Create<LobbyListPanel>(_canvas, _container);
         HostPanel = BaseUI.Create<HostPanel>(_canvas, _container);
+        ChatPanel = BaseUI.Create<ChatPanel>(_canvas, _container);
+        ChatPanel.Enabled = true;
         //GameStatusPanel = BaseUI.Create<GameStatusPanel>(_canvas, _container);
         
         var multiplayer = Helpers.InstantiateDisabled(settings.gameObject, settings.transform.parent);
