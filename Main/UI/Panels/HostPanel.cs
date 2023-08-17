@@ -18,6 +18,7 @@ public class HostPanel : BaseUI
         public string Name;
         public string Password;
         public int MaxPlayers;
+        public bool CheatsEnabled;
         public ELobbyType Type;
     }
 
@@ -86,7 +87,7 @@ public class HostPanel : BaseUI
                 true,
                 5,
                 20,
-                20,
+                80,
                 60,
                 60,
                 TextAnchor.MiddleLeft
@@ -104,6 +105,7 @@ public class HostPanel : BaseUI
         var maxPlayersField = UIHelper.CreateInputField(panel, "max_players", "Players", "8", LabelWidth, 2);
         maxPlayersField.contentType = TMP_InputField.ContentType.DecimalNumber;
         var friendsOnlyToggle = CreateToggle(panel, "friends_only", "Friends Only", false);
+        var enableCheatsToggle = CreateToggle(panel, "cheats_enabled", "Enable Cheats", false);
         
         var buttons = UIFactory.CreateUIObject("buttons", panel);
         {
@@ -136,6 +138,7 @@ public class HostPanel : BaseUI
                 Name = nameField.text,
                 MaxPlayers = int.Parse(maxPlayersField.text),
                 Password = passwordField.text,
+                CheatsEnabled = enableCheatsToggle.Toggle.isOn,
                 Type = friendsOnlyToggle.Toggle.isOn ? ELobbyType.k_ELobbyTypeFriendsOnly : ELobbyType.k_ELobbyTypePublic
             });
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
@@ -264,7 +267,7 @@ public class HostPanel : BaseUI
         SteamMatchmaking.SetLobbyData(id, "password", hasPassword);
         SteamMatchmaking.SetLobbyData(id, "version", Plugin.VersionString);
         // TODO: Add an option in the UI for this.
-        SteamMatchmaking.SetLobbyData(id, "cheats_enabled", "yes");
+        SteamMatchmaking.SetLobbyData(id, "cheats_enabled", _currentRequest.Value.CheatsEnabled ? "yes" : "no");
         Plugin.Log.LogInfo($"Lobby {created.m_ulSteamIDLobby} created with name '{_currentRequest.Value.Name}' password '{hasPassword}'");
         Plugin.CallbackOnLoad("_LevelSelect", false, () =>
         {

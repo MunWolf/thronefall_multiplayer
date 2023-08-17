@@ -13,6 +13,7 @@ using ThronefallMP.Network.Packets.PlayerCommand;
 using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Network.Sync;
 using ThronefallMP.UI;
+using ThronefallMP.UI.Panels;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -221,7 +222,12 @@ public class Network : MonoBehaviour
     private void CloseLobby()
     {
         SyncManager.ResetSyncs();
-        PacketHandler.AwaitingConnectionApproval = false;
+        if (PacketHandler.AwaitingConnectionApproval)
+        {
+            UIManager.LobbyListPanel.CloseConnectingDialog();
+            PacketHandler.AwaitingConnectionApproval = false;
+        }
+        
         if (Lobby.IsValid())
         {
             Plugin.Log.LogInfoFiltered("Network", $"Leaving lobby {Lobby.m_SteamID}");
@@ -239,7 +245,6 @@ public class Network : MonoBehaviour
 
         _password = null;
         _lastOrderedPackages.Clear();
-        UIManager.LobbyListPanel.CloseConnectingDialog();
     }
     
     public void Local()
