@@ -60,6 +60,11 @@ public class PlayerInfoControl : MonoBehaviour
 
     private void OnPingUpdated(Network.PlayerManager.Player player)
     {
+        if (player.Id != playerId)
+        {
+            return;
+        }
+        
         ping.text = player.Ping.ToString();
         ping.color = Color.Lerp(
             Color.green,

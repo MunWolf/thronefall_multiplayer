@@ -116,7 +116,7 @@ public class GameStatusPanel : BaseUI
             false,
             true,
             true,
-            0,
+            5,
             5,
             5,
             15,

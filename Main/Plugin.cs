@@ -181,6 +181,13 @@ namespace ThronefallMP
                 ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
                 3200
             );
+            
+            // This is in bytes.
+            SetSteamNetworkValue(
+                ESteamNetworkingConfigValue.k_ESteamNetworkingConfig_SendBufferSize,
+                ESteamNetworkingConfigDataType.k_ESteamNetworkingConfig_Int32,
+                4 * 1024 * 1024
+            );
         }
 
         private void SetSteamNetworkSimulationValues()

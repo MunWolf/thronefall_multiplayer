@@ -23,6 +23,7 @@ public class PlayerLabelFollower : MonoBehaviour
         _text.outlineColor = Color.black;
         _text.outlineWidth = 0.2f;
         _offset = new Vector3(0.15f, 6, -0.15f);
+        _text.transform.rotation = Quaternion.Euler(54.17f, 45.09f, 0);
         RefreshText();
     }
 
@@ -40,8 +41,6 @@ public class PlayerLabelFollower : MonoBehaviour
             player.Object.transform.position + _offset,
             0.7f
         );
-        
-        _text.transform.rotation = Quaternion.LookRotation(_text.transform.position - _camera.transform.position);
     }
 
     private void RefreshText()
