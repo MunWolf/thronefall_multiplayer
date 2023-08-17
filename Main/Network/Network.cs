@@ -660,11 +660,13 @@ public class Network : MonoBehaviour
         if (Owner == SteamUser.GetSteamID())
         {
             // We are now the host.
+            HandleMessage("Server", $"You are now hosting");
             Server = true;
         }
         else
         {
             // Connect to new host.
+            HandleMessage("Server", $"Host disconnected migrating server to {SteamFriends.GetFriendPersonaName(Owner)}");
             Connect(Owner, _password);
         }
     }
