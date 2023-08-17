@@ -25,11 +25,9 @@
 
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-    <PackageReference Include="BepInEx.Unity" Version="6.0.0-*" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
-    <PackageReference Include="MonoMod.Common" Version="22.6.3.1" />
-    <PackageReference Include="MonoMod.RuntimeDetour.HookGen" Version="22.7.31.1" />
-	<PackageReference Include="UnityEngine.Modules" Version="2022.3.0" IncludeAssets="compile" />
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.0" IncludeAssets="compile" />
 	<PackageReference Include="UniverseLib.Mono" Version="1.5.1" />
   </ItemGroup>
   
@@ -76,8 +74,6 @@
     <None Remove="Assets\crown.png" />
     <EmbeddedResource Include="Assets\crown.png" />
   </ItemGroup>
-  
-  
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="powershell.exe -NonInteractive -executionpolicy Unrestricted -file $(SolutionDir)\install.ps1 $(SolutionDir) $(OutDir)" />
