@@ -100,6 +100,12 @@ public class LevelDataSync : BaseSync
             return;
         }
 
+        if (packet.To == "_LevelSelect")
+        {
+            SceneTransitionManagerPatch.Transition(packet.To, packet.From);
+            return;
+        }
+        
         _activeRequest = new LevelRequest
         {
             To = packet.To,
@@ -121,14 +127,13 @@ public class LevelDataSync : BaseSync
             }
         }
 
-        var netId = new SteamNetworkingIdentity();
-        netId.SetSteamID(peer);
+        Plugin.Log.LogInfo("Sending weapon request.");
         var sentByServer = peer == Plugin.Instance.PlayerManager.LocalPlayer.SteamID;
         var request = new WeaponRequestPacket();
         Plugin.Instance.Network.Send(
             request,
             !sentByServer,
-            sentByServer ? default : netId
+            peer
         );
         
         Plugin.Instance.StartCoroutine(RequestHandler());
@@ -145,10 +150,18 @@ public class LevelDataSync : BaseSync
             yield return null;
         }
 
-        if (_activeRequest != null)
+        if (_activeRequest == null)
         {
-            SceneTransitionManagerPatch.Transition(_activeRequest.To, _activeRequest.From);
+            yield break;
         }
+        
+        foreach (var weapon in _activeRequest.SelectedWeapons)
+        {
+            Plugin.Instance.PlayerManager.Get(weapon.Key).Weapon = weapon.Value;
+        }
+
+        SceneTransitionManagerPatch.Transition(_activeRequest.To, _activeRequest.From);
+        _activeRequest = null;
     }
 
     private static void HandleSyncPacket(SyncLevelDataPacket packet)

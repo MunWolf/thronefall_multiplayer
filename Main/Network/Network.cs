@@ -387,7 +387,7 @@ public class Network : MonoBehaviour
         SteamMatchmaking.SetLobbyJoinable(Lobby, SceneManager.GetSceneByName("_LevelSelect").isLoaded);
     }
 
-    public void Send(BasePacket basePacket, bool handleLocal = false, SteamNetworkingIdentity except = new())
+    public void Send(BasePacket basePacket, bool handleLocal = false, CSteamID except = new())
     {
         if (Online && _peers.Count > 0)
         {
@@ -403,6 +403,11 @@ public class Network : MonoBehaviour
             var sid = new SteamNetworkingIdentity();
             foreach (var peer in _peers)
             {
+                if (peer == except)
+                {
+                    continue;
+                }
+                
                 sid.SetSteamID(peer);
                 Send(buffer, sid, basePacket.DeliveryMask, basePacket.Channel);
             }
@@ -481,6 +486,8 @@ public class Network : MonoBehaviour
         { DayNightPacket.PacketID, typeof(DayNightPacket) },
         { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
         { RequestLevelPacket.PacketID, typeof(RequestLevelPacket)},
+        { WeaponRequestPacket.PacketID, typeof(WeaponRequestPacket) },
+        { WeaponResponsePacket.PacketID, typeof(WeaponResponsePacket) },
         
         { BuildOrUpgradePacket.PacketID, typeof(BuildOrUpgradePacket) },
         { CancelBuildPacket.PacketID, typeof(CancelBuildPacket) },
@@ -541,7 +548,7 @@ public class Network : MonoBehaviour
 
         if (Server && basePacket.ShouldPropagate)
         {
-            Send(basePacket, false, sender);
+            Send(basePacket, false, sender.GetSteamID());
         }
     }
 

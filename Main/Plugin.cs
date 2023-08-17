@@ -84,6 +84,7 @@ namespace ThronefallMP
             PathFinderMovementEnemyPatch.Apply();
             PathfindMovementPlayerunitPatch.Apply();
             PerkHpModifyerPatch.Apply();
+            PerkWeaponModifyerPatch.Apply();
             PlayerAttackPatch.Apply();
             PlayerInteractionPatch.Apply();
             PlayerMovementPatch.Apply();
@@ -94,6 +95,7 @@ namespace ThronefallMP
             TreasuryUIPatch.Apply();
             UIFramePatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
+            WeaponEquipperPatch.Apply();
             
             // Apply settings.
             Application.runInBackground = true;

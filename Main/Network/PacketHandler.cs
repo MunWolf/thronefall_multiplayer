@@ -359,6 +359,6 @@ public static class PacketHandler
         }
 
         var hp = target.GetComponent<Hp>();
-        hp.OnReceiveDamage.Invoke(packet.CausedByPlayer);
+        hp.OnReceiveDamage?.Invoke(packet.CausedByPlayer);
     }
 }

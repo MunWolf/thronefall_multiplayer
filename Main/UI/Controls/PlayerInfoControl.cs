@@ -55,6 +55,7 @@ public class PlayerInfoControl : MonoBehaviour
     private void OnDestroy()
     {
         Plugin.Instance.PlayerManager.OnPlayerRemoved -= OnPlayerRemoved;
+        Plugin.Instance.Network.OnOwnerChanged -= OnOwnerChanged;
     }
 
     private void OnPingUpdated(Network.PlayerManager.Player player)

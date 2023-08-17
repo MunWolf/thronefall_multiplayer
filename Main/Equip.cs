@@ -70,7 +70,7 @@ public static class Equip
     private static readonly Dictionary<string, Equipment> NameToEquip = new()
     {
         { "", Equipment.Invalid },
-        { "Perk Point", Equipment.Invalid },
+        { "Perk Point", Equipment.PerkPoint },
         
         // Weapons
         { "Long Bow", Equipment.LongBow },
@@ -89,12 +89,12 @@ public static class Equip
         { "Castle Blueprints", Equipment.CastleBlueprints },
         { "Gladiator School", Equipment.GladiatorSchool },
         { "War Horse", Equipment.WarHorse },
-        { "Glass Cannon", Equipment.GlassCannon },
+        { "Glass Canon", Equipment.GlassCannon },
         { "Big Harbours", Equipment.BigHarbours },
-        { "Elite Warriors", Equipment.EliteWarriors },
+        { "Ellite Warriors", Equipment.EliteWarriors },
         { "Archery Skills", Equipment.ArcherySkills },
         { "Faster Research", Equipment.FasterResearch },
-        { "Tower Support", Equipment.TowerSupport },
+        { "TowerSupport", Equipment.TowerSupport },
         { "Fortified Houses", Equipment.FortifiedHouses },
         { "Commander Mode", Equipment.CommanderMode },
         { "Healing Spirits", Equipment.HealingSpirits },
@@ -129,7 +129,7 @@ public static class Equip
         { "Taunt The Turtle God", Equipment.Turtle },
         { "Taunt The Tiger God", Equipment.Tiger },
         { "Taunt The Rat God", Equipment.Rat },
-        { "Taunt the Falcon God", Equipment.Falcon },
+        { "Taunt The Falcon God", Equipment.Falcon },
         { "Taunt God of Destruction", Equipment.Destruction },
         { "Taunt The Cheese God", Equipment.Wasp },
         { "Taunt The Disease God", Equipment.Death },
@@ -143,21 +143,21 @@ public static class Equip
     {
         _initialized = true;
         var metaLevels = Traverse.Create(PerkManager.instance).Field<List<MetaLevel>>("metaLevels");
-        Plugin.Log.LogInfo("Initializing converter dictionary");
-        Plugin.Log.LogInfo("Meta levels");
+        Plugin.Log.LogInfoFiltered("Equipment", "Initializing converter dictionary");
+        Plugin.Log.LogInfoFiltered("Equipment", "Meta levels");
         foreach (var meta in metaLevels.Value)
         {
-            Plugin.Log.LogInfo($"- {meta.reward.name}");
             var equipment = Convert(meta.reward.name);
+            Plugin.Log.LogInfoFiltered("Equipment", $"- {equipment} = {meta.reward.name}");
             EquipmentToEquippable[equipment] = meta.reward;
             EquippableToEquipment[meta.reward] = equipment;
         }
         
-        Plugin.Log.LogInfo("Currently Unlocked");
+        Plugin.Log.LogInfoFiltered("Equipment", "Currently Unlocked");
         foreach (var unlocked in PerkManager.instance.UnlockedEquippables)
         {
-            Plugin.Log.LogInfo($"- {unlocked.name}");
             var equipment = Convert(unlocked.name);
+            Plugin.Log.LogInfoFiltered("Equipment", $"- {equipment} = {unlocked.name}");
             EquipmentToEquippable[equipment] = unlocked;
             EquippableToEquipment[unlocked] = equipment;
         }
@@ -165,6 +165,7 @@ public static class Equip
 
     public static void ClearEquipments()
     {
+        Plugin.Log.LogInfoFiltered("Equipment", "Clearing equipment");
         PerkManager.instance.CurrentlyEquipped.Clear();
     }
 
@@ -175,6 +176,7 @@ public static class Equip
             InitializeDictionaries();
         }
         
+        Plugin.Log.LogInfoFiltered("Equipment", $"Equipping {equipment} -> {EquipmentToEquippable[equipment].displayName}");
         PerkManager.instance.CurrentlyEquipped.Add(EquipmentToEquippable[equipment]);
     }
     

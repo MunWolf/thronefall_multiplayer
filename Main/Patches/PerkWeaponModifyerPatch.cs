@@ -18,11 +18,11 @@ public static class PerkWeaponModifyerPatch
             case Equipment.LongBow:
             case Equipment.LightSpear:
             case Equipment.HeavySword:
-                var id = self.GetComponent<Identifier>();
+                Plugin.Log.LogInfo($"Checking PerkWeaponModifyer in '{Helpers.GetPath(self.transform)}'");
+                var id = self.GetComponentInParent<Identifier>();
                 if (id == null || id.Type != IdentifierType.Player)
                 {
-                    original(self);
-                    return;
+                    break;
                 }
 
                 var weapon = Plugin.Instance.PlayerManager.Get(id.Id).Weapon;

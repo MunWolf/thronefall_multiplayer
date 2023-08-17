@@ -161,7 +161,7 @@ public class WeaponDialog : BaseUI
         }
         
         _button = UIHelper.CreateButton(buttons, "button", "Confirm");
-        UIFactory.SetLayoutElement(_button.gameObject, minWidth: 100);
+        UIFactory.SetLayoutElement(_button.gameObject, minWidth: 140);
         _button.OnClick += () =>
         {
             var response = new WeaponResponsePacket

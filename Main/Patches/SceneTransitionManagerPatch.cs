@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using HarmonyLib;
+using Steamworks;
 using ThronefallMP.Components;
+using ThronefallMP.Network;
 using ThronefallMP.Network.Packets.Game;
 using TMPro;
 using UnityEngine;
@@ -55,7 +57,7 @@ public static class SceneTransitionManagerPatch
     
     private static void TransitionToScene(On.SceneTransitionManager.orig_TransitionToScene original, SceneTransitionManager self, string scene)
     {
-        if (!Plugin.Instance.Network.Server && _transitionHookEnabled && scene != "_StartMenu")
+        if (_transitionHookEnabled && scene != "_StartMenu")
         {
             var packet = new RequestLevelPacket
             {
@@ -67,8 +69,18 @@ public static class SceneTransitionManagerPatch
             {
                 packet.Perks.Add(Equip.Convert(item.name));
             }
-            
-            Plugin.Instance.Network.Send(packet);
+
+            if (Plugin.Instance.Network.Server)
+            {
+                var id = new SteamNetworkingIdentity();
+                id.SetSteamID(Plugin.Instance.Network.Owner);
+                PacketHandler.HandlePacket(id, packet);
+            }
+            else
+            {
+                Plugin.Instance.Network.Send(packet);
+            }
+            UIFrameManager.instance.CloseAllFrames();
             return;
         }
         

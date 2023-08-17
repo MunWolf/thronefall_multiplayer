@@ -18,14 +18,13 @@ public static class WeaponEquipperPatch
             case Equipment.LongBow:
             case Equipment.LightSpear:
             case Equipment.HeavySword:
-                var id = self.GetComponent<Identifier>();
+                var id = self.GetComponentInParent<Identifier>();
                 if (id == null || id.Type != IdentifierType.Player)
                 {
-                    original(self);
-                    return;
+                    break;
                 }
 
-                var weapon = Plugin.Instance.PlayerManager.Get(id.Id).Weapon;
+                var weapon = Plugin.Instance.PlayerManager.Get(id.Id)?.Weapon;
                 if (weapon != equipment)
                 {
                     break;
@@ -36,12 +35,13 @@ public static class WeaponEquipperPatch
                 self.GetComponentInParent<PlayerAttack>().AssignManualAttack(self.activeWeapon);
                 self.gameObject.AddComponent<PlayerWeaponVisuals>().Init(self.visuals, self.passiveWeapon);
                 self.facer.AssignAttack(self.passiveWeapon);
-                break;
+                Object.Destroy(self);
+                return;
             default:
                 original(self);
                 return;
         }
 
-        Object.Destroy(self);
+        Object.Destroy(self.gameObject);
     }
 }
