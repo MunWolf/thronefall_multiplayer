@@ -4,11 +4,18 @@ namespace ThronefallMP.Network.Packets.Sync;
 
 public class SyncLevelDataPacket : BasePacket
 {
+    public struct Player
+    {
+        public int PlayerId;
+        public int SpawnId;
+        public Equipment Weapon;
+    }
+    
     public const PacketId PacketID = PacketId.SyncLevelData;
 
     public string Level;
     public List<Equipment> Perks = new();
-    public List<(int playerId, int spawnId)> Spawns = new();
+    public List<Player> PlayerData = new();
     
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Player;
@@ -22,17 +29,18 @@ public class SyncLevelDataPacket : BasePacket
             writer.Write((int)perk);
         }
         
-        writer.Write(Spawns.Count);
-        foreach (var spawn in Spawns)
+        writer.Write(PlayerData.Count);
+        foreach (var player in PlayerData)
         {
-            writer.Write(spawn.playerId);
-            writer.Write(spawn.spawnId);
+            writer.Write(player.PlayerId);
+            writer.Write(player.SpawnId);
+            writer.Write((int)player.Weapon);
         }
     }
 
     public override void Receive(Buffer reader)
     {
-        Spawns.Clear();
+        PlayerData.Clear();
         Level = reader.ReadString();
         
         var perks = reader.ReadInt32();
@@ -45,10 +53,11 @@ public class SyncLevelDataPacket : BasePacket
         var spawns = reader.ReadInt32();
         for (var i = 0; i < spawns; ++i)
         {
-            Spawns.Add((
-                reader.ReadInt32(),
-                reader.ReadInt32()
-            ));
+            PlayerData.Add(new Player{
+                PlayerId = reader.ReadInt32(),
+                SpawnId = reader.ReadInt32(),
+                Weapon = (Equipment)reader.ReadInt32()
+            });
         }
     }
 }

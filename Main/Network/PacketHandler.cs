@@ -37,6 +37,8 @@ public enum PacketId
     EnemySpawn,
     DamageFeedback,
     RequestLevel,
+    WeaponRequest,
+    WeaponResponse,
     
     BuildOrUpgrade,
     CancelBuild,

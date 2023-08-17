@@ -98,12 +98,19 @@ public static class UIManager
         
         multiplayer.SetActive(true);
         _initialized = true;
-}
+    }
 
     public static void CloseAllPanels()
     {
         LobbyListPanel.Enabled = false;
         HostPanel.Enabled = false;
+    }
+
+    public static WeaponDialog CreateWeaponDialog()
+    {
+        var dialog = BaseUI.Create<WeaponDialog>(_canvas, _container);
+        dialog.Enabled = true;
+        return dialog;
     }
 
     public static PasswordDialog CreatePasswordDialog(PasswordDialog.Confirm confirm, PasswordDialog.Cancel cancel)

@@ -86,7 +86,7 @@ public class PasswordDialog : BaseUI
         }
 
         
-        var titleContainer = UIFactory.CreateUIObject("buttons", panel);
+        var titleContainer = UIFactory.CreateUIObject("titleContainer", panel);
         {
             UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
                 titleContainer,

@@ -65,7 +65,7 @@ public static class SceneTransitionManagerPatch
             
             foreach (var item in PerkManager.instance.CurrentlyEquipped)
             {
-                packet.Perks.Add(EquipHandler.Convert(item.name));
+                packet.Perks.Add(Equip.Convert(item.name));
             }
             
             Plugin.Instance.Network.Send(packet);

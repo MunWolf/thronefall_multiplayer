@@ -27,6 +27,7 @@ public class PlayerManager
         public PlayerNetworkData Data;
         public readonly PlayerNetworkData.Shared Shared = new();
         public CharacterController Controller;
+        public Equipment Weapon = Equipment.LongBow;
 
         public uint Ping
         {

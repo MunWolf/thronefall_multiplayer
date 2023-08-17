@@ -64,7 +64,7 @@ public enum Equipment
     Death
 }
 
-public static class EquipHandler
+public static class Equip
 {
     
     private static readonly Dictionary<string, Equipment> NameToEquip = new()
@@ -136,6 +136,7 @@ public static class EquipHandler
     };
     
     private static readonly Dictionary<Equipment, Equippable> EquipmentToEquippable = new();
+    private static readonly Dictionary<Equippable, Equipment> EquippableToEquipment = new();
     private static bool _initialized;
 
     private static void InitializeDictionaries()
@@ -147,14 +148,18 @@ public static class EquipHandler
         foreach (var meta in metaLevels.Value)
         {
             Plugin.Log.LogInfo($"- {meta.reward.name}");
-            EquipmentToEquippable[Convert(meta.reward.name)] = meta.reward;
+            var equipment = Convert(meta.reward.name);
+            EquipmentToEquippable[equipment] = meta.reward;
+            EquippableToEquipment[meta.reward] = equipment;
         }
         
         Plugin.Log.LogInfo("Currently Unlocked");
         foreach (var unlocked in PerkManager.instance.UnlockedEquippables)
         {
             Plugin.Log.LogInfo($"- {unlocked.name}");
-            EquipmentToEquippable[Convert(unlocked.name)] = unlocked;
+            var equipment = Convert(unlocked.name);
+            EquipmentToEquippable[equipment] = unlocked;
+            EquippableToEquipment[unlocked] = equipment;
         }
     }
 
@@ -171,6 +176,26 @@ public static class EquipHandler
         }
         
         PerkManager.instance.CurrentlyEquipped.Add(EquipmentToEquippable[equipment]);
+    }
+    
+    public static Equipment Convert(Equippable equip)
+    {
+        if (!_initialized)
+        {
+            InitializeDictionaries();
+        }
+
+        return EquippableToEquipment.GetValueSafe(equip);
+    }
+    
+    public static Equippable Convert(Equipment equip)
+    {
+        if (!_initialized)
+        {
+            InitializeDictionaries();
+        }
+
+        return EquipmentToEquippable.GetValueSafe(equip);
     }
     
     public static Equipment Convert(string name)

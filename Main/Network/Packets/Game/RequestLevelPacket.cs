@@ -8,6 +8,7 @@ public class RequestLevelPacket : BasePacket
 
     public string To;
     public string From;
+    public Equipment SelectedWeapon;
     public List<Equipment> Perks = new();
     
     public override PacketId TypeID => PacketID;

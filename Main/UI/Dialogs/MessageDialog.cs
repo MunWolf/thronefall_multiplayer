@@ -109,7 +109,7 @@ public class MessageDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1.0f, 1.0f);
         }
 
-        var titleContainer = UIFactory.CreateUIObject("buttons", panel);
+        var titleContainer = UIFactory.CreateUIObject("titleContainer", panel);
         {
             UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
                 titleContainer,
