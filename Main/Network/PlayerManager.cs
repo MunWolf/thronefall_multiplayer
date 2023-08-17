@@ -9,16 +9,34 @@ namespace ThronefallMP.Network;
 
 public class PlayerManager
 {
+    public delegate void PlayerDelegate(Player player);
+
+    public event PlayerDelegate OnPlayerAdded;
+    public event PlayerDelegate OnPlayerInstantiated;
+    public event PlayerDelegate OnPlayerRemoved;
+    public event PlayerDelegate OnPlayerPingUpdated;
+    
     public class Player
     {
+        private uint _ping;
+        
         public int Id;
         public CSteamID SteamID;
-        public uint Ping;
         public int SpawnID;
         public GameObject Object;
         public PlayerNetworkData Data;
         public readonly PlayerNetworkData.Shared Shared = new();
         public CharacterController Controller;
+
+        public uint Ping
+        {
+            get => _ping;
+            set
+            {
+                _ping = value;
+                Plugin.Instance.PlayerManager.OnPlayerPingUpdated?.Invoke(this);
+            }
+        }
         
         public Vector3 SpawnLocation => Helpers.GetSpawnLocation(Plugin.Instance.PlayerManager.SpawnLocation, SpawnID);
     }
@@ -83,6 +101,7 @@ public class PlayerManager
         
             _players[id] = player;
             _steamToPlayer[steamId] = player;
+            OnPlayerAdded?.Invoke(player);
         }
         else
         {
@@ -94,8 +113,14 @@ public class PlayerManager
 
     public void Remove(int player)
     {
+        if (!_players.ContainsKey(player))
+        {
+            return;
+        }
+        
         // TODO: Add a smoke poof effect when a player is destroyed.
         var data = _players[player];
+        OnPlayerRemoved?.Invoke(data);
         Plugin.Log.LogInfo($"Destroying player {data.SteamID}:{player}");
         Object.Destroy(data.Object);
         _steamToPlayer.Remove(data.SteamID);
@@ -135,6 +160,7 @@ public class PlayerManager
         var follower = label.AddComponent<PlayerLabelFollower>();
         follower.TargetPlayer = player.Id;
         label.SetActive(true);
+        OnPlayerInstantiated?.Invoke(player);
         return true;
     }
 

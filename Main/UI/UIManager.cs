@@ -63,8 +63,10 @@ public static class UIManager
         LobbyListPanel = BaseUI.Create<LobbyListPanel>(_canvas, _container);
         HostPanel = BaseUI.Create<HostPanel>(_canvas, _container);
         ChatPanel = BaseUI.Create<ChatPanel>(_canvas, _container);
+        GameStatusPanel = BaseUI.Create<GameStatusPanel>(_canvas, _container);
+        
         ChatPanel.Enabled = true;
-        //GameStatusPanel = BaseUI.Create<GameStatusPanel>(_canvas, _container);
+        GameStatusPanel.Enabled = true;
         
         var multiplayer = Helpers.InstantiateDisabled(settings.gameObject, settings.transform.parent);
         multiplayer.name = "Multiplayer";
@@ -95,7 +97,6 @@ public static class UIManager
         }
         
         multiplayer.SetActive(true);
-        //GameStatusPanel.Enabled = true;
         _initialized = true;
 }
 

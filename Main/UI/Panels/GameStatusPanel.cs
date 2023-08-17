@@ -1,27 +1,27 @@
-﻿using Steamworks;
-using ThronefallMP.Patches;
-using ThronefallMP.UI.Controls;
+﻿using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
-using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
 public class GameStatusPanel : BaseUI
 {
-    public static readonly Color BackgroundColor = new(0.11f, 0.11f, 0.11f, 0.95f);
+    private static readonly Color BackgroundColor = new(0.11f, 0.11f, 0.11f, 0.95f);
+    private static readonly Color EntryColor = new(0.2f, 0.2f, 0.2f, 1f);
     
     public override string Name => "Game Status Panel";
+
+    private GameObject _playerList;
     
     public override void ConstructPanelContent()
     {
         var container = UIFactory.CreateUIObject("container", PanelRoot);
         {
             var rectTransform = container.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0, 0);
-            rectTransform.anchorMax = new Vector2(0.35f, 1);
+            rectTransform.anchorMin = new Vector2(0, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.25f, 1);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
                 container,
                 true,
@@ -37,33 +37,109 @@ public class GameStatusPanel : BaseUI
             );
         }
         
-        var background = UIFactory.CreateUIObject("background", container);
+        _playerList = UIFactory.CreateUIObject("background", container);
         {
-            var image = background.AddComponent<Image>();
+            _playerList.AddComponent<Mask>();
+            var image = _playerList.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = BackgroundColor;
+            var rectTransform = _playerList.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
-                background,
+                _playerList,
                 true,
                 false,
                 true,
                 true,
                 5,
-                15,
-                15,
-                5,
-                5,
+                10,
+                10,
+                10,
+                10,
                 TextAnchor.UpperLeft
             );
         }
+        var playerEntry = UIFactory.CreateUIObject($"player_header", _playerList);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            playerEntry,
+            false,
+            false,
+            true,
+            true,
+            0,
+            0,
+            0,
+            15,
+            15,
+            TextAnchor.UpperCenter
+        );
 
-        UIHelper.CreateText(background, "test", "Testing");
+        var playerName = UIHelper.CreateText(playerEntry, "name", "Name", UIManager.DefaultFont);
+        playerName.alignment = TextAlignmentOptions.Left;
+        playerName.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        UIFactory.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
         
-        LayoutRebuilder.ForceRebuildLayoutImmediate(background.GetComponent<RectTransform>());
+        var ping = UIHelper.CreateText(playerEntry, "ping", "Ping", UIManager.DefaultFont);
+        ping.alignment = TextAlignmentOptions.Center;
+        ping.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        UIFactory.SetLayoutElement(ping.gameObject, minWidth: 40);
+        
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_playerList.GetComponent<RectTransform>());
+
+        foreach (var player in Plugin.Instance.PlayerManager.GetAllPlayers())
+        {
+            CreatePlayerLine(player);
+        }
+
+        Plugin.Instance.PlayerManager.OnPlayerAdded += CreatePlayerLine;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_playerList.GetComponent<RectTransform>());
+        _playerList.SetActive(false);
     }
 
-    public GameObject CreatePlayerLine()
+    private void Update()
     {
-        return null;
+        if (Plugin.Instance.Network.Online && Input.GetKeyDown(KeyCode.BackQuote))
+        {
+            _playerList.SetActive(!_playerList.activeSelf);
+            Plugin.Log.LogInfo($"List toggled {_playerList.activeSelf}");
+        }
+    }
+    
+    public void CreatePlayerLine(Network.PlayerManager.Player player)
+    {
+        var playerEntry = UIHelper.CreateBox(_playerList, $"player_{player.Id}", EntryColor);
+        playerEntry.SetActive(false);
+        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            playerEntry,
+            false,
+            false,
+            true,
+            true,
+            0,
+            5,
+            5,
+            15,
+            15,
+            TextAnchor.UpperCenter
+        );
+
+        var playerName = UIHelper.CreateText(playerEntry, "name", "", UIManager.DefaultFont);
+        playerName.alignment = TextAlignmentOptions.Left;
+        playerName.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        UIFactory.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
+        
+        var ping = UIHelper.CreateText(playerEntry, "ping", "", UIManager.DefaultFont);
+        ping.alignment = TextAlignmentOptions.Center;
+        ping.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        UIFactory.SetLayoutElement(ping.gameObject, minWidth: 40);
+
+        var info = playerEntry.AddComponent<PlayerInfoControl>();
+        info.playerId = player.Id;
+        info.container = playerEntry;
+        info.playerName = playerName;
+        info.ping = ping;
+        playerEntry.SetActive(true);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_playerList.GetComponent<RectTransform>());
     }
 }

@@ -28,7 +28,7 @@ public class ChatPanel : BaseUI
     private static readonly Color ChatColor = new(0.9f, 0.9f, 0.9f, 1f);
     private static readonly Color32 ChatBorderColor = new(0, 0, 0, 255);
     
-    public override string Name => "Game Status Panel";
+    public override string Name => "Chat Panel";
 
     private GameObject _container;
     private GameObject _chatBoxContainer;
