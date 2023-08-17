@@ -30,6 +30,7 @@ namespace ThronefallMP
         
         public Network.Network Network { get; private set; }
         public Network.PlayerManager PlayerManager { get; private set; }
+        public TextureRepository TextureRepository { get; private set; }
 
         private CheatHandler CheatHandler;
         
@@ -49,6 +50,7 @@ namespace ThronefallMP
                 "Network", "EnableSimulation", false, "Enable simulation of a bad network for debugging");
             
             Instance = this;
+            TextureRepository = new TextureRepository();
             Network = Instance.gameObject.AddComponent<Network.Network>();
             PlayerManager = new Network.PlayerManager();
             CheatHandler = new CheatHandler();
@@ -253,20 +255,6 @@ namespace ThronefallMP
                 handle.AddrOfPinnedObject()
             );
             handle.Free();
-        }
-
-        public static Texture2D LoadTexture(string textureName)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var resource = assembly.GetManifestResourceNames()
-                .Single(str => str.EndsWith(textureName));
-            var stream = assembly.GetManifestResourceStream(resource);
-            var texture = new Texture2D(2, 2, GraphicsFormat.R8G8B8A8_UNorm, 1, TextureCreationFlags.None);
-            using var memoryStream = new MemoryStream();
-            Debug.Assert(stream != null, nameof(stream) + " != null");
-            stream.CopyTo(memoryStream);
-            texture.LoadImage(memoryStream.ToArray());
-            return texture;
         }
     }
 }

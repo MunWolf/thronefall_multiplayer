@@ -5,10 +5,8 @@ using ThronefallMP.Network;
 using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.UI;
 using UniverseLib.UI;
-using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
 
@@ -16,7 +14,6 @@ public partial class LobbyListPanel
 {
     public override void ConstructPanelContent()
     {
-        _lockTexture = Plugin.LoadTexture("lock-icon.png");
         // TODO: Fix select sound and click sound playing when you click a button with the mouse.
         
         var multiplayer = UIFactory.CreateUIObject("multiplayer", PanelRoot);
@@ -313,9 +310,10 @@ public partial class LobbyListPanel
             var imageObject = UIFactory.CreateUIObject("image", container);
             var image = imageObject.gameObject.AddComponent<Image>();
             image.type = Image.Type.Filled;
+            var lockTexture = Plugin.Instance.TextureRepository.Lock;
             image.sprite = Sprite.Create(
-                _lockTexture,
-                new Rect(0, 0, _lockTexture.width, _lockTexture.height),
+                lockTexture,
+                new Rect(0, 0, lockTexture.width, lockTexture.height),
                 new Vector2(0.5f, 0.5f)
             );
         }

@@ -98,6 +98,8 @@ public static class UIManager
         
         multiplayer.SetActive(true);
         _initialized = true;
+
+        CreateWeaponDialog();
     }
 
     public static void CloseAllPanels()

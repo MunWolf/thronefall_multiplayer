@@ -170,7 +170,7 @@ public class Network : MonoBehaviour
         Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
 
         var username = SteamFriends.GetFriendPersonaName(id);
-        HandleMessage("Server", $"Player {username} joined");
+        HandleMessage("Server", $"{username} joined");
         
         var packet = new PeerListPacket();
         Plugin.Log.LogInfoFiltered("Network", $"Building peer sync");
@@ -646,7 +646,7 @@ public class Network : MonoBehaviour
             return;
         }
         
-        Plugin.Log.LogInfoFiltered("Network", $"Player {update.m_ulSteamIDUserChanged} left");
+        Plugin.Log.LogInfoFiltered("Network", $"{update.m_ulSteamIDUserChanged} left");
 
         var id = new CSteamID(update.m_ulSteamIDUserChanged);
         var player = Plugin.Instance.PlayerManager.Get(id);

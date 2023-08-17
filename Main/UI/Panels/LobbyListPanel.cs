@@ -19,7 +19,6 @@ public partial class LobbyListPanel : BaseUI
 
     private MessageDialog _activeConnectionDialog;
     private LobbyItem _currentlySelectedLobby;
-    private Texture2D _lockTexture;
     private GameObject _lobbyList;
     private ToggleControl _friendsOnly;
     private ToggleControl _showWithPassword;

@@ -100,7 +100,6 @@ public class HpSync : BaseTargetSync
             return;
         }
         
-        Plugin.Log.LogInfoFiltered("HpSync", $"Setting hp to {sync.Hp}/{sync.MaxHp} : Knocked out = {sync.KnockedOut}");
         hp.maxHp = sync.MaxHp;
         var difference = sync.Hp - hp.HpValue;
         HpPatch.AllowHealthChangeOnClient = true;

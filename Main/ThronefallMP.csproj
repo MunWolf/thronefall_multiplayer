@@ -73,6 +73,8 @@
     <EmbeddedResource Include="Assets\lock-icon.png" />
     <None Remove="Assets\crown.png" />
     <EmbeddedResource Include="Assets\crown.png" />
+    <None Remove="Assets\blank.png" />
+    <EmbeddedResource Include="Assets\blank.png" />
   </ItemGroup>
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

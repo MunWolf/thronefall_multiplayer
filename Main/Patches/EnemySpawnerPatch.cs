@@ -17,12 +17,12 @@ public class EnemySpawnerPatch
 
     private static void Start(On.EnemySpawner.orig_Start original, EnemySpawner self)
     {
-	    self.goldBalanceAtStart = 0;
 	    var balance = self.goldBalanceAtStart;
+	    self.goldBalanceAtStart = 0;
 	    if (PerkManager.instance.RoyalMintActive)
 	    {
-		    self.goldBalanceAtStart = -PerkManager.instance.royalMint_startGoldBonus;
 		    balance += PerkManager.instance.royalMint_startGoldBonus;
+		    self.goldBalanceAtStart = -PerkManager.instance.royalMint_startGoldBonus;
 	    }
 	    
 	    original(self);

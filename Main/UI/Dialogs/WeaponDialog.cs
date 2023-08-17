@@ -1,4 +1,6 @@
-﻿using Steamworks;
+﻿using MPUIKIT;
+using Steamworks;
+using ThronefallMP.Components;
 using ThronefallMP.Network;
 using ThronefallMP.Network.Packets.Game;
 using ThronefallMP.Patches;
@@ -192,57 +194,87 @@ public class WeaponDialog : BaseUI
         var outlineSelected = new Color(1, 0.906f, 0.769f, 1);
         
         var frame = UIFactory.CreateUIObject($"weapon_{equipment}", parent);
+        var icon = UIFactory.CreateUIObject($"weapon_{equipment}", frame);
+
+        var tweeen = frame.AddComponent<TweenScale>();
         {
             var rectTransform = frame.GetComponent<RectTransform>();
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.sizeDelta = new Vector2(32, 32);
+            rectTransform.sizeDelta = new Vector2(64, 64);
 
-            var image = frame.AddComponent<MPUIKIT.MPImage>();
-            image.FalloffDistance = 0.5f;
+            var image = frame.AddComponent<MPImageBasic>();
+            image.type = Image.Type.Simple;
+            image.color = normal;
+            image.OutlineColor = outlineNormal;
             image.OutlineWidth = 4;
+            image.fillCenter = true;
+            image.fillMethod = Image.FillMethod.Radial360;
+            image.fillAmount = 1;
+            image.CircleFitToRect = true;
+            image.Shape = DrawShape.Circle;
             
             frame.AddComponent<EventTrigger>();
             UIHelper.AddEvent(frame, EventTriggerType.PointerClick, (_) =>
             {
                 _selectedEquipment = equipment;
+                ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
                 OnWeaponChanged?.Invoke();
             });
             UIHelper.AddEvent(frame, EventTriggerType.Submit, (_) =>
             {
                 _selectedEquipment = equipment;
+                ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
                 OnWeaponChanged?.Invoke();
             });
             UIHelper.AddEvent(frame, EventTriggerType.PointerEnter, (_) =>
             {
                 image.OutlineColor = outlineSelected;
+                tweeen.Tween(new Vector3(1.2f, 1.2f, 1.2f), 0.1f, 0.03f);
             });
             UIHelper.AddEvent(frame, EventTriggerType.PointerExit, (_) =>
             {
                 image.OutlineColor = _selectedEquipment == equipment
                     ? outlineSelected
                     : outlineNormal;
+                var iconImage = icon.GetComponent<Image>();
+                iconImage.color = _selectedEquipment == equipment
+                    ? outlineSelected
+                    : outlineNormal;
+                if (_selectedEquipment != equipment)
+                {
+                    tweeen.Tween(Vector3.one, 0.3f, 0.05f);
+                }
             });
         }
         
-        var icon = UIFactory.CreateUIObject($"weapon_{equipment}", frame);
         {
             var rectTransform = icon.GetComponent<RectTransform>();
-            rectTransform.anchorMin = Vector2.zero;
-            rectTransform.anchorMax = Vector2.one;
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.sizeDelta = new Vector2(32, 32);
             var image = icon.AddComponent<Image>();
             image.type = Image.Type.Filled;
             image.sprite = Equip.Convert(equipment).icon;
+            image.color = outlineNormal;
         }
         
         OnWeaponChanged += () =>
         {
-            var image = frame.GetComponent<MPUIKIT.MPImage>();
+            var iconImage = icon.GetComponent<Image>();
+            var image = frame.GetComponent<MPImageBasic>();
             image.color = _selectedEquipment == equipment
                 ? selected
                 : normal;
             image.OutlineColor = _selectedEquipment == equipment
                 ? outlineSelected
                 : outlineNormal;
+            iconImage.color = _selectedEquipment == equipment
+                ? outlineSelected
+                : outlineNormal;
+            tweeen.Tween(
+                _selectedEquipment != equipment ? Vector3.one : new Vector3(1.2f, 1.2f, 1.2f),
+                0.3f,
+                0.05f
+            );
         };
     }
 

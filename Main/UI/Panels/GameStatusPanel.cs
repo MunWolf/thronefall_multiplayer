@@ -14,11 +14,9 @@ public class GameStatusPanel : BaseUI
     public override string Name => "Game Status Panel";
 
     private GameObject _playerList;
-    private Texture2D _crownTexture;
     
     public override void ConstructPanelContent()
     {
-        _crownTexture = Plugin.LoadTexture("crown.png");
         var container = UIFactory.CreateUIObject("container", PanelRoot);
         {
             var rectTransform = container.GetComponent<RectTransform>();
@@ -129,9 +127,10 @@ public class GameStatusPanel : BaseUI
         var isHost = UIFactory.CreateUIObject("is_host", playerEntry);
         var image = isHost.AddComponent<Image>();
         image.type = Image.Type.Filled;
+        var crown = Plugin.Instance.TextureRepository.Crown;
         image.sprite = Sprite.Create(
-            _crownTexture,
-            new Rect(0, 0, _crownTexture.width, _crownTexture.height),
+            crown,
+            new Rect(0, 0, crown.width, crown.height),
             new Vector2(0.5f, 0.5f)
         );
         UIFactory.SetLayoutElement(isHost, minWidth: 24);
