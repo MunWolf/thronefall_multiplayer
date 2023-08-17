@@ -13,7 +13,6 @@ using ThronefallMP.Network.Packets.PlayerCommand;
 using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Network.Sync;
 using ThronefallMP.UI;
-using ThronefallMP.UI.Panels;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -31,8 +30,7 @@ public enum Channel
 
 public class Network : MonoBehaviour
 {
-    public delegate void ChatMessage(string user, string message);
-    public event ChatMessage OnReceivedChatMessage;
+    public delegate bool ChatMessageHandler(string user, string message);
 
     public IEnumerable<CSteamID> Peers => _peers;
     
@@ -51,6 +49,7 @@ public class Network : MonoBehaviour
     private readonly HashSet<CSteamID> _peers = new();
     private readonly Dictionary<(int player, Channel channel), int> _lastOrderedPackages = new();
     private readonly IntPtr[] _messages = new IntPtr[MaxMessages];
+    private List<(int priority, ChatMessageHandler handler)> _messageHandlers = new();
 
     public int MaxPlayers { get; set; }
     public bool Authority => Server || !Online;
@@ -91,9 +90,28 @@ public class Network : MonoBehaviour
             out type
         );
 
-        var username = SteamFriends.GetFriendPersonaName(user);
-        var message = Encoding.ASCII.GetString(_chatBuffer, 0, length);
-        OnReceivedChatMessage?.Invoke(username, message);
+        var buffer = new Buffer() { Data = _chatBuffer };
+        var messageType = buffer.ReadInt32();
+        if (messageType == 0)
+        {
+            var username = SteamFriends.GetFriendPersonaName(user);
+            HandleMessage(username, buffer.ReadString());
+        }
+        else if (messageType == 1 && user == Owner)
+        {
+            HandleMessage("Server", buffer.ReadString());
+        }
+    }
+
+    private void HandleMessage(string user, string message)
+    {
+        foreach (var entry in _messageHandlers)
+        {
+            if (entry.handler.Invoke(user, message))
+            {
+                break;
+            }
+        }
     }
     
     public void SendChatMessage(string message)
@@ -103,8 +121,29 @@ public class Network : MonoBehaviour
             return;
         }
 
-        var output = Encoding.ASCII.GetBytes(message);
-        SteamMatchmaking.SendLobbyChatMsg(Lobby, output, output.Length);
+        var buffer = new Buffer();
+        buffer.Write(0);
+        buffer.Write(message);
+        SteamMatchmaking.SendLobbyChatMsg(Lobby, buffer.Data, buffer.WriteHead);
+    }
+    
+    public void SendServerMessage(string message)
+    {
+        if (!Lobby.IsValid() && Server)
+        {
+            return;
+        }
+
+        var buffer = new Buffer();
+        buffer.Write(1);
+        buffer.Write(message);
+        SteamMatchmaking.SendLobbyChatMsg(Lobby, buffer.Data, buffer.WriteHead);
+    }
+
+    public void AddChatMessageHandler(int priority, ChatMessageHandler handler)
+    {
+        _messageHandlers.Add((priority, handler));
+        _messageHandlers.Sort((a, b) => b.priority.CompareTo(a.priority));
     }
     
     public bool Authenticate(string password)

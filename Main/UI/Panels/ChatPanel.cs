@@ -164,7 +164,7 @@ public class ChatPanel : BaseUI
             _chatBoxContainer.SetActive(false);
         }
 
-        Plugin.Instance.Network.OnReceivedChatMessage += OnMessageReceived;
+        Plugin.Instance.Network.AddChatMessageHandler(0, OnMessageReceived);
     }
 
     public void Update()
@@ -213,20 +213,19 @@ public class ChatPanel : BaseUI
 
     private void OnSendMessage(string text)
     {
-        Plugin.Instance.Network.SendChatMessage(text);
+        if (!string.IsNullOrEmpty(text))
+        {
+            Plugin.Instance.Network.SendChatMessage(text);
+        }
+        
         _chatBox.text = "";
         _chatBoxContainer.SetActive(false);
         LocalGamestate.Instance.SetPlayerFreezeState(false);
         _justClosed = true;
     }
 
-    private void OnMessageReceived(string user, string message)
+    private bool OnMessageReceived(string user, string message)
     {
-        if (message.StartsWith("/"))
-        {
-            return;
-        }
-        
         while (_lines.Count >= MaxLines)
         {
             var data = _lines[0];
@@ -242,5 +241,6 @@ public class ChatPanel : BaseUI
         text.outlineWidth = 0.3f;
 
         _lines.Add(new Message { Line = text.gameObject, Text = text, Time = Time.unscaledTime });
+        return true;
     }
 }
