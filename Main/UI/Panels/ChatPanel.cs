@@ -139,6 +139,7 @@ public class ChatPanel : BaseUI
         _chatBox.textComponent.color = InputColor;
         _chatBox.textComponent.alignment = TextAlignmentOptions.Left;
         _chatBox.characterLimit = 0;
+        _chatBox.lineLimit = 1;
         _chatBox.onSubmit.AddListener(OnSendMessage);
         _chatBoxContainer = _chatBox.transform.parent.gameObject;
         {
@@ -221,6 +222,11 @@ public class ChatPanel : BaseUI
 
     private void OnMessageReceived(string user, string message)
     {
+        if (message.StartsWith("/"))
+        {
+            return;
+        }
+        
         while (_lines.Count >= MaxLines)
         {
             var data = _lines[0];

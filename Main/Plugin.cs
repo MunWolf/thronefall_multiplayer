@@ -27,6 +27,8 @@ namespace ThronefallMP
         
         public Network.Network Network { get; private set; }
         public Network.PlayerManager PlayerManager { get; private set; }
+
+        private CheatHandler CheatHandler;
         
         // Network syncs
         [UsedImplicitly] public PingPongSync PingPongSync = new();
@@ -46,6 +48,7 @@ namespace ThronefallMP
             Instance = this;
             Network = Instance.gameObject.AddComponent<Network.Network>();
             PlayerManager = new Network.PlayerManager();
+            CheatHandler = new CheatHandler();
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
             Log = Logger;
             Log.LogInfo($"Little Endian: {BitConverter.IsLittleEndian}");

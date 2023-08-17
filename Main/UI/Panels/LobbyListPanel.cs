@@ -118,7 +118,7 @@ public partial class LobbyListPanel : BaseUI
     {
         foreach (var lobby in _lobbies)
         {
-            Object.Destroy(lobby.gameObject);
+            Destroy(lobby.gameObject);
         }
         
         _lobbies.Clear();

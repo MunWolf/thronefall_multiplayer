@@ -55,9 +55,9 @@ public class Network : MonoBehaviour
     public bool Server { get; private set; }
     public bool Online { get; private set; }
     public CSteamID Owner { get; private set; }
+    public CSteamID Lobby { get; private set; }
     public static CSteamID SteamId => SteamUser.GetSteamID();
 
-    private CSteamID _lobby;
     private string _password;
     private byte[] _chatBuffer = new byte[4096];
     
@@ -96,13 +96,13 @@ public class Network : MonoBehaviour
     
     public void SendChatMessage(string message)
     {
-        if (!_lobby.IsValid())
+        if (!Lobby.IsValid())
         {
             return;
         }
 
         var output = Encoding.ASCII.GetBytes(message);
-        SteamMatchmaking.SendLobbyChatMsg(_lobby, output, output.Length);
+        SteamMatchmaking.SendLobbyChatMsg(Lobby, output, output.Length);
     }
     
     public bool Authenticate(string password)
@@ -221,10 +221,10 @@ public class Network : MonoBehaviour
     {
         SyncManager.ResetSyncs();
         PacketHandler.AwaitingConnectionApproval = false;
-        if (_lobby.IsValid())
+        if (Lobby.IsValid())
         {
-            Plugin.Log.LogInfoFiltered("Network", $"Leaving lobby {_lobby.m_SteamID}");
-            SteamMatchmaking.LeaveLobby(_lobby);
+            Plugin.Log.LogInfoFiltered("Network", $"Leaving lobby {Lobby.m_SteamID}");
+            SteamMatchmaking.LeaveLobby(Lobby);
             foreach (var peer in _peers)
             {
                 var sid = new SteamNetworkingIdentity();
@@ -233,7 +233,7 @@ public class Network : MonoBehaviour
             }
             
             _peers.Clear();
-            _lobby.Clear();
+            Lobby.Clear();
         }
 
         _password = null;
@@ -261,7 +261,7 @@ public class Network : MonoBehaviour
         
         Plugin.Log.LogInfoFiltered("Network", $"Switched to Host in lobby {lobby.m_SteamID} server {SteamUser.GetSteamID()}");
         _password = password;
-        _lobby = lobby;
+        Lobby = lobby;
         Owner = SteamUser.GetSteamID();
         Server = true;
         Online = true;
@@ -284,7 +284,7 @@ public class Network : MonoBehaviour
     {
         Plugin.Log.LogInfoFiltered("Network", "Switched to Connect");
         _password = password;
-        _lobby = lobby;
+        Lobby = lobby;
         Server = false;
         Online = true;
         Plugin.Instance.PlayerManager.Clear();
@@ -313,13 +313,13 @@ public class Network : MonoBehaviour
             return;
         }
         
-        if (!Server || !Online || !_lobby.IsValid())
+        if (!Server || !Online || !Lobby.IsValid())
         {
             return;
         }
 
         Plugin.Log.LogInfoFiltered("Network", $"Can join lobby: {SceneManager.GetSceneByName("_LevelSelect").isLoaded}");
-        SteamMatchmaking.SetLobbyJoinable(_lobby, SceneManager.GetSceneByName("_LevelSelect").isLoaded);
+        SteamMatchmaking.SetLobbyJoinable(Lobby, SceneManager.GetSceneByName("_LevelSelect").isLoaded);
     }
 
     public void Send(BasePacket basePacket, bool handleLocal = false, SteamNetworkingIdentity except = new())
@@ -546,9 +546,9 @@ public class Network : MonoBehaviour
         }
 
         var found = false;
-        for (int i = 0, count = SteamMatchmaking.GetNumLobbyMembers(_lobby); i < count; ++i)
+        for (int i = 0, count = SteamMatchmaking.GetNumLobbyMembers(Lobby); i < count; ++i)
         {
-            var member = SteamMatchmaking.GetLobbyMemberByIndex(_lobby, i);
+            var member = SteamMatchmaking.GetLobbyMemberByIndex(Lobby, i);
             if (id == member)
             {
                 found = true;
@@ -598,7 +598,7 @@ public class Network : MonoBehaviour
 
     private void MigrateServer()
     {
-        Owner = SteamMatchmaking.GetLobbyOwner(_lobby);
+        Owner = SteamMatchmaking.GetLobbyOwner(Lobby);
         Plugin.Log.LogInfoFiltered("Network", $"Host disconnected migrating server to {Owner.m_SteamID}");
         if (Owner == SteamUser.GetSteamID())
         {
@@ -614,6 +614,6 @@ public class Network : MonoBehaviour
 
     public bool IsServer(CSteamID id)
     {
-        return SteamMatchmaking.GetLobbyOwner(_lobby) == id;
+        return SteamMatchmaking.GetLobbyOwner(Lobby) == id;
     }
 }

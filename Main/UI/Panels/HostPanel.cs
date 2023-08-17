@@ -26,6 +26,7 @@ public class HostPanel : BaseUI
     private const int LabelWidth = 140;
     private readonly CallResult<LobbyCreated_t> _onLobbyCreatedCallResult;
     private LobbyCreationRequest? _currentRequest;
+    private GameObject _window;
 
     public HostPanel()
     {
@@ -49,13 +50,13 @@ public class HostPanel : BaseUI
             rectTransform.anchorMax = new Vector2(1, 1);
         }
         
-        var panelBorders = UIFactory.CreateUIObject("panel", background);
+        _window = UIFactory.CreateUIObject("panel", background);
         {
-            var image = panelBorders.AddComponent<Image>();
+            var image = _window.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.DarkBackgroundColor;
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
-                panelBorders,
+                _window,
                 true,
                 true,
                 true,
@@ -67,12 +68,12 @@ public class HostPanel : BaseUI
                 5,
                 TextAnchor.MiddleLeft
             );
-            var rectTransform = panelBorders.GetComponent<RectTransform>();
+            var rectTransform = _window.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.35f, 0.3f);
             rectTransform.anchorMax = new Vector2(0.65f, 0.7f);
         }
         
-        var panel = UIFactory.CreateUIObject("panel", panelBorders);
+        var panel = UIFactory.CreateUIObject("panel", _window);
         {
             var image = panel.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -130,20 +131,14 @@ public class HostPanel : BaseUI
         Host.OnClick += () =>
         {
             Plugin.Log.LogInfo($"Creating {(friendsOnlyToggle.Toggle.isOn ? "friends only" : "public")} lobby");
-            var success = CreateLobby(new LobbyCreationRequest
+            CreateLobby(new LobbyCreationRequest
             {
                 Name = nameField.text,
                 MaxPlayers = int.Parse(maxPlayersField.text),
                 Password = passwordField.text,
                 Type = friendsOnlyToggle.Toggle.isOn ? ELobbyType.k_ELobbyTypeFriendsOnly : ELobbyType.k_ELobbyTypePublic
             });
-
-            if (success)
-            {
-                Enabled = false;
-                UIManager.LobbyListPanel.Close();
-                ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
-            }
+            ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
         
         var back = UIHelper.CreateButton(buttons, "back", "Back");
@@ -169,7 +164,7 @@ public class HostPanel : BaseUI
         back.NavLeft = Host.Button;
         back.NavRight = Host.Button;
         
-        LayoutRebuilder.ForceRebuildLayoutImmediate(panelBorders.GetComponent<RectTransform>());
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_window.GetComponent<RectTransform>());
     }
 
     private static ToggleControl CreateToggle(GameObject panel, string name, string label, bool value)
@@ -233,6 +228,7 @@ public class HostPanel : BaseUI
             return false;
         }
         
+        _window.SetActive(false);
         _currentRequest = request;
         if (request.Password == string.Empty)
         {
@@ -245,15 +241,18 @@ public class HostPanel : BaseUI
 
     private void OnLobbyCreated(LobbyCreated_t created, bool ioFailure)
     {
+        _window.SetActive(true);
         if (ioFailure)
         {
-            // TODO: Show error message.
+            UIManager.CreateMessageDialog("Error creating lobby",
+                $"Lobby creation failed with io error'");
             return;
         }
         
         if (created.m_eResult != EResult.k_EResultOK)
         {
-            // TODO: Show error message.
+            UIManager.CreateMessageDialog("Error creating lobby",
+                $"Lobby creation failed with error '{created.m_eResult}'");
             return;
         }
 
@@ -264,6 +263,8 @@ public class HostPanel : BaseUI
         SteamMatchmaking.SetLobbyData(id, "name", _currentRequest.Value.Name);
         SteamMatchmaking.SetLobbyData(id, "password", hasPassword);
         SteamMatchmaking.SetLobbyData(id, "version", Plugin.VersionString);
+        // TODO: Add an option in the UI for this.
+        SteamMatchmaking.SetLobbyData(id, "cheats_enabled", "yes");
         Plugin.Log.LogInfo($"Lobby {created.m_ulSteamIDLobby} created with name '{_currentRequest.Value.Name}' password '{hasPassword}'");
         Plugin.CallbackOnLoad("_LevelSelect", false, () =>
         {
@@ -271,6 +272,8 @@ public class HostPanel : BaseUI
             _currentRequest = null;
         });
 
+        Enabled = false;
+        UIManager.LobbyListPanel.Close();
         SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
     }
 }
