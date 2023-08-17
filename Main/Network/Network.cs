@@ -161,6 +161,9 @@ public class Network : MonoBehaviour
         var player = Plugin.Instance.PlayerManager.CreateOrGet(id, Plugin.Instance.PlayerManager.GenerateID());
         player.SpawnID = Plugin.Instance.PlayerManager.GetAllPlayers().Max(p => p.SpawnID) + 1;
         Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
+
+        var username = SteamFriends.GetFriendPersonaName(id);
+        HandleMessage("Server", $"Player {username} joined");
         
         var packet = new PeerListPacket();
         Plugin.Log.LogInfoFiltered("Network", $"Building peer sync");
@@ -644,6 +647,8 @@ public class Network : MonoBehaviour
         {
             Plugin.Log.LogInfoFiltered("Network", $"Destroying player {player.Id}");
             Plugin.Instance.PlayerManager.Remove(player.Id);
+            var username = SteamFriends.GetFriendPersonaName(new CSteamID(update.m_ulSteamIDUserChanged));
+            HandleMessage("Server", $"Player {username} left");
         }
 
         _peers.Remove(id);
