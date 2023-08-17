@@ -14,9 +14,11 @@ public class GameStatusPanel : BaseUI
     public override string Name => "Game Status Panel";
 
     private GameObject _playerList;
+    private Texture2D _crownTexture;
     
     public override void ConstructPanelContent()
     {
+        _crownTexture = Plugin.LoadTexture("crown.png");
         var container = UIFactory.CreateUIObject("container", PanelRoot);
         {
             var rectTransform = container.GetComponent<RectTransform>();
@@ -121,9 +123,19 @@ public class GameStatusPanel : BaseUI
             5,
             15,
             15,
-            TextAnchor.UpperCenter
+            TextAnchor.MiddleCenter
         );
 
+        var isHost = UIFactory.CreateUIObject("is_host", playerEntry);
+        var image = isHost.AddComponent<Image>();
+        image.type = Image.Type.Filled;
+        image.sprite = Sprite.Create(
+            _crownTexture,
+            new Rect(0, 0, _crownTexture.width, _crownTexture.height),
+            new Vector2(0.5f, 0.5f)
+        );
+        UIFactory.SetLayoutElement(isHost, minWidth: 24);
+        
         var playerName = UIHelper.CreateText(playerEntry, "name", "", UIManager.DefaultFont);
         playerName.alignment = TextAlignmentOptions.Left;
         playerName.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -136,6 +148,7 @@ public class GameStatusPanel : BaseUI
 
         var info = playerEntry.AddComponent<PlayerInfoControl>();
         info.playerId = player.Id;
+        info.hostIdentifier = isHost;
         info.container = playerEntry;
         info.playerName = playerName;
         info.ping = ping;

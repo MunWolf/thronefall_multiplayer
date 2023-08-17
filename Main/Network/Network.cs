@@ -29,9 +29,11 @@ public enum Channel
 
 public class Network : MonoBehaviour
 {
+    public delegate void OwnerChangedHandler(CSteamID owner);
     public delegate bool ChatMessageHandler(string user, string message);
 
     public IEnumerable<CSteamID> Peers => _peers;
+    public event OwnerChangedHandler OnOwnerChanged;
     
     private const int MaxMessages = 20;
     
@@ -679,6 +681,8 @@ public class Network : MonoBehaviour
             HandleMessage("Server", $"Host disconnected migrating server to {SteamFriends.GetFriendPersonaName(Owner)}");
             Connect(Owner, _password);
         }
+
+        OnOwnerChanged?.Invoke(Owner);
     }
 
     public bool IsServer(CSteamID id)

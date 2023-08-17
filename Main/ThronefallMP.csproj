@@ -73,6 +73,8 @@
   <ItemGroup>
     <None Remove="Assets\lock-icon.png" />
     <EmbeddedResource Include="Assets\lock-icon.png" />
+    <None Remove="Assets\crown.png" />
+    <EmbeddedResource Include="Assets\crown.png" />
   </ItemGroup>
   
   

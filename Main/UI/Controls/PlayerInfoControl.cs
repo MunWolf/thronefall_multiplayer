@@ -10,6 +10,7 @@ public class PlayerInfoControl : MonoBehaviour
     private const int BadPing = 300;
     
     public int playerId;
+    public GameObject hostIdentifier;
     public GameObject container;
     public TMP_Text playerName;
     public TMP_Text ping;
@@ -24,12 +25,20 @@ public class PlayerInfoControl : MonoBehaviour
             return;
         }
         
+        hostIdentifier.gameObject.SetActive(player.SteamID == Plugin.Instance.Network.Owner);
         playerName.text = SteamManager.Initialized ? SteamFriends.GetFriendPersonaName(player.SteamID) : "Unknown";
         OnPingUpdated(player);
         Plugin.Instance.PlayerManager.OnPlayerPingUpdated += OnPingUpdated;
         Plugin.Instance.PlayerManager.OnPlayerRemoved += OnPlayerRemoved;
+        Plugin.Instance.Network.OnOwnerChanged += OnOwnerChanged;
     }
 
+    private void OnOwnerChanged(CSteamID owner)
+    {
+        var player = Plugin.Instance.PlayerManager.Get(playerId);
+        hostIdentifier.gameObject.SetActive(player.SteamID == owner);
+    }
+    
     private void OnPlayerRemoved(Network.PlayerManager.Player player)
     {
         if (player.Id == playerId)

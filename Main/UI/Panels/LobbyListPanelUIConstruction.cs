@@ -16,18 +16,7 @@ public partial class LobbyListPanel
 {
     public override void ConstructPanelContent()
     {
-        var assembly = Assembly.GetExecutingAssembly();
-        var resource = assembly.GetManifestResourceNames()
-            .Single(str => str.EndsWith("lock-icon.png"));
-        var stream = assembly.GetManifestResourceStream(resource);
-        _lockTexture = new Texture2D(2, 2, GraphicsFormat.R8G8B8A8_UNorm, 1, TextureCreationFlags.None);
-        using(var memoryStream = new MemoryStream())
-        {
-            Debug.Assert(stream != null, nameof(stream) + " != null");
-            stream.CopyTo(memoryStream);
-            _lockTexture.LoadImage(memoryStream.ToArray());
-        }
-        
+        _lockTexture = Plugin.LoadTexture("lock-icon.png");
         // TODO: Fix select sound and click sound playing when you click a button with the mouse.
         
         var multiplayer = UIFactory.CreateUIObject("multiplayer", PanelRoot);
