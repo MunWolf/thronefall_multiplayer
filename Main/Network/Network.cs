@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using JetBrains.Annotations;
 using Steamworks;
 using ThronefallMP.Network.Packets;
@@ -92,14 +91,20 @@ public class Network : MonoBehaviour
 
         var buffer = new Buffer() { Data = _chatBuffer };
         var messageType = buffer.ReadInt32();
+        var message = buffer.ReadString();
+        if (buffer.ReadHead != length)
+        {
+            Plugin.Log.LogWarningFiltered("Network", "Received chat message of invalid length.");
+        }
+        
         if (messageType == 0)
         {
             var username = SteamFriends.GetFriendPersonaName(user);
-            HandleMessage(username, buffer.ReadString());
+            HandleMessage(username, message);
         }
         else if (messageType == 1 && user == Owner)
         {
-            HandleMessage("Server", buffer.ReadString());
+            HandleMessage("Server", message);
         }
     }
 
