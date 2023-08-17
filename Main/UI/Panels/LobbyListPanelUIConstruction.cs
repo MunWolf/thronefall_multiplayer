@@ -242,7 +242,38 @@ public partial class LobbyListPanel
             _currentlySelectedLobby.LobbyInfo.Id,
             password
         );
+        _activeConnectionDialog = UIManager.CreateMessageDialog(
+            "Connecting",
+            $"Connecting to {_currentlySelectedLobby.LobbyInfo.Name} please wait...",
+            "Cancel",
+            onClick: () =>
+            {
+                _activeConnectionDialog = null;
+                Plugin.Instance.Network.Local();
+            }
+        );
         ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
+    }
+
+    public void ShowHideConnectingDialog(bool show)
+    {
+        if (_activeConnectionDialog == null)
+        {
+            return;
+        }
+        
+        _activeConnectionDialog.gameObject.SetActive(show);
+    }
+
+    public void CloseConnectingDialog()
+    {
+        if (_activeConnectionDialog == null)
+        {
+            return;
+        }
+        
+        Destroy(_activeConnectionDialog.gameObject);
+        _activeConnectionDialog = null;
     }
 
     private void AddLobbyEntry(Lobby info)

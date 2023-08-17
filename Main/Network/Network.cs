@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -238,6 +239,7 @@ public class Network : MonoBehaviour
 
         _password = null;
         _lastOrderedPackages.Clear();
+        UIManager.LobbyListPanel.CloseConnectingDialog();
     }
     
     public void Local()
@@ -292,15 +294,24 @@ public class Network : MonoBehaviour
         
         Plugin.Log.LogInfoFiltered("Network", $"Sending approval packet to server {Owner.m_SteamID}");
         PacketHandler.AwaitingConnectionApproval = true;
+        _peers.Add(Owner);
+        StartCoroutine(GetApproval(password));
+    }
+
+    private IEnumerator GetApproval(string password)
+    {
         var approvalPacket = new ApprovalPacket()
         {
             Password = password
         };
-
-        _peers.Add(Owner);
+            
         var id = new SteamNetworkingIdentity();
         id.SetSteamID(Owner);
-        SendSingle(approvalPacket, id);
+        while (PacketHandler.AwaitingConnectionApproval)
+        {
+            SendSingle(approvalPacket, id);
+            yield return new WaitForSeconds(2f);
+        }
     }
 
     private void OnSceneChanged(Scene scene, LoadSceneMode mode)
@@ -490,14 +501,14 @@ public class Network : MonoBehaviour
     {
         if (ioFailure)
         {
-            // TOOD: Show error
+            UIManager.LobbyListPanel.CloseConnectingDialog();
             Plugin.Log.LogInfoFiltered("Network", "IO error encountered");
             return;
         }
         
         if (entered.m_EChatRoomEnterResponse != (uint)EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess)
         {
-            // TOOD: Show error
+            UIManager.LobbyListPanel.CloseConnectingDialog();
             Plugin.Log.LogInfoFiltered("Network", $"Failed to join lobby with code {entered.m_EChatRoomEnterResponse}");
             Local();
             return;
@@ -506,9 +517,11 @@ public class Network : MonoBehaviour
         var id = new CSteamID(entered.m_ulSteamIDLobby);
         if (SteamMatchmaking.GetLobbyData(id, "password") == "yes" && _password == null)
         {
+            UIManager.LobbyListPanel.ShowHideConnectingDialog(false);
             UIManager.CreatePasswordDialog(
                 (password) =>
                 {
+                    UIManager.LobbyListPanel.ShowHideConnectingDialog(true);
                     _password = password;
                     Connect(id, _password);
                 },

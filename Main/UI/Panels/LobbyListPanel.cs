@@ -2,6 +2,7 @@
 using Steamworks;
 using ThronefallMP.Network;
 using ThronefallMP.UI.Controls;
+using ThronefallMP.UI.Dialogs;
 using UnityEngine;
 using Image = UnityEngine.UI.Image;
 
@@ -15,7 +16,8 @@ public partial class LobbyListPanel : BaseUI
     public override string Name => "Lobby List Panel";
 
     public ButtonControl Host { get; private set; }
-    
+
+    private MessageDialog _activeConnectionDialog;
     private LobbyItem _currentlySelectedLobby;
     private Texture2D _lockTexture;
     private GameObject _lobbyList;

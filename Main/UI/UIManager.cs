@@ -115,7 +115,7 @@ public static class UIManager
         return dialog;
     }
 
-    public static MessageDialog CreateMessageDialog(string title, string message, Color? color = null)
+    public static MessageDialog CreateMessageDialog(string title, string message, string button = null, Color? color = null, MessageDialog.ClickDelegate onClick = null)
     {
         var dialog = BaseUI.Create<MessageDialog>(_canvas, _container);
         dialog.Title = title;
@@ -125,6 +125,16 @@ public static class UIManager
             dialog.Color = color.Value;
         }
 
+        if (button != null)
+        {
+            dialog.ButtonText = button;
+        }
+
+        if (onClick != null)
+        {
+            dialog.OnClick += onClick;
+        }
+        
         dialog.Enabled = true;
         return dialog;
     }

@@ -1,5 +1,5 @@
-﻿using System;
-using ThronefallMP.Patches;
+﻿using ThronefallMP.Patches;
+using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +11,10 @@ public class MessageDialog : BaseUI
 {
     public override string Name => "Message Dialog";
 
+    public delegate void ClickDelegate();
+
+    public ClickDelegate OnClick;
+    
     public bool FadeScreen
     {
         get => _background.activeSelf;
@@ -29,6 +33,12 @@ public class MessageDialog : BaseUI
         set => _message.text = value;
     }
 
+    public string ButtonText
+    {
+        get => _button.Text.text;
+        set => _button.Text.text = value;
+    }
+
     public Color Color
     {
         get => _message.color;
@@ -38,6 +48,7 @@ public class MessageDialog : BaseUI
     private TextMeshProUGUI _title;
     private TextMeshProUGUI _message;
     private GameObject _background;
+    private ButtonControl _button;
     
     public override void ConstructPanelContent()
     {
@@ -147,9 +158,13 @@ public class MessageDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
         
-        var button = UIHelper.CreateButton(buttons, "button", "Close");
-        UIFactory.SetLayoutElement(button.gameObject, minWidth: 100);
-        button.OnClick += () => Destroy(gameObject);;
+        _button = UIHelper.CreateButton(buttons, "button", "Close");
+        UIFactory.SetLayoutElement(_button.gameObject, minWidth: 100);
+        _button.OnClick += () =>
+        {
+            OnClick?.Invoke();
+            Destroy(gameObject);
+        };
         
         LayoutRebuilder.ForceRebuildLayoutImmediate(panelBorders.GetComponent<RectTransform>());
     }

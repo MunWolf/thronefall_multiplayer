@@ -98,6 +98,7 @@ public static class PacketHandler
         {
             // Currently we only allow joining a lobby if we are in level select.
             SceneTransitionManager.instance.TransitionFromNullToLevelSelect();
+            UIManager.LobbyListPanel.CloseConnectingDialog();
             UIManager.CloseAllPanels();
             AwaitingConnectionApproval = false;
         }
@@ -280,6 +281,7 @@ public static class PacketHandler
             _ => "Unknown"
         };
             
+        UIManager.LobbyListPanel.CloseConnectingDialog();
         UIManager.CreateMessageDialog("Disconnected", message);
     }
 
