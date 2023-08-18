@@ -10,8 +10,6 @@ namespace ThronefallMP.Network.Sync;
 
 public class EnemyPathfinderSync : BaseTargetSync
 {
-    protected override float ForceUpdateTimer => 1f;
-
     protected override IEnumerable<(IdentifierData id, GameObject target)> Targets()
     {
         foreach (var data in Identifier.GetIdentifiers(IdentifierType.Enemy))

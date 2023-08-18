@@ -59,7 +59,7 @@ public class PositionSync : BaseTargetSync
         return output;
     }
     
-    protected override float ForceUpdateTimer => 0.5f;
+    protected override float ForceUpdateTimer => 3f;
 
     protected override IEnumerable<(IdentifierData id, GameObject target)> Targets()
     {

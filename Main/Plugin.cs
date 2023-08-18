@@ -73,6 +73,7 @@ namespace ThronefallMP
             CostDisplayPatch.Apply();
             DayNightCyclePatch.Apply();
             EnemySpawnerPatch.Apply();
+            GateOpenerPatch.Apply();
             HpPatch.Apply();
             LevelBorderPatch.Apply();
             LevelSelectManagerPatch.Apply();
