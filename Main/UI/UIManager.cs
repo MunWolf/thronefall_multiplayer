@@ -3,6 +3,7 @@ using I2.Loc;
 using Rewired.Integration.UnityUI;
 using ThronefallMP.UI.Dialogs;
 using ThronefallMP.UI.Panels;
+using ThronefallMP.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;

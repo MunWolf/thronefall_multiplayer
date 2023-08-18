@@ -12,6 +12,7 @@ using ThronefallMP.Network.Packets.PlayerCommand;
 using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Network.Sync;
 using ThronefallMP.UI;
+using ThronefallMP.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -167,7 +168,7 @@ public class Network : MonoBehaviour
         _peers.Add(id);
         _pendingPeers.Remove(id);
         var player = Plugin.Instance.PlayerManager.CreateOrGet(id, Plugin.Instance.PlayerManager.GenerateID());
-        player.SpawnID = Plugin.Instance.PlayerManager.GetAllPlayers().Max(p => p.SpawnID) + 1;
+        player.SpawnID = (byte)(Plugin.Instance.PlayerManager.GetAllPlayers().Max(p => p.SpawnID) + 1);
         Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
 
         var username = SteamFriends.GetFriendPersonaName(id);
@@ -401,7 +402,7 @@ public class Network : MonoBehaviour
         {
             var buffer = new Buffer();
             Plugin.Log.LogDebugFiltered("Network", $"Writing packet '{basePacket.TypeID}'");
-            buffer.Write((int)basePacket.TypeID);
+            buffer.Write(basePacket.TypeID);
             basePacket.Send(buffer);
             if (Ext.LogDebugFiltered("Network"))
             {
@@ -529,7 +530,7 @@ public class Network : MonoBehaviour
     
     private void HandlePacket(ref SteamNetworkingIdentity sender, Buffer buffer, Dictionary<PacketId, Type> types)
     {
-        var type = (PacketId)buffer.ReadInt32();
+        var type = buffer.ReadPacketId();
         types.TryGetValue(type, out var objectType);
         if (objectType?.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>()) is not BasePacket basePacket)
         {

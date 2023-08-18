@@ -7,11 +7,11 @@ public class EnemySpawnPacket : BasePacket
 {
     public const PacketId PacketID = PacketId.EnemySpawn;
     
-    public int Wave;
-    public int Spawn;
-    public int Id;
+    public byte Wave;
+    public byte Spawn;
+    public ushort Id;
     public Vector3 Position;
-    public int Coins;
+    public byte Coins;
 
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Game;
@@ -31,10 +31,10 @@ public class EnemySpawnPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        Wave = reader.ReadInt32();
-        Spawn = reader.ReadInt32();
-        Id = reader.ReadInt32();
+        Wave = reader.ReadByte();
+        Spawn = reader.ReadByte();
+        Id = reader.ReadUInt16();
         Position = reader.ReadVector3();
-        Coins = reader.ReadInt32();
+        Coins = reader.ReadByte();
     }
 }

@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using HarmonyLib;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Components;
@@ -18,10 +18,10 @@ public enum IdentifierType
 
 public struct IdentifierData
 {
-    public static readonly IdentifierData Invalid = new() { Type = IdentifierType.Invalid, Id = -1 };
+    public static readonly IdentifierData Invalid = new() { Type = IdentifierType.Invalid, Id = 0 };
     
     public IdentifierType Type;
-    public int Id;
+    public ushort Id;
 
     public IdentifierData(Identifier identity)
     {
@@ -41,27 +41,27 @@ public struct IdentifierData
 
 public class Identifier : MonoBehaviour
 {
-    private static readonly Dictionary<IdentifierType, HashSet<int>> DestroyedRepository = new()
+    private static readonly Dictionary<IdentifierType, HashSet<ushort>> DestroyedRepository = new()
     {
-        { IdentifierType.Player, new HashSet<int>() },
-        { IdentifierType.BuildSlot, new HashSet<int>() },
-        { IdentifierType.Building, new HashSet<int>() },
-        { IdentifierType.Ally, new HashSet<int>() },
-        { IdentifierType.Enemy, new HashSet<int>() }
+        { IdentifierType.Player, new HashSet<ushort>() },
+        { IdentifierType.BuildSlot, new HashSet<ushort>() },
+        { IdentifierType.Building, new HashSet<ushort>() },
+        { IdentifierType.Ally, new HashSet<ushort>() },
+        { IdentifierType.Enemy, new HashSet<ushort>() }
     };
     
-    private static readonly Dictionary<IdentifierType, Dictionary<int, GameObject>> Repository = new()
+    private static readonly Dictionary<IdentifierType, Dictionary<ushort, GameObject>> Repository = new()
     {
-        { IdentifierType.Player, new Dictionary<int, GameObject>() },
-        { IdentifierType.BuildSlot, new Dictionary<int, GameObject>() },
-        { IdentifierType.Building, new Dictionary<int, GameObject>() },
-        { IdentifierType.Ally, new Dictionary<int, GameObject>() },
-        { IdentifierType.Enemy, new Dictionary<int, GameObject>() }
+        { IdentifierType.Player, new Dictionary<ushort, GameObject>() },
+        { IdentifierType.BuildSlot, new Dictionary<ushort, GameObject>() },
+        { IdentifierType.Building, new Dictionary<ushort, GameObject>() },
+        { IdentifierType.Ally, new Dictionary<ushort, GameObject>() },
+        { IdentifierType.Enemy, new Dictionary<ushort, GameObject>() }
     };
 
     public IdentifierType Type { get; private set; }
 
-    public int Id { get; private set; }
+    public ushort Id { get; private set; }
 
     public void OnDisable()
     {
@@ -77,7 +77,7 @@ public class Identifier : MonoBehaviour
         DestroyedRepository[Type].Add(Id);
     }
 
-    public void SetIdentity(IdentifierType type, int id)
+    public void SetIdentity(IdentifierType type, ushort id)
     {
         if (Repository[type].ContainsKey(id))
         {
@@ -106,12 +106,12 @@ public class Identifier : MonoBehaviour
         Repository[type].Clear();
     }
     
-    public static GameObject GetGameObject(IdentifierType type, int id)
+    public static GameObject GetGameObject(IdentifierType type, ushort id)
     {
         return type == IdentifierType.Invalid ? null : Repository[type].GetValueSafe(id);
     }
     
-    public static IEnumerable<(int id, GameObject target)> GetIdentifiers(IdentifierType type)
+    public static IEnumerable<(ushort id, GameObject target)> GetIdentifiers(IdentifierType type)
     {
         foreach (var pair in Repository[type])
         {
@@ -133,7 +133,7 @@ public class Identifier : MonoBehaviour
         }
     }
     
-    public static IEnumerable<int> GetDestroyed(IdentifierType type)
+    public static IEnumerable<ushort> GetDestroyed(IdentifierType type)
     {
         foreach (var id in DestroyedRepository[type])
         {
@@ -141,7 +141,7 @@ public class Identifier : MonoBehaviour
         }
     }
     
-    public static bool WasDestroyed(IdentifierType type, int id)
+    public static bool WasDestroyed(IdentifierType type, ushort id)
     {
         return DestroyedRepository[type].Contains(id);
     }

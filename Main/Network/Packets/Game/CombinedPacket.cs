@@ -1,7 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Steamworks;
-using ThronefallMP.Network.Packets.Sync;
 
 namespace ThronefallMP.Network.Packets.Game;
 
@@ -17,8 +14,8 @@ public class CombinedPacket : BasePacket
     
     public override void Send(Buffer writer)
     {
-        writer.Write((int)InnerPacketType);
-        writer.Write(Packets.Count);
+        writer.Write(InnerPacketType);
+        writer.Write((ushort)Packets.Count);
         foreach (var packet in Packets)
         {
             packet.Send(writer);
@@ -27,8 +24,8 @@ public class CombinedPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        InnerPacketType = (PacketId)reader.ReadInt32();
-        var count = reader.ReadInt32();
+        InnerPacketType = reader.ReadPacketId();
+        var count = reader.ReadUInt16();
         for (var i = 0; i < count; ++i)
         {
             var packet = Plugin.Instance.Network.CreatePacket(InnerPacketType);

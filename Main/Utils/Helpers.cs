@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace ThronefallMP;
+namespace ThronefallMP.Utils;
 
 public static class Helpers
 {

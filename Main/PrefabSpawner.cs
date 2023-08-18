@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using On.NGS.MeshFusionPro;
 using ThronefallMP.Components;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP;
@@ -71,7 +72,7 @@ public class PrefabSpawner : MonoBehaviour
         return _enemyNameToType.TryGetValue(enemy, out var type) ? type : EnemyType.Unknown;
     }
     
-    public GameObject Spawn(int id, EnemyType type)
+    public GameObject Spawn(ushort id, EnemyType type)
     {
         var prefab = GetPrefab(type);
         if (prefab == null)

@@ -18,10 +18,10 @@ public class RequestLevelPacket : BasePacket
     {
         writer.Write(To);
         writer.Write(From);
-        writer.Write(Perks.Count);
+        writer.Write((byte)Perks.Count);
         foreach (var perk in Perks)
         {
-            writer.Write((int)perk);
+            writer.Write(perk);
         }
     }
 
@@ -29,11 +29,11 @@ public class RequestLevelPacket : BasePacket
     {
         To = reader.ReadString();
         From = reader.ReadString();
-        var perks = reader.ReadInt32();
+        var perks = reader.ReadByte();
         Perks.Clear();
         for (var i = 0; i < perks; ++i)
         {
-            Perks.Add((Equipment)reader.ReadInt32());
+            Perks.Add(reader.ReadEquipment());
         }
     }
 }

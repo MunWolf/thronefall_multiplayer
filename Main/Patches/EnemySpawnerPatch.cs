@@ -117,18 +117,18 @@ public class EnemySpawnerPatch
 
 		var packet = new EnemySpawnPacket
 		{
-			Wave = waveNumber,
-			Spawn = spawnIndex,
-			Id = _nextEnemyId,
+			Wave = (byte)waveNumber,
+			Spawn = (byte)spawnIndex,
+			Id = (ushort)_nextEnemyId,
 			Position = randomPointOnSpawnLine,
-			Coins = coins
+			Coins = (byte)coins
 		};
 		
 		Plugin.Instance.Network.Send(packet, true);
 		++_nextEnemyId;
     }
 
-    public static void SpawnEnemy(int waveNumber, int spawnIndex, Vector3 position, int id, int coins)
+    public static void SpawnEnemy(int waveNumber, int spawnIndex, Vector3 position, ushort id, int coins)
     {
 	    var spawn = EnemySpawner.instance.waves[waveNumber].spawns[spawnIndex];
 	    var spawnedUnits = Traverse.Create(spawn).Field<int>("spawnedUnits");
@@ -142,7 +142,7 @@ public class EnemySpawnerPatch
 	    }
     }
 
-    private static GameObject SpawnEnemy(Spawn self, Vector3 position, int id, int coins)
+    private static GameObject SpawnEnemy(Spawn self, Vector3 position, ushort id, int coins)
     {
 		GameObject gameObject;
 		if (self.spawnLine == self.enemyPrefab.transform)

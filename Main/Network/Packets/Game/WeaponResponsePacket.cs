@@ -11,11 +11,11 @@ public class WeaponResponsePacket : BasePacket
 
     public override void Send(Buffer writer)
     {
-        writer.Write((int)Weapon);
+        writer.Write(Weapon);
     }
 
     public override void Receive(Buffer reader)
     {
-        Weapon = (Equipment)reader.ReadInt32();
+        Weapon = reader.ReadEquipment();
     }
 }

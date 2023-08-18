@@ -10,7 +10,7 @@ public class TeleportPlayerPacket : BasePacket
     public override Channel Channel => Channel.SyncPositions;
     public override bool ShouldPropagate => true;
 
-    public int PlayerId;
+    public ushort PlayerId;
     public Vector3 Position;
     
     public override void Send(Buffer writer)
@@ -21,7 +21,7 @@ public class TeleportPlayerPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        PlayerId = reader.ReadInt32();
+        PlayerId = reader.ReadUInt16();
         Position = reader.ReadVector3();
     }
 }

@@ -2,6 +2,7 @@
 using System.Text;
 using Steamworks;
 using ThronefallMP.Components;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Network;
@@ -54,6 +55,32 @@ public class Buffer
         EnsureSize(1);
         Data[WriteHead] = value;
         WriteHead += 1;
+    }
+    
+    public void Write(short value)
+    {
+        var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
+    }
+    
+    public void Write(ushort value)
+    {
+        var output = BitConverter.GetBytes(value);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
     }
     
     public void Write(int value)
@@ -121,6 +148,19 @@ public class Buffer
         WriteHead += output.Length;
     }
     
+    public void Write(Half value)
+    {
+        var output = Half.GetBytes(value);
+        EnsureSize(output.Length);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(output);
+        }
+
+        output.CopyTo(Data, WriteHead);
+        WriteHead += output.Length;
+    }
+    
     public void Write(string value)
     {
         if (value == null)
@@ -136,24 +176,53 @@ public class Buffer
         WriteHead += output.Length;
     }
     
-    public void Write(Vector3 value)
+    public void Write(Vector3 value, bool half = false)
     {
-        Write(value.x);
-        Write(value.y);
-        Write(value.z);
+        if (half)
+        {
+            Write((Half)value.x);
+            Write((Half)value.y);
+            Write((Half)value.z);
+        }
+        else
+        {
+            Write(value.x);
+            Write(value.y);
+            Write(value.z);
+        }
     }
     
-    public void Write(Quaternion value)
+    public void Write(Quaternion value, bool half = false)
     {
-        Write(value.x);
-        Write(value.y);
-        Write(value.z);
-        Write(value.w);
+        if (half)
+        {
+            Write((Half)value.x);
+            Write((Half)value.y);
+            Write((Half)value.z);
+            Write((Half)value.w);
+        }
+        else
+        {
+            Write(value.x);
+            Write(value.y);
+            Write(value.z);
+            Write(value.w);
+        }
+    }
+    
+    public void Write(PacketId value)
+    {
+        Write((byte)value);
+    }
+    
+    public void Write(Equipment value)
+    {
+        Write((byte)value);
     }
     
     public void Write(IdentifierData value)
     {
-        Write((int)value.Type);
+        Write((byte)value.Type);
         Write(value.Id);
     }
     
@@ -168,6 +237,18 @@ public class Buffer
 
         output.CopyTo(Data, WriteHead);
         WriteHead += output.Length;
+    }
+
+    public byte ReadByte()
+    {
+        if (!CanRead(1))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read byte");
+            return 0;
+        }
+
+        ReadHead += 1;
+        return Data[ReadHead - 1];
     }
 
     public bool ReadBoolean()
@@ -190,6 +271,29 @@ public class Buffer
         }
         
         ReadHead += sizeof(bool);
+        return output;
+    }
+
+    public ushort ReadUInt16()
+    {
+        if (!CanRead(sizeof(ushort)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
+            return 0;
+        }
+
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(ushort));
+        }
+        
+        var output = BitConverter.ToUInt16(Data, ReadHead);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(ushort));
+        }
+        
+        ReadHead += sizeof(ushort);
         return output;
     }
 
@@ -218,7 +322,7 @@ public class Buffer
 
     public uint ReadUInt32()
     {
-        if (!CanRead(sizeof(int)))
+        if (!CanRead(sizeof(uint)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
             return 0;
@@ -226,13 +330,13 @@ public class Buffer
 
         if (!BitConverter.IsLittleEndian)
         {
-            Array.Reverse(Data, ReadHead, sizeof(int));
+            Array.Reverse(Data, ReadHead, sizeof(uint));
         }
         
         var output = BitConverter.ToUInt32(Data, ReadHead);
         if (!BitConverter.IsLittleEndian)
         {
-            Array.Reverse(Data, ReadHead, sizeof(int));
+            Array.Reverse(Data, ReadHead, sizeof(uint));
         }
         
         ReadHead += sizeof(uint);
@@ -285,6 +389,29 @@ public class Buffer
         return output;
     }
 
+    public Half ReadHalf()
+    {
+        if (!CanRead(sizeof(ushort)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half");
+            return new Half(0);
+        }
+        
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(ushort));
+        }
+
+        var output = Half.ToHalf(Data, ReadHead);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(Data, ReadHead, sizeof(float));
+        }
+
+        ReadHead += sizeof(ushort);
+        return output;
+    }
+
     public float ReadFloat()
     {
         if (!CanRead(sizeof(float)))
@@ -324,6 +451,21 @@ public class Buffer
         return output;
     }
 
+    public Vector3 ReadVector3Half()
+    {
+        var output = new Vector3();
+        if (!CanRead(3 * sizeof(ushort)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half vector3");
+            return output;
+        }
+
+        output.x = ReadHalf();
+        output.y = ReadHalf();
+        output.z = ReadHalf();
+        return output;
+    }
+
     public Vector3 ReadVector3()
     {
         var output = new Vector3();
@@ -336,6 +478,22 @@ public class Buffer
         output.x = ReadFloat();
         output.y = ReadFloat();
         output.z = ReadFloat();
+        return output;
+    }
+
+    public Quaternion ReadQuaternionHalf()
+    {
+        var output = new Quaternion();
+        if (!CanRead(4 * sizeof(ushort)))
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half quaternion");
+            return output;
+        }
+
+        output.x = ReadHalf();
+        output.y = ReadHalf();
+        output.z = ReadHalf();
+        output.w = ReadHalf();
         return output;
     }
 
@@ -354,6 +512,16 @@ public class Buffer
         output.w = ReadFloat();
         return output;
     }
+    
+    public PacketId ReadPacketId()
+    {
+        return (PacketId)ReadByte();
+    }
+    
+    public Equipment ReadEquipment()
+    {
+        return (Equipment)ReadByte();
+    }
 
     public IdentifierData ReadIdentifierData()
     {
@@ -364,8 +532,8 @@ public class Buffer
         }
 
         IdentifierData data;
-        data.Type = (IdentifierType)ReadInt32();
-        data.Id = ReadInt32();
+        data.Type = (IdentifierType)ReadByte();
+        data.Id = ReadUInt16();
         return data;
     }
     

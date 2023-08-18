@@ -15,7 +15,7 @@ public class CommandHoldPositionPacket : BasePacket
     
     public const PacketId PacketID = PacketId.CommandHoldPosition;
 
-    public int Player;
+    public ushort Player;
     public List<UnitData> Units = new();
 
     public override PacketId TypeID => PacketID;
@@ -28,7 +28,7 @@ public class CommandHoldPositionPacket : BasePacket
     public override void Send(Buffer writer)
     {
         writer.Write(Player);
-        writer.Write(Units.Count);
+        writer.Write((byte)Units.Count);
         foreach (var unit in Units)
         {
             writer.Write(unit.Unit);
@@ -38,8 +38,8 @@ public class CommandHoldPositionPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        Player = reader.ReadInt32();
-        var count = reader.ReadInt32();
+        Player = reader.ReadUInt16();
+        var count = reader.ReadByte();
         Units.Clear();
         for (var i = 0; i < count; ++i)
         {

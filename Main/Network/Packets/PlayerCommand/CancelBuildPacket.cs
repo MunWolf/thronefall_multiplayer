@@ -6,7 +6,7 @@ public class CancelBuildPacket : BasePacket
 {
     public const PacketId PacketID = PacketId.CancelBuild;
     
-    public int BuildingId;
+    public ushort BuildingId;
 
     public override PacketId TypeID => PacketID;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
@@ -23,6 +23,6 @@ public class CancelBuildPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        BuildingId = reader.ReadInt32();
+        BuildingId = reader.ReadUInt16();
     }
 }

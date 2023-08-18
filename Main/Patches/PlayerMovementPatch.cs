@@ -7,6 +7,7 @@ using Pathfinding.RVO;
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Utils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 

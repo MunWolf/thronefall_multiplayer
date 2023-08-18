@@ -2,6 +2,7 @@
 using System.Linq;
 using HarmonyLib;
 using ThronefallMP.Network.Packets.Game;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;

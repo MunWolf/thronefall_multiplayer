@@ -4,7 +4,7 @@ public class ManualAttackPacket : BasePacket
 {
     public const PacketId PacketID = PacketId.ManualAttack;
 
-    public int Player;
+    public ushort Player;
 
     public override PacketId TypeID => PacketID;
     public override Channel Channel => Channel.Player;
@@ -17,6 +17,6 @@ public class ManualAttackPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        Player = reader.ReadInt32();
+        Player = reader.ReadUInt16();
     }
 }

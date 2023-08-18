@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
+using ThronefallMP.Utils;
 using UnityEngine;
 using UniverseLib;
 
@@ -45,7 +46,7 @@ public class PlayerNetworkData : MonoBehaviour
         }
     }
     
-    public int id;
+    public ushort id;
     public Network.PlayerManager.Player Player;
     
     public bool IsLocal => Plugin.Instance.PlayerManager.LocalId == id;

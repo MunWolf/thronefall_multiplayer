@@ -6,9 +6,9 @@ public class BuildOrUpgradePacket : BasePacket
 {
     public const PacketId PacketID = PacketId.BuildOrUpgrade;
 
-    public int BuildingId;
-    public int Level;
-    public int Choice;
+    public ushort BuildingId;
+    public byte Level;
+    public byte Choice;
 
     public override PacketId TypeID => PacketID;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
@@ -27,8 +27,8 @@ public class BuildOrUpgradePacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        BuildingId = reader.ReadInt32();
-        Level = reader.ReadInt32();
-        Choice = reader.ReadInt32();
+        BuildingId = reader.ReadUInt16();
+        Level = reader.ReadByte();
+        Choice = reader.ReadByte();
     }
 }

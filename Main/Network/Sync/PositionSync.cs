@@ -4,6 +4,7 @@ using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Sync;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Network.Sync;

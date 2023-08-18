@@ -2,6 +2,7 @@
 using System.Linq;
 using Steamworks;
 using ThronefallMP.Components;
+using ThronefallMP.Utils;
 using TMPro;
 using UnityEngine;
 
@@ -20,9 +21,9 @@ public class PlayerManager
     {
         private uint _ping;
         
-        public int Id;
+        public ushort Id;
         public CSteamID SteamID;
-        public int SpawnID;
+        public byte SpawnID;
         public GameObject Object;
         public PlayerNetworkData Data;
         public readonly PlayerNetworkData.Shared Shared = new();
@@ -42,8 +43,8 @@ public class PlayerManager
         public Vector3 SpawnLocation => Helpers.GetSpawnLocation(Plugin.Instance.PlayerManager.SpawnLocation, SpawnID);
     }
 
-    private int _localId;
-    public int LocalId
+    private ushort _localId;
+    public ushort LocalId
     {
         get => _localId;
         set
@@ -81,15 +82,15 @@ public class PlayerManager
         }
     }
     
-    public int GenerateID()
+    public ushort GenerateID()
     {
-        int id;
-        do { id = Random.Range(0, int.MaxValue); }
+        ushort id;
+        do { id = (ushort)Random.Range(0, ushort.MaxValue); }
         while (_players.ContainsKey(id));
         return id;
     }
     
-    public Player CreateOrGet(CSteamID steamId, int id)
+    public Player CreateOrGet(CSteamID steamId, ushort id)
     {
         if (!_players.TryGetValue(id, out var player))
         {
@@ -202,7 +203,7 @@ public class PlayerManager
         _playerPrefab = Helpers.InstantiateDisabled(prefab, Plugin.Instance.transform, worldPositionStays: true);
         
         var data = _playerPrefab.AddComponent<PlayerNetworkData>();
-        data.id = -1;
+        data.id = 0;
         _playerPrefab.AddComponent<Identifier>();
         
         

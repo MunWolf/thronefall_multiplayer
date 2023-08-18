@@ -4,6 +4,7 @@ using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Sync;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Network.Sync;
@@ -37,7 +38,7 @@ public class EnemyPathfinderSync : BaseTargetSync
             Enemy = id.Id,
             TargetObject = seekToTaggedObjId,
             Slowed = pathfinder.IsSlowed,
-            PathIndex = nextPathPointIndex.Value,
+            PathIndex = (ushort)nextPathPointIndex.Value,
             Path = path.Value
         };
     }

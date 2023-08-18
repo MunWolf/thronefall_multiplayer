@@ -12,10 +12,10 @@ public class SyncEnemyPathfinderPacket : BasePacket
     public override Channel Channel => Channel.SyncUnit;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
 
-    public int Enemy;
+    public ushort Enemy;
     public IdentifierData TargetObject;
     public bool Slowed;
-    public int PathIndex;
+    public ushort PathIndex;
     public List<Vector3> Path = new();
     
     public override void Send(Buffer writer)
@@ -24,7 +24,7 @@ public class SyncEnemyPathfinderPacket : BasePacket
         writer.Write(TargetObject);
         writer.Write(Slowed);
         writer.Write(PathIndex);
-        writer.Write(Path.Count);
+        writer.Write((ushort)Path.Count);
         foreach (var point in Path)
         {
             writer.Write(point);
@@ -34,11 +34,11 @@ public class SyncEnemyPathfinderPacket : BasePacket
     public override void Receive(Buffer reader)
     {
         Path.Clear();
-        Enemy = reader.ReadInt32();
+        Enemy = reader.ReadUInt16();
         TargetObject = reader.ReadIdentifierData();
         Slowed = reader.ReadBoolean();
-        PathIndex = reader.ReadInt32();
-        var count = reader.ReadInt32();
+        PathIndex = reader.ReadUInt16();
+        var count = reader.ReadUInt16();
         for (var i = 0; i < count; ++i)
         {
              Path.Add(reader.ReadVector3());

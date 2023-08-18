@@ -6,10 +6,10 @@ public class ConfirmBuildPacket : BasePacket
 {
     public const PacketId PacketID = PacketId.ConfirmBuild;
     
-    public int BuildingId;
-    public int Level;
-    public int Choice;
-    public int PlayerID;
+    public ushort PlayerID;
+    public ushort BuildingId;
+    public byte Level;
+    public byte Choice;
 
     public override PacketId TypeID => PacketID;
     public override int DeliveryMask => Constants.k_nSteamNetworkingSend_Reliable;
@@ -21,17 +21,17 @@ public class ConfirmBuildPacket : BasePacket
 
     public override void Send(Buffer writer)
     {
+        writer.Write(PlayerID);
         writer.Write(BuildingId);
         writer.Write(Level);
         writer.Write(Choice);
-        writer.Write(PlayerID);
     }
 
     public override void Receive(Buffer reader)
     {
-        BuildingId = reader.ReadInt32();
-        Level = reader.ReadInt32();
-        Choice = reader.ReadInt32();
-        PlayerID = reader.ReadInt32();
+        PlayerID = reader.ReadUInt16();
+        BuildingId = reader.ReadUInt16();
+        Level = reader.ReadByte();
+        Choice = reader.ReadByte();
     }
 }

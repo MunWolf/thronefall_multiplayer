@@ -6,8 +6,8 @@ public class SyncLevelDataPacket : BasePacket
 {
     public struct Player
     {
-        public int PlayerId;
-        public int SpawnId;
+        public ushort PlayerId;
+        public byte SpawnId;
         public Equipment Weapon;
     }
     
@@ -26,15 +26,15 @@ public class SyncLevelDataPacket : BasePacket
         writer.Write(Perks.Count);
         foreach (var perk in Perks)
         {
-            writer.Write((int)perk);
+            writer.Write(perk);
         }
         
-        writer.Write(PlayerData.Count);
+        writer.Write((byte)PlayerData.Count);
         foreach (var player in PlayerData)
         {
             writer.Write(player.PlayerId);
             writer.Write(player.SpawnId);
-            writer.Write((int)player.Weapon);
+            writer.Write(player.Weapon);
         }
     }
 
@@ -43,20 +43,20 @@ public class SyncLevelDataPacket : BasePacket
         PlayerData.Clear();
         Level = reader.ReadString();
         
-        var perks = reader.ReadInt32();
+        var perks = reader.ReadByte();
         Perks.Clear();
         for (var i = 0; i < perks; ++i)
         {
-            Perks.Add((Equipment)reader.ReadInt32());
+            Perks.Add(reader.ReadEquipment());
         }
         
         var spawns = reader.ReadInt32();
         for (var i = 0; i < spawns; ++i)
         {
             PlayerData.Add(new Player{
-                PlayerId = reader.ReadInt32(),
-                SpawnId = reader.ReadInt32(),
-                Weapon = (Equipment)reader.ReadInt32()
+                PlayerId = reader.ReadUInt16(),
+                SpawnId = reader.ReadByte(),
+                Weapon = reader.ReadEquipment()
             });
         }
     }

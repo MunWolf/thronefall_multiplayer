@@ -8,11 +8,9 @@ public class SyncPlayersPacket : BasePacket
 {
     public struct Player
     {
-        public int Id;
-        public int SpawnId;
+        public ushort Id;
+        public byte SpawnId;
         public Vector3 Position;
-        public float Hp;
-        public bool KnockedOut;
         public PlayerNetworkData.Shared Shared;
     }
     
@@ -21,11 +19,6 @@ public class SyncPlayersPacket : BasePacket
     public override Channel Channel => Channel.SyncPlayer;
 
     public List<Player> PlayerData = new();
-    
-    // Local player
-    public float Hp;
-    public bool KnockedOut;
-    public int SpawnId;
     
     public override void Send(Buffer writer)
     {
@@ -54,8 +47,8 @@ public class SyncPlayersPacket : BasePacket
         {
             PlayerData.Add(new Player
             {
-                Id = reader.ReadInt32(),
-                SpawnId = reader.ReadInt32(),
+                Id = reader.ReadUInt16(),
+                SpawnId = reader.ReadByte(),
                 Position = reader.ReadVector3(),
                 Shared = new PlayerNetworkData.Shared
                 {

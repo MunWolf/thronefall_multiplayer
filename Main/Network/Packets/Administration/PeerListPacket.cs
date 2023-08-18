@@ -8,9 +8,9 @@ public class PeerListPacket : BasePacket
 {
     public struct PlayerData
     {
-        public int Id;
+        public ushort Id;
         public CSteamID SteamId;
-        public int SpawnId;
+        public byte SpawnId;
         public Vector3 Position;
     }
     
@@ -45,9 +45,9 @@ public class PeerListPacket : BasePacket
         {
             Players.Add(new PlayerData
             {
-                Id = reader.ReadInt32(),
+                Id = reader.ReadUInt16(),
                 SteamId = reader.ReadSteamID(),
-                SpawnId = reader.ReadInt32(),
+                SpawnId = reader.ReadByte(),
                 Position = reader.ReadVector3()
             });
         }

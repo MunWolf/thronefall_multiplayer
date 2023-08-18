@@ -5,6 +5,7 @@ using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
 using ThronefallMP.Network.Packets.Sync;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Network.Sync;
@@ -45,7 +46,7 @@ public class AllyPathfinderSync : BaseTargetSync
             HoldPosition = pathfinder.HoldPosition,
             HasReachedHomePositionAlready = pathfinder.HasReachedHomePositionAlready,
             Slowed = pathfinder.IsSlowed,
-            PathIndex = nextPathPointIndex.Value,
+            PathIndex = (ushort)nextPathPointIndex.Value,
             Path = path.Value
         };
     }

@@ -49,17 +49,18 @@ public static class BuildSlotPatch
             var current = slots[0];
             slots.Remove(current);
             slots.AddRange(current.IsRootOf);
-            AssignId(current, current.transform.GetSiblingIndex());
+            var buildingId = (ushort)current.transform.GetSiblingIndex();
+            AssignId(current, buildingId);
             foreach (var respawn in current.GetComponentsInChildren<UnitRespawnerForBuildings>(true))
             {
-                ProcessUnits(respawn);
+                ProcessUnits(respawn, buildingId);
             }
         }
 
         CoinPrefab = root.buildingInteractor.coinSpawner.coinPrefab;
     }
 
-    private static void AssignId(BuildSlot self, int id)
+    private static void AssignId(BuildSlot self, ushort id)
     {
         {
             var identifier = self.gameObject.AddComponent<Identifier>();
@@ -75,13 +76,13 @@ public static class BuildSlotPatch
         }
     }
 
-    private static void ProcessUnits(UnitRespawnerForBuildings respawn)
+    private static void ProcessUnits(UnitRespawnerForBuildings respawn, ushort buildingId)
     {
         for (var i = 0; i < respawn.transform.childCount; ++i)
         {
             var unit = respawn.transform.GetChild(i);
             var identifier = unit.gameObject.AddComponent<Identifier>();
-            var id = (Helpers.GetPath(unit) + unit.GetSiblingIndex()).GetHashCode();
+            var id = (ushort)((buildingId << 4) | unit.GetSiblingIndex());
             identifier.SetIdentity(IdentifierType.Ally, id);
         }
     }
@@ -124,8 +125,8 @@ public static class BuildSlotPatch
                 var packet = new ConfirmBuildPacket()
                 {
                     BuildingId = buildingId,
-                    Level = upgradeIndex,
-                    Choice = choiceIndex,
+                    Level = (byte)upgradeIndex,
+                    Choice = (byte)choiceIndex,
                     PlayerID = Plugin.Instance.PlayerManager.LocalId
                 };
                 
@@ -136,8 +137,8 @@ public static class BuildSlotPatch
                 var packet = new BuildOrUpgradePacket
                 {
                     BuildingId = buildingId,
-                    Level = upgradeIndex,
-                    Choice = choiceIndex
+                    Level = (byte)upgradeIndex,
+                    Choice = (byte)choiceIndex
                 };
 
                 Plugin.Instance.Network.Send(packet);
@@ -149,7 +150,7 @@ public static class BuildSlotPatch
         }
     }
     
-    public static UpgradeInfo GetUpgradeInfo(int id, int level, int choice)
+    public static UpgradeInfo GetUpgradeInfo(ushort id, byte level, byte choice)
     {
         var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         var upgrade = building.upgrades[level];
@@ -160,7 +161,7 @@ public static class BuildSlotPatch
         };
     }
 
-    public static void HandleUpgrade(int playerId, int id, int level, int choice)
+    public static void HandleUpgrade(ushort playerId, ushort id, byte level, byte choice)
     {
         var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         if (building == null)
@@ -211,7 +212,7 @@ public static class BuildSlotPatch
         }
     }
 
-    public static void CancelBuild(int id)
+    public static void CancelBuild(ushort id)
     {
         var building = Identifier.GetGameObject(IdentifierType.BuildSlot, id).GetComponent<BuildSlot>();
         building.OnUpgradeChoiceComplete(null);

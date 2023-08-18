@@ -8,7 +8,7 @@ public class SyncPlayerInputPacket : BasePacket
 {
     public const PacketId PacketID = PacketId.SyncPlayerInput;
     
-    public int PlayerID = -1;
+    public ushort PlayerID;
     public PlayerNetworkData.Shared Data = new();
     
     public override PacketId TypeID => PacketID;
@@ -29,7 +29,7 @@ public class SyncPlayerInputPacket : BasePacket
 
     public override void Receive(Buffer reader)
     {
-        PlayerID = reader.ReadInt32();
+        PlayerID = reader.ReadUInt16();
         Data.MoveHorizontal = reader.ReadFloat();
         Data.MoveVertical = reader.ReadFloat();
         Data.SprintToggleButton = reader.ReadBoolean();
