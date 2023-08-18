@@ -6,6 +6,7 @@ using HarmonyLib;
 using Pathfinding.RVO;
 using Steamworks;
 using ThronefallMP.Components;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -21,6 +22,7 @@ static class PlayerMovementPatch
 		On.PlayerMovement.Awake += Awake;
 		On.PlayerMovement.Start += Start;
         On.PlayerMovement.Update += Update;
+        On.PlayerMovement.TeleportTo += TeleportTo;
         On.CameraRig.Start += Start;
 	}
 
@@ -160,4 +162,25 @@ static class PlayerMovementPatch
 			)
 		);
     }
+	
+	private static void TeleportTo(On.PlayerMovement.orig_TeleportTo original, PlayerMovement self, Vector3 position)
+	{
+		var playerNetworkData = self.GetComponent<PlayerNetworkData>();
+		if (playerNetworkData == null)
+		{
+			return;
+		}
+
+		if (playerNetworkData.IsLocal)
+		{
+			var packet = new TeleportPlayerPacket
+			{
+				PlayerId = playerNetworkData.id,
+				Position = position
+			};
+			Plugin.Instance.Network.Send(packet);
+		}
+		
+		original(self, position);
+	}
 }

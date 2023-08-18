@@ -39,6 +39,7 @@ public enum PacketId
     DamageFeedback,
     RequestLevel,
     RestartLevel,
+    TeleportPlayer,
     WeaponRequest,
     WeaponResponse,
     
@@ -64,6 +65,7 @@ public static class PacketHandler
         { DamageFeedbackPacket.PacketID, HandleDamageFeedback },
         { DayNightPacket.PacketID, HandleDayNight },
         { EnemySpawnPacket.PacketID, HandleEnemySpawn },
+        { TeleportPlayerPacket.PacketID, HandlePlayerTeleport },
         
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CancelBuildPacket.PacketID, HandleCancelBuild },
@@ -170,6 +172,20 @@ public static class PacketHandler
     {
         var packet = (EnemySpawnPacket)ipacket;
         EnemySpawnerPatch.SpawnEnemy(packet.Wave, packet.Spawn, packet.Position, packet.Id, packet.Coins);
+    }
+
+    private static void HandlePlayerTeleport(SteamNetworkingIdentity sender, BasePacket ipacket)
+    {
+        var packet = (TeleportPlayerPacket)ipacket;
+        var player = Plugin.Instance.PlayerManager.Get(packet.PlayerId);
+        if (player.Object == null)
+        {
+            return;
+        }
+        
+        player.Controller.enabled = false;
+        player.Object.transform.position = packet.Position;
+        player.Controller.enabled = true;
     }
 
     private static void HandleCommandAdd(SteamNetworkingIdentity sender, BasePacket ipacket)

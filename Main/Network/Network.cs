@@ -490,14 +490,15 @@ public class Network : MonoBehaviour
         { SyncPositionPacket.PacketID, typeof(SyncPositionPacket) },
         { SyncResourcePacket.PacketID, typeof(SyncResourcePacket) },
         
+        { CombinedPacket.PacketID, typeof(CombinedPacket) },
         { DamageFeedbackPacket.PacketID, typeof(DamageFeedbackPacket) },
         { DayNightPacket.PacketID, typeof(DayNightPacket) },
         { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
         { RequestLevelPacket.PacketID, typeof(RequestLevelPacket)},
         { RestartLevelPacket.PacketID, typeof(RestartLevelPacket)},
+        { TeleportPlayerPacket.PacketID, typeof(TeleportPlayerPacket) },
         { WeaponRequestPacket.PacketID, typeof(WeaponRequestPacket) },
         { WeaponResponsePacket.PacketID, typeof(WeaponResponsePacket) },
-        { CombinedPacket.PacketID, typeof(CombinedPacket) },
         
         { BuildOrUpgradePacket.PacketID, typeof(BuildOrUpgradePacket) },
         { CancelBuildPacket.PacketID, typeof(CancelBuildPacket) },

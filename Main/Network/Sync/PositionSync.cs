@@ -26,10 +26,9 @@ public class PositionSync : BaseTargetSync
         }
     }
 
-    private const float TeleportDistance = 100f;
     private readonly Dictionary<IdentifierType, DevianceConstant> _devianceConstants = new()
     {
-        { IdentifierType.Player, new DevianceConstant(0.05f, 0.4f, 15f, 30f) },
+        { IdentifierType.Player, new DevianceConstant(0.05f, 0.9f, 15f, 60f) },
         { IdentifierType.Ally, new DevianceConstant(0.1f, 0.7f, 15f, 30f) },
         { IdentifierType.Enemy, new DevianceConstant(0.1f, 0.7f, 15f, 30f) }
     };
@@ -39,11 +38,6 @@ public class PositionSync : BaseTargetSync
     private Vector3 CalculatePosition(IdentifierType type, float speed, Vector3 a, Vector3 b)
     {
         var distance = (a - b).magnitude;
-        // We are far enough away that we teleported, return the actual location.
-        if (distance >= TeleportDistance)
-        {
-            return b;
-        }
         
         //var speedModifier = (speed - 10f) / 20f + 10f;
         
