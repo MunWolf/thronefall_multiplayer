@@ -43,7 +43,6 @@ public class AllyPathfinderSync : BaseTargetSync
             Ally = id.Id,
             TargetObject = seekToTaggedObjId,
             HomePosition = pathfinder.HomePosition,
-            HoldPosition = pathfinder.HoldPosition,
             HasReachedHomePositionAlready = pathfinder.HasReachedHomePositionAlready,
             Slowed = pathfinder.IsSlowed,
             PathIndex = (ushort)nextPathPointIndex.Value,
@@ -72,7 +71,6 @@ public class AllyPathfinderSync : BaseTargetSync
         return a.TargetObject.Type == b.TargetObject.Type
                && a.TargetObject.Id == b.TargetObject.Id
                && a.HomePosition == b.HomePosition
-               && a.HoldPosition == b.HoldPosition
                && a.HasReachedHomePositionAlready == b.HasReachedHomePositionAlready
                && a.Slowed == b.Slowed;
     }
@@ -105,7 +103,6 @@ public class AllyPathfinderSync : BaseTargetSync
         var isTargetNull = sync.TargetObject.Type == IdentifierType.Invalid;
         
         pathfinder.HomePosition = sync.HomePosition;
-        pathfinder.HoldPosition = sync.HoldPosition;
         followingPlayer.Value = sync.TargetObject.Type == IdentifierType.Player;
         targetPosition.Value = followingPlayer.Value || walkingHome.Value || target == null ? pathfinder.HomePosition : target.transform.position;
         seekToTaggedObj.Value = isTargetNull || sync.TargetObject.Type == IdentifierType.Player ? null : target.GetComponent<TaggedObject>();

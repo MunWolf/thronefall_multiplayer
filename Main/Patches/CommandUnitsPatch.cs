@@ -5,6 +5,7 @@ using Pathfinding;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets.Game;
 using ThronefallMP.Network.Packets.PlayerCommand;
+using ThronefallMP.Utils;
 using UnityEngine;
 
 namespace ThronefallMP.Patches;
@@ -214,7 +215,14 @@ public static class CommandUnitsPatch
             return;
         }
 
+        var data = self.GetComponent<PlayerNetworkData>();
+        if (data == null)
+        {
+            return;
+        }
+        
         var packet = new CommandHoldPositionPacket();
+        packet.Player = data.id;
         var unitBuffer = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommandingBuffer");
         foreach (var unit in unitBuffer.Value)
         {

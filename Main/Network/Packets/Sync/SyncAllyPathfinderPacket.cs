@@ -16,7 +16,6 @@ public class SyncAllyPathfinderPacket : BasePacket
     public IdentifierData TargetObject;
     public Vector3 HomePosition;
     public bool HasReachedHomePositionAlready;
-    public bool HoldPosition;
     public bool Slowed;
     public ushort PathIndex;
     public List<Vector3> Path = new();
@@ -26,7 +25,6 @@ public class SyncAllyPathfinderPacket : BasePacket
         writer.Write(Ally);
         writer.Write(TargetObject);
         writer.Write(HomePosition);
-        writer.Write(HoldPosition);
         writer.Write(Slowed);
         writer.Write(PathIndex);
         writer.Write((ushort)Path.Count);
@@ -42,7 +40,6 @@ public class SyncAllyPathfinderPacket : BasePacket
         Ally = reader.ReadUInt16();
         TargetObject = reader.ReadIdentifierData();
         HomePosition = reader.ReadVector3();
-        HoldPosition = reader.ReadBoolean();
         Slowed = reader.ReadBoolean();
         PathIndex = reader.ReadUInt16();
         var count = reader.ReadUInt16();
