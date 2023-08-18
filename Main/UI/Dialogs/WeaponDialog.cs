@@ -132,9 +132,9 @@ public class WeaponDialog : BaseUI
             );
         }
 
-        AddWeaponIcon(weapons, Equipment.LongBow);
-        AddWeaponIcon(weapons, Equipment.LightSpear);
-        AddWeaponIcon(weapons, Equipment.HeavySword);
+        var bow = AddWeaponIcon(weapons, Equipment.LongBow).GetComponent<Selectable>();
+        var spear = AddWeaponIcon(weapons, Equipment.LightSpear).GetComponent<Selectable>();
+        var sword = AddWeaponIcon(weapons, Equipment.HeavySword).GetComponent<Selectable>();
         
         _selectedEquipment = Equipment.LongBow;
         OnWeaponChanged?.Invoke();
@@ -182,11 +182,18 @@ public class WeaponDialog : BaseUI
             
             Destroy(gameObject);
         };
+
+        bow.navigation = bow.navigation with { selectOnLeft = sword, selectOnRight = spear, selectOnDown = _button.Button };
+        sword.navigation = bow.navigation with { selectOnLeft = spear, selectOnRight = bow, selectOnDown = _button.Button };
+        spear.navigation = bow.navigation with { selectOnLeft = bow, selectOnRight = sword, selectOnDown = _button.Button };
+        _button.NavUp = sword;
+        
+        _button.Button.Select();
         
         LayoutRebuilder.ForceRebuildLayoutImmediate(panelBorders.GetComponent<RectTransform>());
     }
 
-    private void AddWeaponIcon(GameObject parent, Equipment equipment)
+    private GameObject AddWeaponIcon(GameObject parent, Equipment equipment)
     {
         var normal = new Color(0.153f, 0.216f, 0.294f, 1);
         var selected = new Color(0.106f, 0.322f, 0.584f, 1);
@@ -226,12 +233,19 @@ public class WeaponDialog : BaseUI
                 ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
                 OnWeaponChanged?.Invoke();
             });
-            UIHelper.AddEvent(frame, EventTriggerType.PointerEnter, (_) =>
+
+            UIHelper.AddEvent(frame, EventTriggerType.PointerEnter, (_) => Highlight());
+            UIHelper.AddEvent(frame, EventTriggerType.Select, (_) => Highlight());
+            UIHelper.AddEvent(frame, EventTriggerType.PointerExit, (_) => Unhighlight());
+            UIHelper.AddEvent(frame, EventTriggerType.Deselect, (_) => Unhighlight());
+
+            void Highlight()
             {
                 image.OutlineColor = outlineSelected;
                 tweeen.Tween(new Vector3(1.2f, 1.2f, 1.2f), 0.1f, 0.03f);
-            });
-            UIHelper.AddEvent(frame, EventTriggerType.PointerExit, (_) =>
+            }
+
+            void Unhighlight()
             {
                 image.OutlineColor = _selectedEquipment == equipment
                     ? outlineSelected
@@ -244,7 +258,7 @@ public class WeaponDialog : BaseUI
                 {
                     tweeen.Tween(Vector3.one, 0.3f, 0.05f);
                 }
-            });
+            }
         }
         
         {
@@ -276,6 +290,8 @@ public class WeaponDialog : BaseUI
                 0.05f
             );
         };
+
+        return frame;
     }
 
     public void OnEnable()
