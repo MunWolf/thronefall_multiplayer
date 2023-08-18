@@ -25,12 +25,12 @@ public class DisconnectPacket : BasePacket
     public override void Send(Buffer writer)
     {
         Plugin.Log.LogInfo($"Sending disconnect reason {DisconnectReason}");
-        writer.Write((int)DisconnectReason);
+        writer.Write((byte)DisconnectReason);
     }
 
     public override void Receive(Buffer reader)
     {
-        DisconnectReason = (Reason)reader.ReadInt32();
+        DisconnectReason = (Reason)reader.ReadByte();
         Plugin.Log.LogInfo($"Receiving disconnect reason {DisconnectReason}");
     }
 }

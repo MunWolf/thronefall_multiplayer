@@ -172,7 +172,10 @@ public class MessageDialog : BaseUI
     public void OnEnable()
     {
         ++UIFramePatch.DisableGameUIInputCount;
-        _button.Button.Select();
+        if (_button != null)
+        {
+            _button.Button.Select();
+        }
     }
 
     public void OnDisable()

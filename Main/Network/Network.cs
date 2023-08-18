@@ -94,7 +94,7 @@ public class Network : MonoBehaviour
         );
 
         var buffer = new Buffer() { Data = _chatBuffer };
-        var messageType = buffer.ReadInt32();
+        var messageType = buffer.ReadByte();
         var message = buffer.ReadString();
         if (buffer.ReadHead != length)
         {
@@ -131,7 +131,7 @@ public class Network : MonoBehaviour
         }
 
         var buffer = new Buffer();
-        buffer.Write(0);
+        buffer.Write((byte)0);
         buffer.Write(message);
         SteamMatchmaking.SendLobbyChatMsg(Lobby, buffer.Data, buffer.WriteHead);
     }
@@ -144,7 +144,7 @@ public class Network : MonoBehaviour
         }
 
         var buffer = new Buffer();
-        buffer.Write(1);
+        buffer.Write((byte)1);
         buffer.Write(message);
         SteamMatchmaking.SendLobbyChatMsg(Lobby, buffer.Data, buffer.WriteHead);
     }
@@ -437,7 +437,7 @@ public class Network : MonoBehaviour
     public void SendSingle(BasePacket basePacket, SteamNetworkingIdentity target)
     {
         var buffer = new Buffer();
-        buffer.Write((int)basePacket.TypeID);
+        buffer.Write(basePacket.TypeID);
         basePacket.Send(buffer);
         Send(buffer, target, basePacket.DeliveryMask, basePacket.Channel);
     }

@@ -165,12 +165,13 @@ public class Buffer
     {
         if (value == null)
         {
-            Write(0);
+            Write((ushort)0);
             return;
         }
         
         var output = Encoding.ASCII.GetBytes(value);
-        Write(output.Length);
+        Plugin.Log.LogInfo($"Writing string of length {output.Length}");
+        Write((ushort)output.Length);
         EnsureSize(output.Length);
         output.CopyTo(Data, WriteHead);
         WriteHead += output.Length;
@@ -438,7 +439,7 @@ public class Buffer
     public string ReadString()
     {
         var old = ReadHead;
-        var size = ReadInt32();
+        var size = ReadUInt16();
         if (!CanRead(size))
         {
             Plugin.Log.LogInfoFiltered("Buffer", $"Failed to read string of length {size} ({old}:{Data.Length})");
