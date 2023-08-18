@@ -12,7 +12,7 @@ public class RequestLevelPacket : BasePacket
     public List<Equipment> Perks = new();
     
     public override PacketId TypeID => PacketID;
-    public override Channel Channel => Channel.Player;
+    public override Channel Channel => Channel.Game;
 
     public override void Send(Buffer writer)
     {

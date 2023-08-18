@@ -84,7 +84,7 @@ static class PlayerMovementPatch
         
         // Normal code
 		var zero = new Vector2(playerNetworkData.SharedData.MoveVertical, playerNetworkData.SharedData.MoveHorizontal);
-		if (LocalGamestate.Instance.PlayerFrozen)
+		if (LocalGamestate.Instance.PlayerFrozen && playerNetworkData.IsLocal)
 		{
 			zero = Vector2.zero;
 		}

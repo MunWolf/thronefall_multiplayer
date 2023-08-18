@@ -26,7 +26,7 @@ public class PositionSync : BaseTargetSync
         }
     }
 
-    private const float TeleportDistance = 120f;
+    private const float TeleportDistance = 100f;
     private readonly Dictionary<IdentifierType, DevianceConstant> _devianceConstants = new()
     {
         { IdentifierType.Player, new DevianceConstant(0.05f, 0.4f, 15f, 30f) },

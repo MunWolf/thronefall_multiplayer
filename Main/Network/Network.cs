@@ -486,6 +486,7 @@ public class Network : MonoBehaviour
         { DayNightPacket.PacketID, typeof(DayNightPacket) },
         { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
         { RequestLevelPacket.PacketID, typeof(RequestLevelPacket)},
+        { RestartLevelPacket.PacketID, typeof(RestartLevelPacket)},
         { WeaponRequestPacket.PacketID, typeof(WeaponRequestPacket) },
         { WeaponResponsePacket.PacketID, typeof(WeaponResponsePacket) },
         

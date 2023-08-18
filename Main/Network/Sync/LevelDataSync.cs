@@ -81,6 +81,7 @@ public class LevelDataSync : BaseSync
         return packet.TypeID is
             SyncLevelDataPacket.PacketID or
             RequestLevelPacket.PacketID or
+            RestartLevelPacket.PacketID or
             WeaponRequestPacket.PacketID or
             WeaponResponsePacket.PacketID;
     }
@@ -103,6 +104,12 @@ public class LevelDataSync : BaseSync
         if (packet.To == "_LevelSelect")
         {
             SceneTransitionManagerPatch.Transition(packet.To, packet.From);
+            return;
+        }
+
+        if (packet.To == packet.From)
+        {
+            Plugin.Instance.Network.Send(new RestartLevelPacket(), true);
             return;
         }
         
@@ -181,7 +188,7 @@ public class LevelDataSync : BaseSync
         
         if (packet.Level != SceneTransitionManagerPatch.CurrentScene)
         {
-            SceneTransitionManagerPatch.Transition(packet.Level, null);
+            SceneTransitionManagerPatch.Transition(packet.Level, SceneTransitionManagerPatch.CurrentScene);
         }
     }
 
@@ -204,6 +211,12 @@ public class LevelDataSync : BaseSync
                 break;
             case RequestLevelPacket.PacketID:
                 HandleRequestPacket(peer, (RequestLevelPacket)packet);
+                break;
+            case RestartLevelPacket.PacketID:
+                SceneTransitionManagerPatch.Transition(
+                    SceneTransitionManagerPatch.CurrentScene,
+                    SceneTransitionManagerPatch.CurrentScene
+                );
                 break;
             case WeaponRequestPacket.PacketID:
                 HandleWeaponRequestPacket(peer);

@@ -37,6 +37,7 @@ public enum PacketId
     EnemySpawn,
     DamageFeedback,
     RequestLevel,
+    RestartLevel,
     WeaponRequest,
     WeaponResponse,
     
