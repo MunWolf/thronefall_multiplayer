@@ -82,7 +82,7 @@ public static class BuildSlotPatch
         {
             var unit = respawn.transform.GetChild(i);
             var identifier = unit.gameObject.AddComponent<Identifier>();
-            var id = (ushort)((buildingId << 4) | unit.GetSiblingIndex());
+            var id = (ushort)((buildingId << 7) | unit.parent.GetSiblingIndex() << 4 | unit.GetSiblingIndex());
             identifier.SetIdentity(IdentifierType.Ally, id);
         }
     }
