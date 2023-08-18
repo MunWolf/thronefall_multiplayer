@@ -92,6 +92,7 @@ namespace ThronefallMP
             UIFrameManagerPatch.Apply();
             UIFramePatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
+            UpgradeAssassinsTrainingPatch.Apply();
             WeaponEquipperPatch.Apply();
             
             // Apply settings.
