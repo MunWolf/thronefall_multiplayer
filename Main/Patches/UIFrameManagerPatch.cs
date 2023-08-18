@@ -15,7 +15,11 @@ public static class UIFrameManagerPatch
         bool keepoldframegameobjectactive,
         ThronefallUIElement firstselected)
     {
-        nextframe.freezeTime = false;
+        if (nextframe != null)
+        {
+            nextframe.freezeTime = false;
+        }
+        
         original(
             self,
             nextframe,

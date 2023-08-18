@@ -7,6 +7,8 @@ using ThronefallMP.Network.Packets.Game;
 using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.UI;
+using ThronefallMP.UI.Dialogs;
+using UnityEngine;
 
 namespace ThronefallMP.Network.Sync;
 
@@ -19,7 +21,10 @@ public class LevelDataSync : BaseSync
         public readonly Dictionary<int, Equipment> SelectedWeapons = new();
     }
 
+    private const float ResendWeaponRequestTime = 4f;
+    
     private LevelRequest _activeRequest;
+    private WeaponDialog _activeDialog;
     
     protected override bool ShouldUpdate =>
         Plugin.Instance.Network.Server &&
@@ -40,7 +45,13 @@ public class LevelDataSync : BaseSync
             
         foreach (var item in PerkManager.instance.CurrentlyEquipped)
         {
-            packet.Perks.Add(Equip.Convert(item.name));
+            var equipment = Equip.Convert(item.name);
+            if (equipment is Equipment.LongBow or Equipment.LightSpear or Equipment.HeavySword)
+            {
+                continue;
+            }
+            
+            packet.Perks.Add(equipment);
         }
         
         return packet;
@@ -146,14 +157,38 @@ public class LevelDataSync : BaseSync
         Plugin.Instance.StartCoroutine(RequestHandler());
     }
 
+    private void ResendWeaponRequest()
+    {
+        var id = new SteamNetworkingIdentity();
+        var request = new WeaponRequestPacket();
+        foreach (var player in Plugin.Instance.PlayerManager.GetAllPlayers())
+        {
+            if (_activeRequest.SelectedWeapons.ContainsKey(player.Id))
+            {
+                continue;
+            }
+            
+            id.SetSteamID(player.SteamID);
+            Plugin.Instance.Network.SendSingle(request, id);
+        }
+    }
+
     private IEnumerator RequestHandler()
     {
+        var timer = 0f;
         while (
             _activeRequest != null &&
             !Plugin.Instance.PlayerManager.GetAllPlayers().All(
                 p => _activeRequest.SelectedWeapons.ContainsKey(p.Id)
             ))
         {
+            timer += Time.deltaTime;
+            if (timer > ResendWeaponRequestTime)
+            {
+                ResendWeaponRequest();
+                timer = 0f;
+            }
+            
             yield return null;
         }
 
@@ -164,7 +199,12 @@ public class LevelDataSync : BaseSync
         
         foreach (var weapon in _activeRequest.SelectedWeapons)
         {
-            Plugin.Instance.PlayerManager.Get(weapon.Key).Weapon = weapon.Value;
+            var player = Plugin.Instance.PlayerManager.Get(weapon.Key);
+            player.Weapon = weapon.Value;
+            if (player.Id == Plugin.Instance.PlayerManager.LocalId)
+            {
+                Equip.EquipEquipment(player.Weapon);
+            }
         }
 
         SceneTransitionManagerPatch.Transition(_activeRequest.To, _activeRequest.From);
@@ -184,6 +224,10 @@ public class LevelDataSync : BaseSync
             var player = Plugin.Instance.PlayerManager.Get(data.PlayerId);
             player.SpawnID = data.SpawnId;
             player.Weapon = data.Weapon;
+            if (player.Id == Plugin.Instance.PlayerManager.LocalId)
+            {
+                Equip.EquipEquipment(player.Weapon);
+            }
         }
         
         if (packet.Level != SceneTransitionManagerPatch.CurrentScene)
@@ -192,13 +236,23 @@ public class LevelDataSync : BaseSync
         }
     }
 
-    private void HandleWeaponRequestPacket(CSteamID peer)
+    private void HandleWeaponRequestPacket()
     {
-        UIManager.CreateWeaponDialog();
+        if (_activeDialog != null)
+        {
+            return;
+        }
+        
+        _activeDialog = UIManager.CreateWeaponDialog();
     }
 
     private void HandleWeaponResponsePacket(CSteamID peer, WeaponResponsePacket packet)
     {
+        if (_activeRequest == null)
+        {
+            return;
+        }
+        
         _activeRequest.SelectedWeapons[Plugin.Instance.PlayerManager.Get(peer).Id] = packet.Weapon;
     }
     
@@ -219,7 +273,7 @@ public class LevelDataSync : BaseSync
                 );
                 break;
             case WeaponRequestPacket.PacketID:
-                HandleWeaponRequestPacket(peer);
+                HandleWeaponRequestPacket();
                 break;
             case WeaponResponsePacket.PacketID:
                 HandleWeaponResponsePacket(peer, (WeaponResponsePacket)packet);

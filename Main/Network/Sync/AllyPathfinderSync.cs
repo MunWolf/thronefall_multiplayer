@@ -45,6 +45,7 @@ public class AllyPathfinderSync : BaseTargetSync
             TargetObject = seekToTaggedObjId,
             HomePosition = pathfinder.HomePosition,
             HoldPosition = pathfinder.HoldPosition,
+            HasReachedHomePositionAlready = pathfinder.HasReachedHomePositionAlready,
             Slowed = pathfinder.IsSlowed,
             PathIndex = nextPathPointIndex.Value,
             Path = path.Value
@@ -73,6 +74,7 @@ public class AllyPathfinderSync : BaseTargetSync
                && a.TargetObject.Id == b.TargetObject.Id
                && a.HomePosition == b.HomePosition
                && a.HoldPosition == b.HoldPosition
+               && a.HasReachedHomePositionAlready == b.HasReachedHomePositionAlready
                && a.Slowed == b.Slowed;
     }
 
@@ -94,6 +96,7 @@ public class AllyPathfinderSync : BaseTargetSync
         var pathfinder = ally.GetComponent<PathfindMovementPlayerunit>();
         var targetPosition = Traverse.Create(pathfinder).Field<Vector3>("seekToTargetPos");
         var walkingHome = Traverse.Create(pathfinder).Field<bool>("currentlyWalkingHome");
+        var hasReachedHomePositionAlready = Traverse.Create(pathfinder).Field<bool>("hasReachedHomePositionAlready");
         var followingPlayer = Traverse.Create(pathfinder).Field<bool>("followingPlayer");
         var slowedFor = Traverse.Create(pathfinder).Field<float>("slowedFor");
         var nextPathPointIndex = Traverse.Create(pathfinder).Field<int>("nextPathPointIndex");
@@ -108,6 +111,7 @@ public class AllyPathfinderSync : BaseTargetSync
         targetPosition.Value = followingPlayer.Value || walkingHome.Value || target == null ? pathfinder.HomePosition : target.transform.position;
         seekToTaggedObj.Value = isTargetNull || sync.TargetObject.Type == IdentifierType.Player ? null : target.GetComponent<TaggedObject>();
         walkingHome.Value = isTargetNull;
+        hasReachedHomePositionAlready.Value = sync.HasReachedHomePositionAlready;
         slowedFor.Value = sync.Slowed ? float.MaxValue : float.MinValue;
         nextPathPointIndex.Value = sync.PathIndex;
         path.Value = sync.Path;

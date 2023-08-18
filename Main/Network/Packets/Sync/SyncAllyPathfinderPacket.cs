@@ -15,6 +15,7 @@ public class SyncAllyPathfinderPacket : BasePacket
     public int Ally;
     public IdentifierData TargetObject;
     public Vector3 HomePosition;
+    public bool HasReachedHomePositionAlready;
     public bool HoldPosition;
     public bool Slowed;
     public int PathIndex;

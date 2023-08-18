@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using BepInEx;
@@ -14,7 +12,6 @@ using ThronefallMP.Network.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.UI;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace ThronefallMP
@@ -31,8 +28,7 @@ namespace ThronefallMP
         public Network.Network Network { get; private set; }
         public Network.PlayerManager PlayerManager { get; private set; }
         public TextureRepository TextureRepository { get; private set; }
-
-        private CheatHandler CheatHandler;
+        [UsedImplicitly] public CheatHandler CheatHandler { get; private set; }
         
         // Network syncs
         [UsedImplicitly] public PingPongSync PingPongSync = new();
@@ -93,6 +89,7 @@ namespace ThronefallMP
             SceneTransitionManagerPatch.Apply();
             SteamManagerPatch.Apply();
             TreasuryUIPatch.Apply();
+            UIFrameManagerPatch.Apply();
             UIFramePatch.Apply();
             UnitRespawnerForBuildingsPatch.Apply();
             WeaponEquipperPatch.Apply();

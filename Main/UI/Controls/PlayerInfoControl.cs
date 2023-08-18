@@ -35,8 +35,8 @@ public class PlayerInfoControl : MonoBehaviour
 
     private void OnOwnerChanged(CSteamID owner)
     {
-        var player = Plugin.Instance.PlayerManager.Get(playerId);
-        hostIdentifier.gameObject.SetActive(player.SteamID == owner);
+        var player = Plugin.Instance.PlayerManager.Get(owner);
+        hostIdentifier.gameObject.SetActive(player.Id == playerId);
     }
     
     private void OnPlayerRemoved(Network.PlayerManager.Player player)

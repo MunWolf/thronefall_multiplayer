@@ -35,7 +35,7 @@ public class Network : MonoBehaviour
     public IEnumerable<CSteamID> Peers => _peers;
     public event OwnerChangedHandler OnOwnerChanged;
     
-    private const int MaxMessages = 20;
+    private const int MaxMessages = 100;
     
     [UsedImplicitly] private Callback<LobbyChatUpdate_t> _lobbyChatUpdate;
     [UsedImplicitly] private Callback<GameLobbyJoinRequested_t> _lobbyJoinRequested;
@@ -225,36 +225,43 @@ public class Network : MonoBehaviour
         }
     }
 
+    private bool HandleChannel(Channel channel)
+    {
+        var received = SteamNetworkingMessages.ReceiveMessagesOnChannel(
+            (int)channel,
+            _messages,
+            MaxMessages
+        );
+
+        for (var i = 0; i < received; ++i)
+        {
+            var message = Marshal.PtrToStructure<SteamNetworkingMessage_t>(_messages[i]);
+            if (_peers.Contains(message.m_identityPeer.GetSteamID()))
+            {
+                var buffer = new Buffer(message.m_cbSize);
+                Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
+                HandlePacket(ref message.m_identityPeer, buffer, PacketTypes);
+            }
+            else if (_pendingPeers.Contains(message.m_identityPeer.GetSteamID()))
+            {
+                var buffer = new Buffer(message.m_cbSize);
+                Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
+                HandlePacket(ref message.m_identityPeer, buffer, PendingPeerPacketTypes);
+            }
+                    
+            SteamNetworkingMessage_t.Release(_messages[i]);
+        }
+
+        return received != 0;
+    }
+    
     private void Update()
     {
         if (_peers.Count > 0 || _pendingPeers.Count > 0)
         {
             foreach (var channel in Enum.GetValues(typeof(Channel)))
             {
-                var received = SteamNetworkingMessages.ReceiveMessagesOnChannel(
-                    (int)channel,
-                    _messages,
-                    MaxMessages
-                );
-
-                for (var i = 0; i < received; ++i)
-                {
-                    var message = Marshal.PtrToStructure<SteamNetworkingMessage_t>(_messages[i]);
-                    if (_peers.Contains(message.m_identityPeer.GetSteamID()))
-                    {
-                        var buffer = new Buffer(message.m_cbSize);
-                        Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
-                        HandlePacket(ref message.m_identityPeer, buffer, PacketTypes);
-                    }
-                    else if (_pendingPeers.Contains(message.m_identityPeer.GetSteamID()))
-                    {
-                        var buffer = new Buffer(message.m_cbSize);
-                        Marshal.Copy(message.m_pData, buffer.Data, 0, buffer.Data.Length);
-                        HandlePacket(ref message.m_identityPeer, buffer, PendingPeerPacketTypes);
-                    }
-                    
-                    SteamNetworkingMessage_t.Release(_messages[i]);
-                }
+                while (HandleChannel((Channel)channel)) {}
             }
         }
     }

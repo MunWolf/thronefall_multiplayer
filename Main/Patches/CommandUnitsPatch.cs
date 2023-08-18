@@ -289,6 +289,11 @@ public static class CommandUnitsPatch
         var audioSet = Traverse.Create(self).Field<AudioSet>("audioSet");
         var units = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommanding");
         var upgradeManager = Traverse.Create(self).Field<PlayerUpgradeManager>("playerUPgradeManager");
+        if (units.Value.Contains(unit))
+        {
+            return;
+        }
+        
         audioManager.Value.PlaySoundAsOneShot(
             audioSet.Value.AddedUnitToCommanding,
             0.55f,
@@ -309,9 +314,10 @@ public static class CommandUnitsPatch
         if (upgradeManager.Value.commander)
         {
              unit.movementSpeed *= UpgradeCommander.instance.moveSpeedMultiplicator;
+             return;
         }
         
-        foreach (AutoAttack autoAttack in unit.GetComponents<AutoAttack>())
+        foreach (var autoAttack in unit.GetComponents<AutoAttack>())
         {
             autoAttack.enabled = false;
         }
