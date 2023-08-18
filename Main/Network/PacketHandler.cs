@@ -33,6 +33,7 @@ public enum PacketId
     SyncPosition,
     SyncHp,
     
+    Combined,
     DayNight,
     EnemySpawn,
     DamageFeedback,

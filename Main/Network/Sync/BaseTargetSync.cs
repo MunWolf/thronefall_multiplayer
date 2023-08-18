@@ -2,6 +2,7 @@
 using Steamworks;
 using ThronefallMP.Components;
 using ThronefallMP.Network.Packets;
+using ThronefallMP.Network.Packets.Game;
 using UnityEngine;
 using SteamNetworkingIdentity = Steamworks.SteamNetworkingIdentity;
 
@@ -15,6 +16,8 @@ public abstract class BaseTargetSync
         public float ForceTimer;
         public float MinWaitTimer;
     }
+    
+    private const int CombineThreshold = 10;
     
     private readonly Dictionary<(CSteamID, IdentifierData), State> _states = new();
     
@@ -70,10 +73,15 @@ public abstract class BaseTargetSync
         {
             return;
         }
+        
+        var toSend = new Dictionary<CSteamID, List<BasePacket>>();
+        foreach (var peer in Plugin.Instance.Network.Peers)
+        {
+            toSend[peer] = new List<BasePacket>();
+        }
 
         if (CaresAboutPeer)
         {
-            var id = new SteamNetworkingIdentity();
             foreach (var data in Targets())
             {
                 if (!HandleDisabledTargets && !data.target.activeInHierarchy)
@@ -97,8 +105,7 @@ public abstract class BaseTargetSync
                     var packet = PacketToSend(last, peer, data.id, data.target);
                     if (packet != null)
                     {
-                        id.SetSteamID(peer);
-                        Plugin.Instance.Network.SendSingle(packet, id);
+                        toSend[peer].Add(packet);
                     }
                 }
             }
@@ -119,17 +126,46 @@ public abstract class BaseTargetSync
                 }
 
                 var packet = PacketToSend(last, CSteamID.Nil, data.id, data.target);
-                if (packet != null)
+                if (packet == null)
                 {
-                    var id = new SteamNetworkingIdentity();
-                    foreach (var peer in Plugin.Instance.Network.Peers)
+                    continue;
+                }
+                
+                foreach (var peer in Plugin.Instance.Network.Peers)
+                {
+                    if (!Filter(peer, data.id, data.target))
                     {
-                        if (!Filter(peer, data.id, data.target))
-                        {
-                            id.SetSteamID(peer);
-                            Plugin.Instance.Network.SendSingle(packet, id);
-                        }
+                        toSend[peer].Add(packet);
                     }
+                }
+            }
+        }
+
+        var id = new SteamNetworkingIdentity();
+        foreach (var pair in toSend)
+        {
+            if (pair.Value.Count == 0)
+            {
+                continue;
+            }
+                
+            id.SetSteamID(pair.Key);
+            if (pair.Value.Count > CombineThreshold)
+            {
+                Plugin.Instance.Network.SendSingle(
+                    new CombinedPacket
+                    {
+                        InnerPacketType = pair.Value[0].TypeID,
+                        Packets = pair.Value
+                    },
+                    id
+                );
+            }
+            else
+            {
+                foreach (var packet in pair.Value)
+                {
+                    Plugin.Instance.Network.SendSingle(packet, id);
                 }
             }
         }

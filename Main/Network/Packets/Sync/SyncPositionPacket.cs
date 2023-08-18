@@ -13,17 +13,7 @@ public class SyncPositionPacket : BasePacket
 
     public override PacketId TypeID => PacketID;
 
-    public override Channel Channel
-    {
-        get
-        {
-            return Target.Type switch
-            {
-                IdentifierType.Player => Channel.Player,
-                _ => Channel.SyncUnit
-            };
-        }
-    }
+    public override Channel Channel => Channel.SyncPositions;
 
     public override void Send(Buffer writer)
     {

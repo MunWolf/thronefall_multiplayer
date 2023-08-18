@@ -23,6 +23,7 @@ public enum Channel
     Player,
     SyncPlayer,
     SyncUnit,
+    SyncPositions,
     Resources,
     Game,
 }
@@ -496,6 +497,7 @@ public class Network : MonoBehaviour
         { RestartLevelPacket.PacketID, typeof(RestartLevelPacket)},
         { WeaponRequestPacket.PacketID, typeof(WeaponRequestPacket) },
         { WeaponResponsePacket.PacketID, typeof(WeaponResponsePacket) },
+        { CombinedPacket.PacketID, typeof(CombinedPacket) },
         
         { BuildOrUpgradePacket.PacketID, typeof(BuildOrUpgradePacket) },
         { CancelBuildPacket.PacketID, typeof(CancelBuildPacket) },
@@ -515,6 +517,14 @@ public class Network : MonoBehaviour
     {
         _lastOrderedPackages[(player, channel)] = value;
     }
+
+    public BasePacket CreatePacket(PacketId id)
+    {
+        PacketTypes.TryGetValue(id, out var objectType);
+        return objectType?
+            .GetConstructor(Type.EmptyTypes)
+            ?.Invoke(Array.Empty<object>()) as BasePacket;
+    }
     
     private void HandlePacket(ref SteamNetworkingIdentity sender, Buffer buffer, Dictionary<PacketId, Type> types)
     {
@@ -532,7 +542,23 @@ public class Network : MonoBehaviour
         {
             Plugin.Log.LogDebug($"{buffer.Data.Length}:{BitConverter.ToString(buffer.Data).Replace('-', ' ')}");
         }
-        if (basePacket is BaseOrderedPacket orderedPacket)
+
+        if (type == PacketId.Combined)
+        {
+            foreach (var innerPacket in ((CombinedPacket)basePacket).Packets)
+            {
+                HandlePacket(ref sender, innerPacket);
+            }
+        }
+        else
+        {
+            HandlePacket(ref sender, basePacket);
+        }
+    }
+
+    private void HandlePacket(ref SteamNetworkingIdentity sender, BasePacket packet)
+    {
+        if (packet is BaseOrderedPacket orderedPacket)
         {
             var order = orderedPacket.GetOrder();
             var lastCount = GetLastOrderedPackage(order.player, orderedPacket.Channel);
@@ -545,18 +571,18 @@ public class Network : MonoBehaviour
             SetLastOrderedPackage(order.player, orderedPacket.Channel, order.count);
         }
         
-        if (basePacket.CanHandle(sender.GetSteamID()))
+        if (packet.CanHandle(sender.GetSteamID()))
         {
-            PacketHandler.HandlePacket(sender, basePacket);
+            PacketHandler.HandlePacket(sender, packet);
         }
         else
         {
-            Plugin.Log.LogInfoFiltered("Network", $"Received unauthorized packet from '{sender.GetSteamID().m_SteamID}' (type: '{type}', size: {buffer.Data.Length})");
+            Plugin.Log.LogInfoFiltered("Network", $"Received unauthorized packet from '{sender.GetSteamID().m_SteamID}' (type: '{packet.TypeID}')");
         }
 
-        if (Server && basePacket.ShouldPropagate)
+        if (Server && packet.ShouldPropagate)
         {
-            Send(basePacket, false, sender.GetSteamID());
+            Send(packet, false, sender.GetSteamID());
         }
     }
 
