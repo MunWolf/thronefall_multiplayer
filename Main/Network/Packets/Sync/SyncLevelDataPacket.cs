@@ -23,7 +23,7 @@ public class SyncLevelDataPacket : BasePacket
     public override void Send(Buffer writer)
     {
         writer.Write(Level);
-        writer.Write(Perks.Count);
+        writer.Write((byte)Perks.Count);
         foreach (var perk in Perks)
         {
             writer.Write(perk);
@@ -50,7 +50,7 @@ public class SyncLevelDataPacket : BasePacket
             Perks.Add(reader.ReadEquipment());
         }
         
-        var spawns = reader.ReadInt32();
+        var spawns = reader.ReadByte();
         for (var i = 0; i < spawns; ++i)
         {
             PlayerData.Add(new Player{

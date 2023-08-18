@@ -183,9 +183,9 @@ public class WeaponDialog : BaseUI
             Destroy(gameObject);
         };
 
-        bow.navigation = bow.navigation with { selectOnLeft = sword, selectOnRight = spear, selectOnDown = _button.Button };
-        sword.navigation = bow.navigation with { selectOnLeft = spear, selectOnRight = bow, selectOnDown = _button.Button };
-        spear.navigation = bow.navigation with { selectOnLeft = bow, selectOnRight = sword, selectOnDown = _button.Button };
+        bow.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnLeft = sword, selectOnRight = spear, selectOnDown = _button.Button };
+        sword.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnLeft = spear, selectOnRight = bow, selectOnDown = _button.Button };
+        spear.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnLeft = bow, selectOnRight = sword, selectOnDown = _button.Button };
         _button.NavUp = sword;
         
         _button.Button.Select();
@@ -219,6 +219,19 @@ public class WeaponDialog : BaseUI
             image.fillAmount = 1;
             image.CircleFitToRect = true;
             image.Shape = DrawShape.Circle;
+            
+            var button = frame.AddComponent<Button>();
+            button.image = image;
+            button.colors = new ColorBlock()
+            {
+                normalColor = Color.white,
+                pressedColor = Color.white,
+                selectedColor = Color.white,
+                highlightedColor = Color.white,
+                disabledColor = Color.white,
+                colorMultiplier = 1,
+                fadeDuration = 0
+            };
             
             frame.AddComponent<EventTrigger>();
             UIHelper.AddEvent(frame, EventTriggerType.PointerClick, (_) =>

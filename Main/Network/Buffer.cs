@@ -12,6 +12,7 @@ public class Buffer
     public byte[] Data;
     public int ReadHead;
     public int WriteHead;
+    public bool LastReadFailed;
 
     public Buffer()
         : this(32)
@@ -35,6 +36,13 @@ public class Buffer
     public bool CanRead(int size)
     {
         return ReadHead + size <= Data.Length;
+    }
+
+    private bool CanReadInternal(int size)
+    {
+        var canRead = CanRead(size);
+        LastReadFailed = !canRead;
+        return canRead;
     }
     
     public void Write(bool value)
@@ -170,7 +178,6 @@ public class Buffer
         }
         
         var output = Encoding.ASCII.GetBytes(value);
-        Plugin.Log.LogInfo($"Writing string of length {output.Length}");
         Write((ushort)output.Length);
         EnsureSize(output.Length);
         output.CopyTo(Data, WriteHead);
@@ -242,7 +249,7 @@ public class Buffer
 
     public byte ReadByte()
     {
-        if (!CanRead(1))
+        if (!CanReadInternal(1))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read byte");
             return 0;
@@ -254,7 +261,7 @@ public class Buffer
 
     public bool ReadBoolean()
     {
-        if (!CanRead(sizeof(bool)))
+        if (!CanReadInternal(sizeof(bool)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read bool");
             return false;
@@ -277,7 +284,7 @@ public class Buffer
 
     public ushort ReadUInt16()
     {
-        if (!CanRead(sizeof(ushort)))
+        if (!CanReadInternal(sizeof(ushort)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
             return 0;
@@ -300,7 +307,7 @@ public class Buffer
 
     public int ReadInt32()
     {
-        if (!CanRead(sizeof(int)))
+        if (!CanReadInternal(sizeof(int)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
             return 0;
@@ -323,7 +330,7 @@ public class Buffer
 
     public uint ReadUInt32()
     {
-        if (!CanRead(sizeof(uint)))
+        if (!CanReadInternal(sizeof(uint)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read int");
             return 0;
@@ -346,7 +353,7 @@ public class Buffer
 
     public long ReadInt64()
     {
-        if (!CanRead(sizeof(long)))
+        if (!CanReadInternal(sizeof(long)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read long");
             return 0;
@@ -369,7 +376,7 @@ public class Buffer
 
     public ulong ReadUInt64()
     {
-        if (!CanRead(sizeof(ulong)))
+        if (!CanReadInternal(sizeof(ulong)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read long");
             return 0;
@@ -392,7 +399,7 @@ public class Buffer
 
     public Half ReadHalf()
     {
-        if (!CanRead(sizeof(ushort)))
+        if (!CanReadInternal(sizeof(ushort)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half");
             return new Half(0);
@@ -415,7 +422,7 @@ public class Buffer
 
     public float ReadFloat()
     {
-        if (!CanRead(sizeof(float)))
+        if (!CanReadInternal(sizeof(float)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read float");
             return 0;
@@ -440,7 +447,14 @@ public class Buffer
     {
         var old = ReadHead;
         var size = ReadUInt16();
-        if (!CanRead(size))
+        if (LastReadFailed)
+        {
+            Plugin.Log.LogInfoFiltered("Buffer", $"Failed to read string length ({old}:{Data.Length})");
+            ReadHead = old;
+            return "";
+        }
+        
+        if (!CanReadInternal(size))
         {
             Plugin.Log.LogInfoFiltered("Buffer", $"Failed to read string of length {size} ({old}:{Data.Length})");
             ReadHead = old;
@@ -455,7 +469,7 @@ public class Buffer
     public Vector3 ReadVector3Half()
     {
         var output = new Vector3();
-        if (!CanRead(3 * sizeof(ushort)))
+        if (!CanReadInternal(3 * sizeof(ushort)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half vector3");
             return output;
@@ -470,7 +484,7 @@ public class Buffer
     public Vector3 ReadVector3()
     {
         var output = new Vector3();
-        if (!CanRead(3 * sizeof(float)))
+        if (!CanReadInternal(3 * sizeof(float)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read vector3");
             return output;
@@ -485,7 +499,7 @@ public class Buffer
     public Quaternion ReadQuaternionHalf()
     {
         var output = new Quaternion();
-        if (!CanRead(4 * sizeof(ushort)))
+        if (!CanReadInternal(4 * sizeof(ushort)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read half quaternion");
             return output;
@@ -501,7 +515,7 @@ public class Buffer
     public Quaternion ReadQuaternion()
     {
         var output = new Quaternion();
-        if (!CanRead(4 * sizeof(float)))
+        if (!CanReadInternal(4 * sizeof(float)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read quaternion");
             return output;
@@ -526,7 +540,7 @@ public class Buffer
 
     public IdentifierData ReadIdentifierData()
     {
-        if (!CanRead(2 * sizeof(int)))
+        if (!CanReadInternal(2 * sizeof(int)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read identifier");
             return IdentifierData.Invalid;
@@ -540,7 +554,7 @@ public class Buffer
     
     public CSteamID ReadSteamID()
     {
-        if (!CanRead(sizeof(ulong)))
+        if (!CanReadInternal(sizeof(ulong)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read identifier");
             return CSteamID.Nil;

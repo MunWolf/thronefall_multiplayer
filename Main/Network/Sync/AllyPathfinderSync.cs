@@ -70,7 +70,7 @@ public class AllyPathfinderSync : BaseTargetSync
 
         return a.TargetObject.Type == b.TargetObject.Type
                && a.TargetObject.Id == b.TargetObject.Id
-               && a.HomePosition == b.HomePosition
+               && (a.HomePosition - b.HomePosition).sqrMagnitude < Helpers.EpsilonSqr
                && a.HasReachedHomePositionAlready == b.HasReachedHomePositionAlready
                && a.Slowed == b.Slowed;
     }
