@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>com.badwolf.thronefall_mp</AssemblyName>
     <Description>Multiplayer mod for Thronefall</Description>
     <Version>1.0.1</Version>
