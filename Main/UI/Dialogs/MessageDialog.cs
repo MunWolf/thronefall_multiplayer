@@ -3,7 +3,6 @@ using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Dialogs;
 
@@ -52,7 +51,7 @@ public class MessageDialog : BaseUI
     
     public override void ConstructPanelContent()
     {
-        _background = UIFactory.CreateUIObject("background", PanelRoot);
+        _background = UIHelper.CreateUIObject("background", PanelRoot);
         {
             var image = _background.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -62,12 +61,12 @@ public class MessageDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1, 1);
         }
         
-        var panelBorders = UIFactory.CreateUIObject("panel", PanelRoot);
+        var panelBorders = UIHelper.CreateUIObject("panel", PanelRoot);
         {
             var image = panelBorders.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.DarkBackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panelBorders,
                 true,
                 true,
@@ -86,12 +85,12 @@ public class MessageDialog : BaseUI
             rectTransform.anchorMax = new Vector2(0.65f, 0.7f);
         }
         
-        var panel = UIFactory.CreateUIObject("panel", panelBorders);
+        var panel = UIHelper.CreateUIObject("panel", panelBorders);
         {
             var image = panel.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.BackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panel,
                 false,
                 false,
@@ -109,9 +108,9 @@ public class MessageDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1.0f, 1.0f);
         }
 
-        var titleContainer = UIFactory.CreateUIObject("titleContainer", panel);
+        var titleContainer = UIHelper.CreateUIObject("titleContainer", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 titleContainer,
                 false,
                 false,
@@ -124,7 +123,7 @@ public class MessageDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(titleContainer, ignoreLayout: true);
+            UIHelper.SetLayoutElement(titleContainer, ignoreLayout: true);
             var rectTransform = titleContainer.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.7f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.9f);
@@ -137,9 +136,9 @@ public class MessageDialog : BaseUI
         _message = UIHelper.CreateText(panel, "message", "Message");
         _message.alignment = TextAlignmentOptions.Center;
 
-        var buttons = UIFactory.CreateUIObject("buttons", panel);
+        var buttons = UIHelper.CreateUIObject("buttons", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 buttons,
                 false,
                 false,
@@ -152,14 +151,14 @@ public class MessageDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(buttons, ignoreLayout: true);
+            UIHelper.SetLayoutElement(buttons, ignoreLayout: true);
             var rectTransform = buttons.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.1f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
         
         _button = UIHelper.CreateButton(buttons, "button", "Close");
-        UIFactory.SetLayoutElement(_button.gameObject, minWidth: 100);
+        UIHelper.SetLayoutElement(_button.gameObject, minWidth: 100);
         _button.OnClick += () =>
         {
             OnClick?.Invoke();

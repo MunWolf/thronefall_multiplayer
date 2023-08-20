@@ -3,7 +3,6 @@ using ThronefallMP.Patches;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UniverseLib.UI;
 using Object = UnityEngine.Object;
 
 namespace ThronefallMP.UI.Dialogs;
@@ -29,7 +28,7 @@ public class PasswordDialog : BaseUI
     
     public override void ConstructPanelContent()
     {
-        _background = UIFactory.CreateUIObject("background", PanelRoot);
+        _background = UIHelper.CreateUIObject("background", PanelRoot);
         {
             var image = _background.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -39,12 +38,12 @@ public class PasswordDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1, 1);
         }
         
-        var panelBorders = UIFactory.CreateUIObject("panel", PanelRoot);
+        var panelBorders = UIHelper.CreateUIObject("panel", PanelRoot);
         {
             var image = panelBorders.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.DarkBackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panelBorders,
                 true,
                 true,
@@ -62,12 +61,12 @@ public class PasswordDialog : BaseUI
             rectTransform.anchorMax = new Vector2(0.65f, 0.6f);
         }
         
-        var panel = UIFactory.CreateUIObject("panel", panelBorders);
+        var panel = UIHelper.CreateUIObject("panel", panelBorders);
         {
             var image = panel.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.BackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panel,
                 false,
                 false,
@@ -86,9 +85,9 @@ public class PasswordDialog : BaseUI
         }
 
         
-        var titleContainer = UIFactory.CreateUIObject("titleContainer", panel);
+        var titleContainer = UIHelper.CreateUIObject("titleContainer", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 titleContainer,
                 false,
                 false,
@@ -101,7 +100,7 @@ public class PasswordDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(titleContainer, ignoreLayout: true);
+            UIHelper.SetLayoutElement(titleContainer, ignoreLayout: true);
             var rectTransform = titleContainer.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.7f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.9f);
@@ -113,9 +112,9 @@ public class PasswordDialog : BaseUI
 
         _input = UIHelper.CreateInputField(panel, "password", null, "", 24);
 
-        var buttons = UIFactory.CreateUIObject("buttons", panel);
+        var buttons = UIHelper.CreateUIObject("buttons", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 buttons,
                 false,
                 false,
@@ -128,14 +127,14 @@ public class PasswordDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(buttons, ignoreLayout: true);
+            UIHelper.SetLayoutElement(buttons, ignoreLayout: true);
             var rectTransform = buttons.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.1f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
         
         var connect = UIHelper.CreateButton(buttons, "connect", "Connect");
-        UIFactory.SetLayoutElement(connect.gameObject, minWidth: 120);
+        UIHelper.SetLayoutElement(connect.gameObject, minWidth: 120);
         connect.OnClick += () =>
         {
             Destroy(gameObject);
@@ -143,7 +142,7 @@ public class PasswordDialog : BaseUI
         };
         
         var cancel = UIHelper.CreateButton(buttons, "cancel", "Cancel");
-        UIFactory.SetLayoutElement(cancel.gameObject, minWidth: 120);
+        UIHelper.SetLayoutElement(cancel.gameObject, minWidth: 120);
         cancel.OnClick += () =>
         {
             Destroy(gameObject);

@@ -2,7 +2,6 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Panels;
 
@@ -17,12 +16,12 @@ public class GameStatusPanel : BaseUI
     
     public override void ConstructPanelContent()
     {
-        var container = UIFactory.CreateUIObject("container", PanelRoot);
+        var container = UIHelper.CreateUIObject("container", PanelRoot);
         {
             var rectTransform = container.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0, 0.5f);
             rectTransform.anchorMax = new Vector2(0.25f, 1);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 container,
                 true,
                 false,
@@ -37,7 +36,7 @@ public class GameStatusPanel : BaseUI
             );
         }
         
-        _playerList = UIFactory.CreateUIObject("background", container);
+        _playerList = UIHelper.CreateUIObject("background", container);
         {
             _playerList.AddComponent<Mask>();
             var image = _playerList.AddComponent<Image>();
@@ -46,7 +45,7 @@ public class GameStatusPanel : BaseUI
             var rectTransform = _playerList.GetComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 _playerList,
                 true,
                 false,
@@ -60,8 +59,8 @@ public class GameStatusPanel : BaseUI
                 TextAnchor.UpperLeft
             );
         }
-        var playerEntry = UIFactory.CreateUIObject($"player_header", _playerList);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var playerEntry = UIHelper.CreateUIObject($"player_header", _playerList);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             playerEntry,
             false,
             false,
@@ -78,12 +77,12 @@ public class GameStatusPanel : BaseUI
         var playerName = UIHelper.CreateText(playerEntry, "name", "Name", UIManager.DefaultFont);
         playerName.alignment = TextAlignmentOptions.Left;
         playerName.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UIFactory.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
+        UIHelper.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
         
         var ping = UIHelper.CreateText(playerEntry, "ping", "Ping", UIManager.DefaultFont);
         ping.alignment = TextAlignmentOptions.Center;
         ping.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UIFactory.SetLayoutElement(ping.gameObject, minWidth: 40);
+        UIHelper.SetLayoutElement(ping.gameObject, minWidth: 40);
         
         LayoutRebuilder.ForceRebuildLayoutImmediate(_playerList.GetComponent<RectTransform>());
 
@@ -110,7 +109,7 @@ public class GameStatusPanel : BaseUI
     {
         var playerEntry = UIHelper.CreateBox(_playerList, $"player_{player.Id}", EntryColor);
         playerEntry.SetActive(false);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             playerEntry,
             false,
             false,
@@ -124,7 +123,7 @@ public class GameStatusPanel : BaseUI
             TextAnchor.MiddleCenter
         );
 
-        var isHost = UIFactory.CreateUIObject("is_host", playerEntry);
+        var isHost = UIHelper.CreateUIObject("is_host", playerEntry);
         var image = isHost.AddComponent<Image>();
         image.type = Image.Type.Filled;
         var crown = Plugin.Instance.TextureRepository.Crown;
@@ -133,17 +132,17 @@ public class GameStatusPanel : BaseUI
             new Rect(0, 0, crown.width, crown.height),
             new Vector2(0.5f, 0.5f)
         );
-        UIFactory.SetLayoutElement(isHost, minWidth: 24);
+        UIHelper.SetLayoutElement(isHost, minWidth: 24);
         
         var playerName = UIHelper.CreateText(playerEntry, "name", "", UIManager.DefaultFont);
         playerName.alignment = TextAlignmentOptions.Left;
         playerName.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UIFactory.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
+        UIHelper.SetLayoutElement(playerName.gameObject, flexibleWidth: 1);
         
         var ping = UIHelper.CreateText(playerEntry, "ping", "", UIManager.DefaultFont);
         ping.alignment = TextAlignmentOptions.Center;
         ping.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UIFactory.SetLayoutElement(ping.gameObject, minWidth: 40);
+        UIHelper.SetLayoutElement(ping.gameObject, minWidth: 40);
 
         var info = playerEntry.AddComponent<PlayerInfoControl>();
         info.playerId = player.Id;

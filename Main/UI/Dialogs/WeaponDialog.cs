@@ -9,7 +9,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Dialogs;
 
@@ -33,7 +32,7 @@ public class WeaponDialog : BaseUI
     
     public override void ConstructPanelContent()
     {
-        _background = UIFactory.CreateUIObject("background", PanelRoot);
+        _background = UIHelper.CreateUIObject("background", PanelRoot);
         {
             var image = _background.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -43,12 +42,12 @@ public class WeaponDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1, 1);
         }
         
-        var panelBorders = UIFactory.CreateUIObject("panel", PanelRoot);
+        var panelBorders = UIHelper.CreateUIObject("panel", PanelRoot);
         {
             var image = panelBorders.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.DarkBackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panelBorders,
                 true,
                 true,
@@ -67,12 +66,12 @@ public class WeaponDialog : BaseUI
             rectTransform.anchorMax = new Vector2(0.65f, 0.6f);
         }
         
-        var panel = UIFactory.CreateUIObject("panel", panelBorders);
+        var panel = UIHelper.CreateUIObject("panel", panelBorders);
         {
             var image = panel.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.BackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panel,
                 false,
                 false,
@@ -90,9 +89,9 @@ public class WeaponDialog : BaseUI
             rectTransform.anchorMax = new Vector2(1.0f, 1.0f);
         }
 
-        var titleContainer = UIFactory.CreateUIObject("titleContainer", panel);
+        var titleContainer = UIHelper.CreateUIObject("titleContainer", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 titleContainer,
                 false,
                 false,
@@ -105,7 +104,7 @@ public class WeaponDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(titleContainer, ignoreLayout: true);
+            UIHelper.SetLayoutElement(titleContainer, ignoreLayout: true);
             var rectTransform = titleContainer.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.7f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.9f);
@@ -115,9 +114,9 @@ public class WeaponDialog : BaseUI
         _title.fontSize = 36;
         _title.alignment = TextAlignmentOptions.Center;
 
-        var weapons = UIFactory.CreateUIObject("weapons", panel);
+        var weapons = UIHelper.CreateUIObject("weapons", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 weapons,
                 false,
                 false,
@@ -139,9 +138,9 @@ public class WeaponDialog : BaseUI
         _selectedEquipment = Equipment.LongBow;
         OnWeaponChanged?.Invoke();
 
-        var buttons = UIFactory.CreateUIObject("buttons", panel);
+        var buttons = UIHelper.CreateUIObject("buttons", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 buttons,
                 false,
                 false,
@@ -154,14 +153,14 @@ public class WeaponDialog : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(buttons, ignoreLayout: true);
+            UIHelper.SetLayoutElement(buttons, ignoreLayout: true);
             var rectTransform = buttons.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.1f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
         
         _button = UIHelper.CreateButton(buttons, "button", "Confirm");
-        UIFactory.SetLayoutElement(_button.gameObject, minWidth: 140);
+        UIHelper.SetLayoutElement(_button.gameObject, minWidth: 140);
         _button.OnClick += () =>
         {
             var response = new WeaponResponsePacket
@@ -200,8 +199,8 @@ public class WeaponDialog : BaseUI
         var outlineNormal = new Color(0.784f, 0.651f, 0.455f, 1);
         var outlineSelected = new Color(1, 0.906f, 0.769f, 1);
         
-        var frame = UIFactory.CreateUIObject($"weapon_{equipment}", parent);
-        var icon = UIFactory.CreateUIObject($"weapon_{equipment}", frame);
+        var frame = UIHelper.CreateUIObject($"weapon_{equipment}", parent);
+        var icon = UIHelper.CreateUIObject($"weapon_{equipment}", frame);
 
         var tweeen = frame.AddComponent<TweenScale>();
         {

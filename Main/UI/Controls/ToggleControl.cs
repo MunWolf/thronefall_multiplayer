@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements.Experimental;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Controls;
 
@@ -65,7 +64,7 @@ public class ToggleControl : MonoBehaviour
     {
         get => _checkmarkSize;
         set {
-            UIFactory.SetLayoutElement(_checkBorder, minWidth: value, minHeight: value);
+            UIHelper.SetLayoutElement(_checkBorder, minWidth: value, minHeight: value);
             _checkmarkSize = value;
         }
     }

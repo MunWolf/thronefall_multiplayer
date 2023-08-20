@@ -1,12 +1,8 @@
-﻿using System.IO;
-using System.Linq;
-using System.Reflection;
-using ThronefallMP.Network;
+﻿using ThronefallMP.Network;
 using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Panels;
 
@@ -16,8 +12,8 @@ public partial class LobbyListPanel
     {
         // TODO: Fix select sound and click sound playing when you click a button with the mouse.
         
-        var multiplayer = UIFactory.CreateUIObject("multiplayer", PanelRoot);
-        UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+        var multiplayer = UIHelper.CreateUIObject("multiplayer", PanelRoot);
+        UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
             multiplayer,
             false,
             false,
@@ -34,8 +30,8 @@ public partial class LobbyListPanel
         rectTransform.anchorMin = new Vector2(0, 0);
         rectTransform.anchorMax = new Vector2(1, 1);
         
-        var lobbiesUI = UIFactory.CreateUIObject("lobbies", multiplayer);
-        UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+        var lobbiesUI = UIHelper.CreateUIObject("lobbies", multiplayer);
+        UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
             lobbiesUI,
             true,
             false,
@@ -48,10 +44,10 @@ public partial class LobbyListPanel
             0,
             TextAnchor.UpperCenter
         );
-        UIFactory.SetLayoutElement(lobbiesUI, flexibleHeight: 1);
+        UIHelper.SetLayoutElement(lobbiesUI, flexibleHeight: 1);
 
-        var header = UIFactory.CreateUIObject("header", lobbiesUI);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var header = UIHelper.CreateUIObject("header", lobbiesUI);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             header,
             true,
             true,
@@ -64,31 +60,31 @@ public partial class LobbyListPanel
             0,
             TextAnchor.MiddleCenter
         );
-        UIFactory.SetLayoutElement(header, minHeight: 40, flexibleHeight: 0);
+        UIHelper.SetLayoutElement(header, minHeight: 40, flexibleHeight: 0);
 
         var text = UIHelper.CreateText(header, "name", "Name");
         text.alignment = TextAlignmentOptions.BaselineLeft;
-        UIFactory.SetLayoutElement(text.gameObject, flexibleWidth: 9999999);
+        UIHelper.SetLayoutElement(text.gameObject, flexibleWidth: 9999999);
         
         text = UIHelper.CreateText(header, "player_count", "Player Count");
         text.alignment = TextAlignmentOptions.Baseline;
-        UIFactory.SetLayoutElement(text.gameObject, minWidth: 160);
+        UIHelper.SetLayoutElement(text.gameObject, minWidth: 160);
         
         text = UIHelper.CreateText(header, "password", "");
         text.alignment = TextAlignmentOptions.Baseline;
-        UIFactory.SetLayoutElement(text.gameObject, minWidth: 50);
+        UIHelper.SetLayoutElement(text.gameObject, minWidth: 50);
         
-        var separator = UIFactory.CreateUIObject("separator", lobbiesUI);
+        var separator = UIHelper.CreateUIObject("separator", lobbiesUI);
         var image = separator.AddComponent<Image>();
         image.type = Image.Type.Sliced;
         image.color = UIManager.TextColor;
-        UIFactory.SetLayoutElement(separator, minHeight: 2, flexibleHeight: 0);
+        UIHelper.SetLayoutElement(separator, minHeight: 2, flexibleHeight: 0);
         
-        var scroller = UIFactory.CreateUIObject("scroller", lobbiesUI);
+        var scroller = UIHelper.CreateUIObject("scroller", lobbiesUI);
         scroller.gameObject.AddComponent<RectMask2D>();
         
-        _lobbyList = UIFactory.CreateUIObject("lobby_list", scroller);
-        UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+        _lobbyList = UIHelper.CreateUIObject("lobby_list", scroller);
+        UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
             _lobbyList,
             true,
             false,
@@ -115,16 +111,16 @@ public partial class LobbyListPanel
         _scrollRect.vertical = true;
         _scrollRect.scrollSensitivity = 50.0f;
         _scrollRect.content = _lobbyList.GetComponent<RectTransform>();
-        UIFactory.SetLayoutElement(scroller, flexibleHeight: 1);
+        UIHelper.SetLayoutElement(scroller, flexibleHeight: 1);
         
-        separator = UIFactory.CreateUIObject("separator", lobbiesUI);
+        separator = UIHelper.CreateUIObject("separator", lobbiesUI);
         image = separator.AddComponent<Image>();
         image.type = Image.Type.Sliced;
         image.color = UIManager.TextColor;
-        UIFactory.SetLayoutElement(separator, minHeight: 2, flexibleHeight: 0);
+        UIHelper.SetLayoutElement(separator, minHeight: 2, flexibleHeight: 0);
         
-        var filters = UIFactory.CreateUIObject("filters", multiplayer);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var filters = UIHelper.CreateUIObject("filters", multiplayer);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             filters,
             false,
             true,
@@ -137,7 +133,7 @@ public partial class LobbyListPanel
             20,
             TextAnchor.MiddleLeft
         );
-        UIFactory.SetLayoutElement(filters, minHeight: 40, flexibleHeight: 0);
+        UIHelper.SetLayoutElement(filters, minHeight: 40, flexibleHeight: 0);
 
         var refresh = UIHelper.CreateButton(filters, "refresh", "Refresh");
         refresh.Normal.Size = 24;
@@ -151,16 +147,16 @@ public partial class LobbyListPanel
             RefreshLobbies();
             ThronefallAudioManager.Oneshot(ThronefallAudioManager.AudioOneShot.ButtonApply);
         };
-        UIFactory.SetLayoutElement(refresh.gameObject, minWidth: 120, preferredWidth: 160);
+        UIHelper.SetLayoutElement(refresh.gameObject, minWidth: 120, preferredWidth: 160);
         _friendsOnly = UIHelper.CreateLeftToggle(filters, "friends_only", "Friends Only");
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_friendsOnly.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(_friendsOnly.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
         _showWithPassword = UIHelper.CreateLeftToggle(filters, "show_with_password", "Show with Password", true);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_showWithPassword.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(_showWithPassword.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
         _showFull = UIHelper.CreateLeftToggle(filters, "show_full", "Show Full", true);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(_showFull.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(_showFull.gameObject, padTop: 5, padLeft: 20, padBottom: 5, padRight: 20);
         
-        var buttons = UIFactory.CreateUIObject("buttons", multiplayer);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var buttons = UIHelper.CreateUIObject("buttons", multiplayer);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             buttons,
             false,
             true,
@@ -173,7 +169,7 @@ public partial class LobbyListPanel
             20,
             TextAnchor.MiddleCenter
         );
-        UIFactory.SetLayoutElement(buttons, minHeight: 80, flexibleHeight: 0);
+        UIHelper.SetLayoutElement(buttons, minHeight: 80, flexibleHeight: 0);
 
         _connect = UIHelper.CreateButton(buttons, "connect", "Connect");
         _connect.OnClick += () =>
@@ -192,7 +188,7 @@ public partial class LobbyListPanel
         };
         _connect.OnExit += () => { _muteSound = false; };
         _connect.OnSelected += PlaySelectSound;
-        UIFactory.SetLayoutElement(_connect.gameObject, minWidth: 160, preferredWidth: 300);
+        UIHelper.SetLayoutElement(_connect.gameObject, minWidth: 160, preferredWidth: 300);
         _connect.SetInteractable(false);
 
         Host = UIHelper.CreateButton(buttons, "host", "Host");
@@ -204,13 +200,13 @@ public partial class LobbyListPanel
         };
         Host.OnExit += () => { _muteSound = false; };
         Host.OnSelected += PlaySelectSound;
-        UIFactory.SetLayoutElement(Host.gameObject, minWidth: 100, preferredWidth: 300);
+        UIHelper.SetLayoutElement(Host.gameObject, minWidth: 100, preferredWidth: 300);
 
         _back = UIHelper.CreateButton(buttons, "back", "Back");
         _back.OnClick += Back;
         _back.OnExit += () => { _muteSound = false; };
         _back.OnSelected += PlaySelectSound;
-        UIFactory.SetLayoutElement(_back.gameObject, minWidth: 100, preferredWidth: 300);
+        UIHelper.SetLayoutElement(_back.gameObject, minWidth: 100, preferredWidth: 300);
 
         // Navigation
         _connect.NavLeft = _back.Button;
@@ -265,7 +261,7 @@ public partial class LobbyListPanel
     private void AddLobbyEntry(Lobby info)
     {
         var lobby = UIHelper.CreateBox(_lobbyList, info.Name, UIManager.TransparentBackgroundColor);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             lobby,
             false,
             true,
@@ -283,14 +279,14 @@ public partial class LobbyListPanel
         
         var text = UIHelper.CreateText(lobby, "name", info.Name);
         text.alignment = TextAlignmentOptions.Left;
-        UIFactory.SetLayoutElement(text.gameObject, flexibleWidth: 9999999);
+        UIHelper.SetLayoutElement(text.gameObject, flexibleWidth: 9999999);
         
         text = UIHelper.CreateText(lobby, "player_count", $"{info.PlayerCount}/{info.MaxPlayerCount}");
         text.alignment = TextAlignmentOptions.Center;
-        UIFactory.SetLayoutElement(text.gameObject, minWidth: 160);
+        UIHelper.SetLayoutElement(text.gameObject, minWidth: 160);
         
-        var container = UIFactory.CreateUIObject("password", lobby);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var container = UIHelper.CreateUIObject("password", lobby);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             container,
             false,
             true,
@@ -303,11 +299,11 @@ public partial class LobbyListPanel
             4,
             TextAnchor.MiddleCenter
         );
-        UIFactory.SetLayoutElement(container, minWidth: 50);
+        UIHelper.SetLayoutElement(container, minWidth: 50);
 
         if (info.HasPassword)
         {
-            var imageObject = UIFactory.CreateUIObject("image", container);
+            var imageObject = UIHelper.CreateUIObject("image", container);
             var image = imageObject.gameObject.AddComponent<Image>();
             image.type = Image.Type.Filled;
             var lockTexture = Plugin.Instance.TextureRepository.Lock;

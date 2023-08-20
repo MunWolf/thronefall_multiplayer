@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI;
 
@@ -12,8 +11,8 @@ public static class UIHelper
 {
     public static GameObject CreateBox(GameObject root, string name, Color color)
     {
-        var border = UIFactory.CreateUIObject(name, root);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var border = CreateUIObject(name, root);
+        SetLayoutGroup<HorizontalLayoutGroup>(
             border,
             childControlWidth: true,
             childControlHeight: true
@@ -26,7 +25,7 @@ public static class UIHelper
     
     public static TextMeshProUGUI CreateText(GameObject root, string name, string text, TMP_FontAsset font = null)
     {
-        var textObject = UIFactory.CreateUIObject(name, root);
+        var textObject = CreateUIObject(name, root);
         var textComponent = textObject.AddComponent<TextMeshProUGUI>();
         textComponent.text = text;
         textComponent.color = UIManager.TextColor;
@@ -44,8 +43,8 @@ public static class UIHelper
     
     public static ButtonControl CreateButton(GameObject root, string name, string text)
     {
-        var buttonObject = UIFactory.CreateUIObject(name, root, new Vector2(25f, 25f));
-        var textObject = UIFactory.CreateUIObject("text", buttonObject);
+        var buttonObject = CreateUIObject(name, root, new Vector2(25f, 25f));
+        var textObject = CreateUIObject("text", buttonObject);
         var button = buttonObject.AddComponent<Button>();
         var navigation = button.navigation with { mode = Navigation.Mode.Explicit };
         button.navigation = navigation;
@@ -61,7 +60,7 @@ public static class UIHelper
         component.sizeDelta = Vector2.zero;
         button.onClick.AddListener(() => button.OnDeselect(null));
         
-        UIFactory.SetLayoutElement(buttonObject, minWidth: 20, minHeight: 20);
+        SetLayoutElement(buttonObject, minWidth: 20, minHeight: 20);
         
         buttonObject.AddComponent<EventTrigger>();
         return buttonObject.AddComponent<ButtonControl>();
@@ -69,11 +68,11 @@ public static class UIHelper
 
     public static GameObject CreateCheck(GameObject root, string name, bool startsOn = false)
     {
-        var toggleObject = UIFactory.CreateUIObject(name, root, new Vector2(25f, 25f));
+        var toggleObject = CreateUIObject(name, root, new Vector2(25f, 25f));
         var toggle = toggleObject.AddComponent<Toggle>();
         toggleObject.AddComponent<Image>().color = Color.clear;
         toggle.isOn = startsOn;
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        SetLayoutGroup<HorizontalLayoutGroup>(
             toggleObject,
             false,
             false,
@@ -89,12 +88,12 @@ public static class UIHelper
         var navigation = toggle.navigation with { mode = Navigation.Mode.Explicit };
         toggle.navigation = navigation;
         
-        var checkBorderObject = UIFactory.CreateUIObject("checkmark", toggleObject);
-        UIFactory.SetLayoutElement(checkBorderObject, flexibleWidth: 0, flexibleHeight: 0);
-        var checkBackgroundObject = UIFactory.CreateUIObject("background", checkBorderObject).GetComponent<RectTransform>();
+        var checkBorderObject = CreateUIObject("checkmark", toggleObject);
+        SetLayoutElement(checkBorderObject, flexibleWidth: 0, flexibleHeight: 0);
+        var checkBackgroundObject = CreateUIObject("background", checkBorderObject).GetComponent<RectTransform>();
         checkBackgroundObject.anchorMin = new Vector2(0.1f, 0.1f);
         checkBackgroundObject.anchorMax = new Vector2(0.9f, 0.9f);
-        var checkObject = UIFactory.CreateUIObject("check", checkBorderObject).GetComponent<RectTransform>();
+        var checkObject = CreateUIObject("check", checkBorderObject).GetComponent<RectTransform>();
         checkObject.anchorMin = new Vector2(0.3f, 0.3f);
         checkObject.anchorMax = new Vector2(0.7f, 0.7f);
 
@@ -111,7 +110,7 @@ public static class UIHelper
     public static ToggleControl CreateLeftToggle(GameObject root, string name, string text, bool startsOn = false)
     {
         var toggleObject = CreateCheck(root, name, startsOn);
-        var textObject = UIFactory.CreateUIObject("text", toggleObject);
+        var textObject = CreateUIObject("text", toggleObject);
         var textComponent = textObject.AddComponent<TextMeshProUGUI>();
         textComponent.text = text;
         textComponent.font = UIManager.DefaultFont;
@@ -120,7 +119,7 @@ public static class UIHelper
         fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         
-        UIFactory.SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
+        SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
         
         toggleObject.AddComponent<EventTrigger>();
         return toggleObject.AddComponent<ToggleControl>();
@@ -129,7 +128,7 @@ public static class UIHelper
     public static ToggleControl CreateRightToggle(GameObject root, string name, string text, bool startsOn = false)
     {
         var toggleObject = CreateCheck(root, name, startsOn);
-        var textObject = UIFactory.CreateUIObject("text", toggleObject);
+        var textObject = CreateUIObject("text", toggleObject);
         var textComponent = textObject.AddComponent<TextMeshProUGUI>();
         textComponent.text = text;
         textComponent.font = UIManager.DefaultFont;
@@ -139,7 +138,7 @@ public static class UIHelper
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         textObject.transform.SetSiblingIndex(0);
 
-        UIFactory.SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
+        SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
         
         toggleObject.AddComponent<EventTrigger>();
         return toggleObject.AddComponent<ToggleControl>();
@@ -149,7 +148,7 @@ public static class UIHelper
     {
         var toggleObject = CreateCheck(root, name, startsOn);
 
-        UIFactory.SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
+        SetLayoutElement(toggleObject, minWidth: 20, minHeight: 20);
         
         toggleObject.AddComponent<EventTrigger>();
         return toggleObject.AddComponent<ToggleControl>();
@@ -158,8 +157,8 @@ public static class UIHelper
     public static TMP_InputField CreateInputField(GameObject panel, string name, string label, string value,
         int? labelWidth = null, int limit = 32, TMP_FontAsset font = null)
     {
-        var group = UIFactory.CreateUIObject($"{name}Group", panel);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var group = CreateUIObject($"{name}Group", panel);
+        SetLayoutGroup<HorizontalLayoutGroup>(
             group,
             false,
             false,
@@ -172,17 +171,17 @@ public static class UIHelper
             5,
             TextAnchor.MiddleLeft
         );
-        UIFactory.SetLayoutElement(group, flexibleWidth: 1);
+        SetLayoutElement(group, flexibleWidth: 1);
 
         if (label != null)
         {
             var bg = CreateBox(group, $"{name}_label_bg", Color.clear);
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            SetLayoutGroup<HorizontalLayoutGroup>(
                 bg,
                 childControlWidth: true,
                 childAlignment: TextAnchor.MiddleLeft
             );
-            UIFactory.SetLayoutElement(bg.gameObject, minWidth: labelWidth, flexibleWidth: 0);
+            SetLayoutElement(bg.gameObject, minWidth: labelWidth, flexibleWidth: 0);
             bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             var labelText = CreateText(bg, $"{name}_label", $"{label}: ", font);
             labelText.alignment = TextAlignmentOptions.Left;
@@ -190,7 +189,7 @@ public static class UIHelper
 
         {
             var bg = CreateBox(group, $"{name}_bg",  new Color(0.2f, 0.2f, 0.2f));
-            UIFactory.SetLayoutElement(bg, flexibleWidth: 1);
+            SetLayoutElement(bg, flexibleWidth: 1);
             bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             var inputField = bg.AddComponent<TMP_InputField>();
             inputField.textViewport = inputField.transform.parent.GetComponent<RectTransform>();
@@ -232,4 +231,152 @@ public static class UIHelper
             callback = entry
         });
     }
+    
+    public static T SetLayoutGroup<T>(
+        GameObject gameObject,
+        bool? forceWidth = null,
+        bool? forceHeight = null,
+        bool? childControlWidth = null,
+        bool? childControlHeight = null,
+        int? spacing = null,
+        int? padTop = null,
+        int? padBottom = null,
+        int? padLeft = null,
+        int? padRight = null,
+        TextAnchor? childAlignment = null)
+        where T : HorizontalOrVerticalLayoutGroup
+    {
+        var group = gameObject.GetComponent<T>();
+        if (!(bool)(Object)group)
+        {
+            group = gameObject.AddComponent<T>();
+        }
+        return SetLayoutGroup<T>(group, forceWidth, forceHeight, childControlWidth, childControlHeight, spacing, padTop, padBottom, padLeft, padRight, childAlignment);
+    }
+    
+    public static T SetLayoutGroup<T>(
+        T group,
+        bool? forceWidth = null,
+        bool? forceHeight = null,
+        bool? childControlWidth = null,
+        bool? childControlHeight = null,
+        int? spacing = null,
+        int? padTop = null,
+        int? padBottom = null,
+        int? padLeft = null,
+        int? padRight = null,
+        TextAnchor? childAlignment = null)
+        where T : HorizontalOrVerticalLayoutGroup
+    {
+        if (forceWidth.HasValue)
+        {
+            group.childForceExpandWidth = forceWidth.Value;
+        }
+        if (forceHeight.HasValue)
+        {
+            group.childForceExpandHeight = forceHeight.Value;
+        }
+        if (childControlWidth.HasValue)
+        {
+            group.SetChildControlWidth(childControlWidth.Value);
+        }
+        if (childControlHeight.HasValue)
+        {
+            group.SetChildControlHeight(childControlHeight.Value);
+        }
+        if (spacing.HasValue)
+        {
+            group.spacing = spacing.Value;
+        }
+        if (padTop.HasValue)
+        {
+            group.padding.top = padTop.Value;
+        }
+        if (padBottom.HasValue)
+        {
+            group.padding.bottom = padBottom.Value;
+        }
+        if (padLeft.HasValue)
+        {
+            group.padding.left = padLeft.Value;
+        }
+        if (padRight.HasValue)
+        {
+            group.padding.right = padRight.Value;
+        }
+        if (childAlignment.HasValue)
+        {
+            group.childAlignment = childAlignment.Value;
+        }
+        
+        return group;
+    }
+    
+    public static GameObject CreateUIObject(string name, GameObject parent, Vector2 sizeDelta = default (Vector2))
+    {
+        var gameObject = new GameObject(name)
+        {
+            layer = 5,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        if ((bool)(Object)parent)
+        {
+            gameObject.transform.SetParent(parent.transform, false);
+        }
+        
+        gameObject.AddComponent<RectTransform>().sizeDelta = sizeDelta;
+        return gameObject;
+    }
+    
+    public static LayoutElement SetLayoutElement(GameObject gameObject, int? minWidth = null, int? minHeight = null,
+        int? flexibleWidth = null, int? flexibleHeight = null, int? preferredWidth = null, int? preferredHeight = null,
+        bool? ignoreLayout = null)
+    {
+        var layout = gameObject.GetComponent<LayoutElement>();
+        if (!layout)
+        {
+            layout = gameObject.AddComponent<LayoutElement>();
+        }
+
+        if (minWidth != null)
+        {
+            layout.minWidth = minWidth.Value;
+        }
+
+        if (minHeight != null)
+        {
+            layout.minHeight = minHeight.Value;
+        }
+
+        if (flexibleWidth != null)
+        {
+            layout.flexibleWidth = flexibleWidth.Value;
+        }
+
+        if (flexibleHeight != null)
+        {
+            layout.flexibleHeight = flexibleHeight.Value;
+        }
+
+        if (preferredWidth != null)
+        {
+            layout.preferredWidth = preferredWidth.Value;
+        }
+
+        if (preferredHeight != null)
+        {
+            layout.preferredHeight = preferredHeight.Value;
+        }
+
+        if (ignoreLayout != null)
+        {
+            layout.ignoreLayout = ignoreLayout.Value;
+        }
+
+        return layout;
+    }
+    
+    public static void SetChildControlHeight(this HorizontalOrVerticalLayoutGroup group, bool value) => group.childControlHeight = value;
+    public static void SetChildControlWidth(this HorizontalOrVerticalLayoutGroup group, bool value) => group.childControlWidth = value;
 }

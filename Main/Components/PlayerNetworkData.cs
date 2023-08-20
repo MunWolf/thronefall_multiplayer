@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
 using Rewired;
 using ThronefallMP.Utils;
 using UnityEngine;
-using UniverseLib;
 
 namespace ThronefallMP.Components;
 

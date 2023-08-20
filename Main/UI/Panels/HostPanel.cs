@@ -4,7 +4,6 @@ using ThronefallMP.UI.Controls;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UniverseLib.UI;
 using Debug = System.Diagnostics.Debug;
 
 namespace ThronefallMP.UI.Panels;
@@ -41,7 +40,7 @@ public class HostPanel : BaseUI
     
     public override void ConstructPanelContent()
     {
-        var background = UIFactory.CreateUIObject("background", PanelRoot);
+        var background = UIHelper.CreateUIObject("background", PanelRoot);
         {
             var image = background.AddComponent<Image>();
             image.type = Image.Type.Sliced;
@@ -51,12 +50,12 @@ public class HostPanel : BaseUI
             rectTransform.anchorMax = new Vector2(1, 1);
         }
         
-        _window = UIFactory.CreateUIObject("panel", background);
+        _window = UIHelper.CreateUIObject("panel", background);
         {
             var image = _window.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.DarkBackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 _window,
                 true,
                 true,
@@ -74,12 +73,12 @@ public class HostPanel : BaseUI
             rectTransform.anchorMax = new Vector2(0.65f, 0.7f);
         }
         
-        var panel = UIFactory.CreateUIObject("panel", _window);
+        var panel = UIHelper.CreateUIObject("panel", _window);
         {
             var image = panel.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = UIManager.BackgroundColor;
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 panel,
                 false,
                 false,
@@ -107,9 +106,9 @@ public class HostPanel : BaseUI
         var friendsOnlyToggle = CreateToggle(panel, "friends_only", "Friends Only", false);
         var enableCheatsToggle = CreateToggle(panel, "cheats_enabled", "Enable Cheats", false);
         
-        var buttons = UIFactory.CreateUIObject("buttons", panel);
+        var buttons = UIHelper.CreateUIObject("buttons", panel);
         {
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 buttons,
                 false,
                 false,
@@ -122,14 +121,14 @@ public class HostPanel : BaseUI
                 0,
                 TextAnchor.MiddleCenter
             );
-            UIFactory.SetLayoutElement(buttons, ignoreLayout: true);
+            UIHelper.SetLayoutElement(buttons, ignoreLayout: true);
             var rectTransform = buttons.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.0f, 0.1f);
             rectTransform.anchorMax = new Vector2(1.0f, 0.3f);
         }
 
         Host = UIHelper.CreateButton(buttons, "host", "Host");
-        UIFactory.SetLayoutElement(Host.gameObject, minWidth: 100);
+        UIHelper.SetLayoutElement(Host.gameObject, minWidth: 100);
         Host.OnClick += () =>
         {
             Plugin.Log.LogInfo($"Creating {(friendsOnlyToggle.Toggle.isOn ? "friends only" : "public")} lobby");
@@ -145,7 +144,7 @@ public class HostPanel : BaseUI
         };
         
         var back = UIHelper.CreateButton(buttons, "back", "Back");
-        UIFactory.SetLayoutElement(back.gameObject, minWidth: 100);
+        UIHelper.SetLayoutElement(back.gameObject, minWidth: 100);
         back.OnClick += () =>
         {
             Enabled = false;
@@ -172,8 +171,8 @@ public class HostPanel : BaseUI
 
     private static ToggleControl CreateToggle(GameObject panel, string name, string label, bool value)
     {
-        var group = UIFactory.CreateUIObject($"{name}Group", panel);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        var group = UIHelper.CreateUIObject($"{name}Group", panel);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             group,
             false,
             false,
@@ -186,29 +185,29 @@ public class HostPanel : BaseUI
             5,
             TextAnchor.MiddleLeft
         );
-        UIFactory.SetLayoutElement(group, flexibleWidth: 1);
+        UIHelper.SetLayoutElement(group, flexibleWidth: 1);
 
         var bg = UIHelper.CreateBox(group, $"{name}_label_bg", Color.clear);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             bg,
             childControlWidth: true,
             childAlignment: TextAnchor.MiddleLeft
         );
-        UIFactory.SetLayoutElement(bg.gameObject, minWidth: LabelWidth, flexibleWidth: 0);
+        UIHelper.SetLayoutElement(bg.gameObject, minWidth: LabelWidth, flexibleWidth: 0);
         bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var labelText = UIHelper.CreateText(bg, $"{name}_label", $"{label}: ");
         labelText.alignment = TextAlignmentOptions.Left;
         
         bg = UIHelper.CreateBox(group, $"{name}_bg", Color.clear);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
             bg,
             childControlWidth: true,
             childAlignment: TextAnchor.MiddleCenter
         );
-        UIFactory.SetLayoutElement(bg.gameObject, flexibleWidth: 1);
+        UIHelper.SetLayoutElement(bg.gameObject, flexibleWidth: 1);
         bg.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var toggle = UIHelper.CreateToggle(bg, $"{name}", value);
-        UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(toggle.gameObject, childAlignment: TextAnchor.MiddleCenter);
+        UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(toggle.gameObject, childAlignment: TextAnchor.MiddleCenter);
         return toggle;
     }
 

@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
-using UniverseLib.UI;
 
 namespace ThronefallMP.UI.Panels;
 
@@ -94,12 +93,12 @@ public class ChatPanel : BaseUI
         _chatFont.material.EnableKeyword(ShaderUtilities.Keyword_Outline);
         _chatFont.material.SetFloat(ShaderUtilities.ID_FaceDilate, 0.3f);
         
-        _container = UIFactory.CreateUIObject("container", PanelRoot);
+        _container = UIHelper.CreateUIObject("container", PanelRoot);
         {
             var rectTransform = _container.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0, 0.5f);
             rectTransform.anchorMax = new Vector2(0.35f, 0.8f);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+            UIHelper.SetLayoutGroup<VerticalLayoutGroup>(
                 _container,
                 true,
                 false,
@@ -114,12 +113,12 @@ public class ChatPanel : BaseUI
             );
         }
 
-        var chatBoxBounds = UIFactory.CreateUIObject("chat_box_container", PanelRoot);
+        var chatBoxBounds = UIHelper.CreateUIObject("chat_box_container", PanelRoot);
         {
             var rectTransform = chatBoxBounds.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.4f, 0.4f);
             rectTransform.anchorMax = new Vector2(0.6f, 0.5f);
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 chatBoxBounds,
                 true,
                 false,
@@ -146,7 +145,7 @@ public class ChatPanel : BaseUI
             var image = _chatBoxContainer.AddComponent<Image>();
             image.type = Image.Type.Sliced;
             image.color = BackgroundColor;
-            UIFactory.SetLayoutGroup<HorizontalLayoutGroup>(
+            UIHelper.SetLayoutGroup<HorizontalLayoutGroup>(
                 _chatBoxContainer,
                 true,
                 false,
