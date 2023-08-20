@@ -76,8 +76,8 @@ public static class Helpers
             return Object.Instantiate(original, parent, worldPositionStays);
         }
 		
-        (GameObject coreObject, Transform coreObjectTransform) = CreateDisabledCoreObject(parent);
-        T instance = Object.Instantiate(original, coreObjectTransform, worldPositionStays);
+        var (coreObject, coreObjectTransform) = CreateDisabledCoreObject(parent);
+        var instance = Object.Instantiate(original, coreObjectTransform, worldPositionStays);
         SetActiveState(instance, false);
         SetParent(instance, parent, worldPositionStays);
         Object.Destroy(coreObject);
