@@ -1,4 +1,4 @@
-![Thronefall Multiplayer logo](https://github.com/MunWolf/thronefall_multiplayer/PackageAssets/icon.png)
+![Thronefall Multiplayer logo](https://github.com/MunWolf/thronefall_multiplayer/blob/main/PackageAssets/icon.png)
 
 # Thronefall Multiplayer
 
