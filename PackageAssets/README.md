@@ -1,4 +1,4 @@
-![Thronefall Multiplayer logo](https://github.com/MunWolf/thronefall_multiplayer/blob/main/PackageAssets/icon.png)
+![Thronefall Multiplayer logo](https://github.com/MunWolf/thronefall_multiplayer/blob/main/PackageAssets/icon.png?raw=true)
 
 # Thronefall Multiplayer
 
@@ -27,6 +27,12 @@ At this moment, you can use the following channels to ask for help
 Rikhardur Bjarni Einarsson (BadWolf)
 
 ## Changelog
+
+#### 1.0.2
+* Update to use netstandard2.1 for Mac support
+
+#### 1.0.1
+* Fixes to packaging script
 
 #### 1.0.0
 * Initial Thunderstore release
