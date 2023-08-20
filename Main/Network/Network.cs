@@ -497,6 +497,7 @@ public class Network : MonoBehaviour
         { EnemySpawnPacket.PacketID, typeof(EnemySpawnPacket) },
         { RequestLevelPacket.PacketID, typeof(RequestLevelPacket)},
         { RestartLevelPacket.PacketID, typeof(RestartLevelPacket)},
+        { ResignPacket.PacketID, typeof(ResignPacket)},
         { TeleportPlayerPacket.PacketID, typeof(TeleportPlayerPacket) },
         { WeaponRequestPacket.PacketID, typeof(WeaponRequestPacket) },
         { WeaponResponsePacket.PacketID, typeof(WeaponResponsePacket) },

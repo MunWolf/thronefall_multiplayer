@@ -12,6 +12,7 @@ using ThronefallMP.Network.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.UI;
 using ThronefallMP.Utils;
+using UnityEngine;
 
 namespace ThronefallMP.Network;
 
@@ -40,6 +41,7 @@ public enum PacketId
     DamageFeedback,
     RequestLevel,
     RestartLevel,
+    Resign,
     TeleportPlayer,
     WeaponRequest,
     WeaponResponse,
@@ -67,6 +69,7 @@ public static class PacketHandler
         { DayNightPacket.PacketID, HandleDayNight },
         { EnemySpawnPacket.PacketID, HandleEnemySpawn },
         { TeleportPlayerPacket.PacketID, HandlePlayerTeleport },
+        { ResignPacket.PacketID, HandleResign },
         
         { BuildOrUpgradePacket.PacketID, HandleBuildOrUpgrade },
         { CancelBuildPacket.PacketID, HandleCancelBuild },
@@ -187,6 +190,20 @@ public static class PacketHandler
         player.Controller.enabled = false;
         player.Object.transform.position = packet.Position;
         player.Controller.enabled = true;
+    }
+
+    private static void HandleResign(SteamNetworkingIdentity sender, BasePacket ipacket)
+    {
+        try
+        {
+            Plugin.Log.LogDebug("Resign");
+            UIFrameManager.instance.CloseAllFrames();
+            LocalGamestate.Instance.SetState(LocalGamestate.State.AfterMatchDefeat, false, true);
+        }
+        catch
+        {
+            Plugin.Log.LogError("InGameResignUIHelper: Bro we can not resign here.");
+        }
     }
 
     private static void HandleCommandAdd(SteamNetworkingIdentity sender, BasePacket ipacket)

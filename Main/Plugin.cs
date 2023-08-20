@@ -75,6 +75,7 @@ namespace ThronefallMP
             EnemySpawnerPatch.Apply();
             GateOpenerPatch.Apply();
             HpPatch.Apply();
+            InGameResignUIHelperPatch.Apply();
             LevelBorderPatch.Apply();
             LevelSelectManagerPatch.Apply();
             NightCallPatch.Apply();
