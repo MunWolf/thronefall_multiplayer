@@ -20,7 +20,7 @@ try {
     $null = New-Item -ItemType Directory -Path (Join-Path $sln_path "Packages/temp") -Force
     $null = Copy-Item -Path (Join-Path $sln_path "PackageAssets/*") -Destination (Join-Path $sln_path "Packages/temp") -Force
 
-    $null = New-Item -ItemType Directory -Path (Join-Path $sln_path "Packages/temp/$($mod_name)") -Force
+    $null = New-Item -ItemType Directory -Path (Join-Path $sln_path "Packages/temp/$($mod_name)_Mod") -Force
 
     function CopyDll {
         param (
@@ -28,7 +28,7 @@ try {
         )
         
         Write-Host "Copying $(Join-Path $input_path "$($dll).dll")"
-        $null = Copy-Item (Join-Path $input_path "$($dll).dll") (Join-Path $sln_path "Packages/temp/$($mod_name)/$($dll).dll") -Force
+        $null = Copy-Item (Join-Path $input_path "$($dll).dll") (Join-Path $sln_path "Packages/temp/$($mod_name)_Mod/$($dll).dll") -Force
     }
 
     $dlls | ForEach-Object {
