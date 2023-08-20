@@ -17,6 +17,7 @@ try {
         }
     }
 
+    $null = New-Item -ItemType Directory -Path $config.InstallPath -Force
     $dlls = (
         'com.badwolf.thronefall_mp'
     )
