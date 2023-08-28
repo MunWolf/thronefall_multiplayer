@@ -57,7 +57,7 @@ public static class SceneTransitionManagerPatch
     
     private static void TransitionToScene(On.SceneTransitionManager.orig_TransitionToScene original, SceneTransitionManager self, string scene)
     {
-        if (_transitionHookEnabled && scene != "_StartMenu")
+        if (_transitionHookEnabled && scene != "_StartMenu" && Plugin.Instance.Network.Online)
         {
             var packet = new RequestLevelPacket
             {

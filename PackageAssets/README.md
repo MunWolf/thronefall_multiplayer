@@ -28,6 +28,9 @@ Rikhardur Bjarni Einarsson (BadWolf)
 
 ## Changelog
 
+#### 1.0.3
+* Fixed serialization issue to do with identifiers, caused some pathfinding packets to be ignored.
+
 #### 1.0.2
 * Update to use netstandard2.1 for Mac support
 

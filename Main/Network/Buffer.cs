@@ -540,7 +540,7 @@ public class Buffer
 
     public IdentifierData ReadIdentifierData()
     {
-        if (!CanReadInternal(2 * sizeof(int)))
+        if (!CanReadInternal(sizeof(byte) + sizeof(short)))
         {
             Plugin.Log.LogInfoFiltered("Buffer", "Failed to read identifier");
             return IdentifierData.Invalid;

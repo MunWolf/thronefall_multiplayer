@@ -317,6 +317,7 @@ public class Network : MonoBehaviour
         Plugin.Instance.PlayerManager.LocalId = Plugin.Instance.PlayerManager.GenerateID();
         var player = Plugin.Instance.PlayerManager.CreateOrGet(CSteamID.Nil, Plugin.Instance.PlayerManager.LocalId);
         player.SpawnID = 0;
+        Owner = CSteamID.Nil;
         Plugin.Instance.PlayerManager.InstantiatePlayer(player, player.SpawnLocation);
     }
 

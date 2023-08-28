@@ -7,7 +7,7 @@ try {
     $input_path = $Args[1]
     $configuration = $Args[2]
     $mod_name = "ThronefallMultiplayer"
-    $identifier = if ($configuration -eq "Release") { "_$($configuration)" } Else { "" }
+    $identifier = if ($configuration -ne "Release") { "_$($configuration)" } Else { "" }
     $version = (Get-Item (Join-Path $input_path "com.badwolf.thronefall_mp.dll")).VersionInfo.ProductVersion
     $package_name = "$($mod_name)_$($version)$($identifier)"
     

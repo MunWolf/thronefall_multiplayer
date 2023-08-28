@@ -137,6 +137,7 @@ public class LevelDataSync : BaseSync
                 case Equipment.LongBow:
                 case Equipment.LightSpear:
                 case Equipment.HeavySword:
+                    Plugin.Log.LogInfo($"Steam id {peer.m_SteamID}");
                     _activeRequest.SelectedWeapons[Plugin.Instance.PlayerManager.Get(peer).Id] = perk;
                     break;
                 default:
