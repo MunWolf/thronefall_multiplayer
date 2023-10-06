@@ -28,6 +28,9 @@ Rikhardur Bjarni Einarsson (BadWolf)
 
 ## Changelog
 
+#### 1.0.4
+* Update to work with content update 1.
+
 #### 1.0.3
 * Fixed serialization issue to do with identifiers, caused some pathfinding packets to be ignored.
 

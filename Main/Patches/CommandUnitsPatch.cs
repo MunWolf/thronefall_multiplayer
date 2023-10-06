@@ -21,6 +21,11 @@ public static class CommandUnitsPatch
 
     private static void Update(On.CommandUnits.orig_Update original, CommandUnits self)
     {
+        if (Time.timeScale == 0f)
+        {
+            return;
+        }
+        
         var units = Traverse.Create(self).Field<List<PathfindMovementPlayerunit>>("playerUnitsCommanding");
         var data = self.GetComponent<PlayerNetworkData>();
         if (data == null)

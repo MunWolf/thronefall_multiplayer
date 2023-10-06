@@ -11,6 +11,7 @@ public static class HpPatch
         On.Hp.TakeDamage += TakeDamage;
         On.Hp.ScaleHp += ScaleHp;
         On.Hp.Heal += Heal;
+        On.Hp.SetHpToMaxHp += SetHpToMaxHp;
     }
 
     public static bool AllowHealthChangeOnClient;
@@ -75,6 +76,21 @@ public static class HpPatch
         if (Plugin.Instance.Network.Server || AllowHealthChangeOnClient)
         {
             original(self, amount);
+        }
+    }
+
+    private static void SetHpToMaxHp(On.Hp.orig_SetHpToMaxHp original, Hp self)
+    {
+        var identifier = self.GetComponent<Identifier>();
+        if (identifier == null || identifier.Type == IdentifierType.Invalid)
+        {
+            original(self);
+            return;
+        }
+
+        if (Plugin.Instance.Network.Server || AllowHealthChangeOnClient)
+        {
+            original(self);
         }
     }
 }

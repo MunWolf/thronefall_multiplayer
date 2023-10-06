@@ -466,7 +466,7 @@ public class Network : MonoBehaviour
 
         if (result != EResult.k_EResultOK)
         {
-            Plugin.Log.LogWarningFiltered("Network", $"SendMessage returned error '{result}'");
+            Plugin.Log.LogWarningFiltered("Network", $"SendMessage to {target.GetSteamID().m_SteamID} returned error '{result}'");
         }
     }
 

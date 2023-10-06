@@ -1,5 +1,5 @@
 $path = Read-Host -Prompt 'Input the path to your Thronefall installation (default: C:\Program Files (x86)\Steam\steamapps\common\Thronefall)'
-$mod_name = ThronefallMP
+$mod_name = "ThronefallMP"
 
 if ($path -eq "") {
     $path = "C:\Program Files (x86)\Steam\steamapps\common\Thronefall"
@@ -38,4 +38,4 @@ else {
 }
 
 Write-Host "Adding references"
-$project = Get-Content $mod_name/$mod_name.csproj
+$project = Get-Content Main/$mod_name.csproj

@@ -18,6 +18,7 @@ public class PlayerNetworkData : MonoBehaviour
         public bool CallNightButton;
         public float CallNightFill;
         public bool CommandUnitsButton;
+        public bool Slowed;
         
         public void Set(Shared a)
         {
@@ -29,6 +30,7 @@ public class PlayerNetworkData : MonoBehaviour
             CallNightButton = a.CallNightButton;
             CallNightFill = a.CallNightFill;
             CommandUnitsButton = a.CommandUnitsButton;
+            Slowed = a.Slowed;
         }
 
         public bool Compare(Shared b)
@@ -40,7 +42,8 @@ public class PlayerNetworkData : MonoBehaviour
                 && InteractButton == b.InteractButton
                 && CallNightButton == b.CallNightButton
                 && Math.Abs(CallNightFill - b.CallNightFill) < Helpers.Epsilon
-                && CommandUnitsButton == b.CommandUnitsButton;
+                && CommandUnitsButton == b.CommandUnitsButton
+                && Slowed == b.Slowed;
         }
     }
     

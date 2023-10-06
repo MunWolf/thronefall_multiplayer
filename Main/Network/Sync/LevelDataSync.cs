@@ -132,17 +132,9 @@ public class LevelDataSync : BaseSync
         Equip.ClearEquipments();
         foreach (var perk in packet.Perks)
         {
-            switch (perk)
+            if (Equip.Weapons.Contains(perk))
             {
-                case Equipment.LongBow:
-                case Equipment.LightSpear:
-                case Equipment.HeavySword:
-                    Plugin.Log.LogInfo($"Steam id {peer.m_SteamID}");
-                    _activeRequest.SelectedWeapons[Plugin.Instance.PlayerManager.Get(peer).Id] = perk;
-                    break;
-                default:
-                    Equip.EquipEquipment(perk);
-                    break;
+                _activeRequest.SelectedWeapons[Plugin.Instance.PlayerManager.Get(peer).Id] = perk;
             }
         }
 

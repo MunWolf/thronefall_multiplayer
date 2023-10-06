@@ -77,6 +77,7 @@ static class PlayerMovementPatch
         var sprintingToggledOn = Traverse.Create(self).Field<bool>("sprintingToggledOn");
         var sprinting = Traverse.Create(self).Field<bool>("sprinting");
         var moving = Traverse.Create(self).Field<bool>("moving");
+        var slowedFor = Traverse.Create(self).Field<float>("slowedFor");
         var desiredMeshRotation = Traverse.Create(self).Field<Quaternion>("desiredMeshRotation");
         var controller = Traverse.Create(self).Field<CharacterController>("controller");
 
@@ -108,8 +109,14 @@ static class PlayerMovementPatch
 		{
 			sprintingToggledOn.Value = false;
 		}
+		slowedFor.Value -= Time.deltaTime;
+		if (Plugin.Instance.Network.Server)
+		{
+			playerNetworkData.SharedData.Slowed = slowedFor.Value > 0f;
+		}
 		sprinting.Value = (playerNetworkData.SharedData.SprintButton || sprintingToggledOn.Value) && hp.HpPercentage >= 1f;
 		velocity.Value *= (sprinting.Value ? self.sprintSpeed : self.speed);
+		velocity.Value *= playerNetworkData.SharedData.Slowed ? 0.33f : 1f;
 		if (heavyArmorEquipped && DayNightCycle.Instance.CurrentTimestate == DayNightCycle.Timestate.Night)
 		{
 			velocity.Value *= PerkManager.instance.heavyArmor_SpeedMultiplyer;

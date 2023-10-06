@@ -105,7 +105,8 @@ public class EnemySpawnerPatch
 		}
 		
 		waitBeforeNextSpawn.Value = self.interval;
-		var randomPointOnSpawnLine = self.GetRandomPointOnSpawnLine();
+		var randomPointOnSpawnLine = self.GetRandomPointOnSpawnLine(
+			self.enemyPrefab.GetComponentInChildren<TaggedObject>().Tags.Contains(TagManager.ETag.Flying));
 
 		var coins = 0;
 		var spawnedUnits = Traverse.Create(self).Field<int>("spawnedUnits");

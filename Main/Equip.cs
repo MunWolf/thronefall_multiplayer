@@ -12,6 +12,7 @@ public enum Equipment
     LongBow,
     LightSpear,
     HeavySword,
+    LightningWand,
         
     RoyalMint,
     ArcaneTowers,
@@ -40,6 +41,12 @@ public enum Equipment
     TreasureHunter,
     IndestructibleMines,
     WarriorMode,
+    MeleeDamage,
+    FirewingHero,
+    AntiAirTelescope,
+    RangedDamage,
+    StrongerHeroes,
+    LizardRiderHero,
         
     AssassinsTraining,
     MagicArmor,
@@ -56,17 +63,30 @@ public enum Equipment
     MeleeBerserkers,
     RangedFireArchers,
         
+    WarGods,
     Turtle,
     Tiger,
     Rat,
     Falcon,
     Destruction,
     Wasp,
-    Death
+    Death,
+    Phoenix,
+    
+    NoWallsPact,
+    NoTowersPact,
+    NoUnitsPact
 }
 
 public static class Equip
 {
+    public static readonly HashSet<Equipment> Weapons = new()
+    {
+        Equipment.LongBow,
+        Equipment.LightSpear,
+        Equipment.HeavySword,
+        Equipment.LightningWand,
+    };
     
     private static readonly Dictionary<string, Equipment> NameToEquip = new()
     {
@@ -77,6 +97,7 @@ public static class Equip
         { "Long Bow", Equipment.LongBow },
         { "Light Spear", Equipment.LightSpear },
         { "Heavy Sword", Equipment.HeavySword },
+        { "Lightning Wand", Equipment.LightningWand },
         
         // Perks
         { "Universal Income", Equipment.RoyalMint },
@@ -106,6 +127,12 @@ public static class Equip
         { "Treasure Hunter", Equipment.TreasureHunter },
         { "Indestructible Mines", Equipment.IndestructibleMines },
         { "Warrior Mode", Equipment.WarriorMode },
+        { "Melee Damage", Equipment.MeleeDamage },
+        { "Firewing Hero", Equipment.FirewingHero },
+        { "Anti Air Telescope", Equipment.AntiAirTelescope },
+        { "Ranged Damage", Equipment.RangedDamage },
+        { "Stronger Heros", Equipment.StrongerHeroes },
+        { "LizzardRider Hero", Equipment.LizardRiderHero },
         
         // Castle Upgrades
         { "CCAssassinsTraining", Equipment.AssassinsTraining },
@@ -127,6 +154,7 @@ public static class Equip
         { "RangedFireArchers", Equipment.RangedFireArchers },
         
         // Mutators
+        { "Pray to The God of Strength", Equipment.WarGods },
         { "Taunt The Turtle God", Equipment.Turtle },
         { "Taunt The Tiger God", Equipment.Tiger },
         { "Taunt The Rat God", Equipment.Rat },
@@ -134,6 +162,10 @@ public static class Equip
         { "Taunt God of Destruction", Equipment.Destruction },
         { "Taunt The Cheese God", Equipment.Wasp },
         { "Taunt The Disease God", Equipment.Death },
+        { "Taunt The Phoenix God", Equipment.Phoenix },
+        { "No Walls Pact", Equipment.NoWallsPact },
+        { "No Towers Pact", Equipment.NoTowersPact },
+        { "No Units Pact", Equipment.NoUnitsPact },
     };
     
     private static readonly Dictionary<Equipment, Equippable> EquipmentToEquippable = new();
