@@ -9,7 +9,7 @@ public class PlayerLabelFollower : MonoBehaviour
     public int TargetPlayer { get; set; }
     
     private TextMeshPro _text;
-    private Camera _camera;
+    private Camera _camera; 
     private Vector3 _offset;
 
     private void Start()
