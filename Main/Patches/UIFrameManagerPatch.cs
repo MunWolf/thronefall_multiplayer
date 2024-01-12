@@ -30,7 +30,9 @@ public static class UIFrameManagerPatch
                 _pauseUI = GameObject.Find("UI Canvas").transform.Find("InMatch Pause Frame").GetComponent<PauseUILoadoutHelper>();
                 var menu = _pauseUI.transform.Find("Title /Menu Items");
                 _menuItems = menu.GetComponent<VerticalLayoutGroup>();
-                _resignButton = menu.Find("Resign").GetComponent<TFUITextButton>();
+
+                _resignButton = menu.Find("Back To Menu").GetComponent<TFUITextButton>();
+                
                 var disconnect = Helpers.InstantiateDisabled(_resignButton.gameObject, _resignButton.gameObject.transform.parent);
                 disconnect.name = "Disconnect";
                 _disconnectButton = disconnect.GetComponent<TFUITextButton>();
