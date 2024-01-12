@@ -61,6 +61,7 @@ public static class UIFrameManagerPatch
                     _resignButton.GetComponent<RectTransform>()
                 };
             }
+
             if (Plugin.Instance.Network.Online)
             {
                 foreach (var transform in _buttonTransforms)

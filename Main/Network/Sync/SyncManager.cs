@@ -22,13 +22,13 @@ public static class SyncManager
     public static void UpdateSyncs()
     {
         foreach (var sync in RegisteredSyncs)
-       {
-           sync.Update();
-       }
+        {
+            sync.Update();
+        }
         
         foreach (var sync in RegisteredTargetSyncs)
         {
-           sync.Update();
+            sync.Update();
         }
     }
 

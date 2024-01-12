@@ -7,7 +7,6 @@ using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.Utils;
 using UnityEngine;
-using UnityEngine.Bindings;
 
 namespace ThronefallMP.Network.Sync;
 
