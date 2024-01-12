@@ -26,7 +26,7 @@ public static class LevelSelectManagerPatch
         var levelInteractors = Traverse.Create(self).Field<LevelInteractor[]>("levelInteractors");
         foreach (var level in levelInteractors.Value)
         {
-
+            if (level != null) { }
             if (level.levelInfo.sceneName != sceneTransitionManager.ComingFromGameplayScene)
             {
                 continue;

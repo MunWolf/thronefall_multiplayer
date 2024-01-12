@@ -7,6 +7,7 @@ using ThronefallMP.Network.Packets.Sync;
 using ThronefallMP.Patches;
 using ThronefallMP.Utils;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace ThronefallMP.Network.Sync;
 
@@ -50,25 +51,25 @@ public class HpSync : BaseTargetSync
 
     protected override BasePacket CreateSyncPacket(CSteamID peer, IdentifierData id, GameObject target)
     {
-        if (target == null)
+        if (target != null)
         {
-            // Max hp doesn't matter as this kills the unit.
-            return new SyncHpPacket
-            {
-                Target = id,
-                Hp = int.MinValue,
-                MaxHp = 10,
-                KnockedOut = true
-            };
+            Hp hp = target.GetComponent<Hp>();
+            if (hp != null) {
+                return new SyncHpPacket
+                {
+                    Target = id,
+                    Hp = hp.HpValue,
+                    MaxHp = hp.maxHp,
+                    KnockedOut = hp.KnockedOut
+                };
+            }
         }
-        
-        var hp = target.GetComponent<Hp>();
         return new SyncHpPacket
         {
             Target = id,
-            Hp = hp.HpValue,
-            MaxHp = hp.maxHp,
-            KnockedOut = hp.KnockedOut
+            Hp = int.MinValue,
+            MaxHp = 10,
+            KnockedOut = true
         };
     }
 
